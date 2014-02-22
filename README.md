@@ -9,7 +9,7 @@ $ gradle run
 To run test client:
 
 ```bash
-$ pip install pyzmq
+$ pip3 install pyzmq
 $ cd test/main/python
-$ python -m borneo.test
+$ python3 -m borneo.repl
 ```

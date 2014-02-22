@@ -1,9 +1,10 @@
-#!/usr/bin/env python
-
-from __future__ import print_function
+#!/usr/bin/env python3
 
 import json
+import readline
+
 import zmq
+
 
 context = zmq.Context()
 
@@ -17,21 +18,25 @@ def send(verb, resource, *args):
     print(">>> " + line)
     socket.send(line.encode("utf-8"))
 
-def recv():
+
+def receive():
     message = socket.recv().decode("utf-8")
     print("<<< " + message)
     return message
 
-query = """\
-MERGE (a:Person {name:'Alice'})
-MERGE (b:Person {name:'Bob'})
-CREATE UNIQUE (a)-[:KNOWS]->(b)
-RETURN a, b
-"""
 
-send("POST", "cypher", query)
+def post_cypher(query):
+    send("POST", "cypher", query)
+    message = receive()
+    while message.startswith("100"):
+        message = receive()
 
-#  Get the reply.
-message = recv()
-while message.startswith("100"):
-    message = recv()
+
+if __name__ == "__main__":
+    done = False
+    while not done:
+        line = input("\x1b[32;1mborneo>\x1b[0m ")
+        if line.lower() == "quit":
+            done = True
+        else:
+            post_cypher(line)

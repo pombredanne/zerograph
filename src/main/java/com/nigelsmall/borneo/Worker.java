@@ -39,6 +39,7 @@ public class Worker implements Runnable {
             } catch (IOException ex) {
                 new Response(Response.SERVER_ERROR).send(external);
             }
+            System.out.println();
         }
     }
 
