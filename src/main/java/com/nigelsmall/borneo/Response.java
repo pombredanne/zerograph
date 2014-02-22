@@ -18,23 +18,28 @@ public class Response {
     final public static int BAD_REQUEST = 400;
     final public static int NOT_FOUND = 404;
     final public static int METHOD_NOT_ALLOWED = 405;
+    final public static int SERVER_ERROR = 500;
 
     final private String string;
     final private int status;
     final private Object[] data;
 
-    public Response(int status, Object[] data) throws IOException {
+    public Response(int status, Object[] data) {
         this.status = status;
         this.data = data;
         StringBuilder builder = new StringBuilder(Integer.toString(status));
         for (Object datum : data) {
             builder.append('\t');
-            builder.append(JSON.encode(datum));
+            try {
+                builder.append(JSON.encode(datum));
+            } catch (IOException ex) {
+                builder.append('?');  // TODO
+            }
         }
         this.string = builder.toString();
     }
 
-    public Response(int status) throws IOException {
+    public Response(int status) {
         this(status, new Object[0]);
     }
 
