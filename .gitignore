@@ -1,0 +1,15 @@
+.DS_Store
+
+*~
+*.iml
+*.ipr
+*.iws
+*.py[co]
+
+.gradle
+.idea
+
+build
+classes
+lib
+out
