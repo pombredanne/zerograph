@@ -1,5 +1,9 @@
-package com.nigelsmall.borneo;
+package com.nigelsmall.borneo.resources;
 
+import com.nigelsmall.borneo.BadRequest;
+import com.nigelsmall.borneo.Environment;
+import com.nigelsmall.borneo.Request;
+import com.nigelsmall.borneo.Response;
 import org.zeromq.ZMQ;
 
 public abstract class Resource {
@@ -16,6 +20,30 @@ public abstract class Resource {
 
     public Environment environment() {
         return this.env;
+    }
+
+    public Object getArgument(Request request, int index) throws BadRequest {
+        try {
+            return request.getData()[index];
+        } catch (IndexOutOfBoundsException ex) {
+            throw new BadRequest("Missing argument " + Integer.toString(index));
+        }
+    }
+
+    public String getStringArgument(Request request, int index) throws BadRequest {
+        try {
+            return (String)getArgument(request, index);
+        } catch (ClassCastException ex) {
+            throw new BadRequest("String argument cannot be parsed");
+        }
+    }
+
+    public long getLongArgument(Request request, int index) throws BadRequest {
+        try {
+            return ((Integer)getArgument(request, index)).longValue();
+        } catch (ClassCastException ex) {
+            throw new BadRequest("Long argument cannot be parsed");
+        }
     }
 
     public void handle(Request request) {

@@ -1,5 +1,8 @@
-package com.nigelsmall.borneo;
+package com.nigelsmall.borneo.resources;
 
+import com.nigelsmall.borneo.Environment;
+import com.nigelsmall.borneo.Request;
+import com.nigelsmall.borneo.Response;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;

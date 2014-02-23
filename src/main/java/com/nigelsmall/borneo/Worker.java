@@ -1,5 +1,7 @@
 package com.nigelsmall.borneo;
 
+import com.nigelsmall.borneo.resources.CypherResource;
+import com.nigelsmall.borneo.resources.NodeResource;
 import org.zeromq.ZMQ;
 
 import java.io.IOException;
@@ -37,9 +39,12 @@ public class Worker implements Runnable {
 
     public void handle(Request request) throws IOException {
         if (Pattern.matches(CypherResource.PATTERN, request.getResource())) {
-            CypherResource cypher = new CypherResource(env, external);
-            cypher.handle(request);
-        } else {
+            new CypherResource(env, external).handle(request);
+        }
+        else if (Pattern.matches(NodeResource.PATTERN, request.getResource())) {
+            new NodeResource(env, external).handle(request);
+        }
+        else {
             new Response(Response.NOT_FOUND, new Object[] {request.getResource()}).send(external);
         }
     }
