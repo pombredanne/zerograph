@@ -48,6 +48,10 @@ public class Request {
         return this.resource;
     }
 
+    public Object getData(int index) throws IOException {
+        return JSON.decode(data[index]);
+    }
+
     public String getStringData(int index) throws IOException {
         return JSON.decodeString(data[index]);
     }

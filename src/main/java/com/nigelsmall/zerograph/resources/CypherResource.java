@@ -24,7 +24,7 @@ public class CypherResource extends Resource {
     }
 
     /**
-     * POST cypher <db_name> <query> [<params>]
+     * POST cypher {db} {query} [{params}]
      *
      * @param request
      */
@@ -37,17 +37,16 @@ public class CypherResource extends Resource {
             try (Transaction tx = database.beginTx()) {
                 ExecutionEngine engine = new ExecutionEngine(database);
                 ExecutionResult result;
-                result = engine.execute( query );
-
+                result = engine.execute(query);
                 List<String> columns = result.columns();
-                send(Response.CONTINUE, columns.toArray(new Object[columns.size()]));
+                send(new Response(Response.CONTINUE, columns.toArray(new Object[columns.size()])));
 
                 for (Map<String, Object> row : result) {
                     ArrayList<Object> values = new ArrayList<>();
                     for (String column : columns) {
                         values.add(row.get(column));
                     }
-                    send(Response.CONTINUE, values.toArray(new Object[values.size()]));
+                    send(new Response(Response.CONTINUE, values.toArray(new Object[values.size()])));
                 }
                 tx.success();
                 response = new Response(Response.OK);
@@ -55,7 +54,7 @@ public class CypherResource extends Resource {
         } catch (BadRequest ex) {
             response = ex.getResponse();
         } catch (CypherException ex) {
-            response = new Response(Response.BAD_REQUEST, new Object[] { ex.getMessage() });
+            response = new Response(Response.BAD_REQUEST, ex.getMessage());
         } finally {
             send(response);
         }

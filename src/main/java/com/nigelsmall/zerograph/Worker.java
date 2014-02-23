@@ -2,6 +2,7 @@ package com.nigelsmall.zerograph;
 
 import com.nigelsmall.zerograph.resources.CypherResource;
 import com.nigelsmall.zerograph.resources.NodeResource;
+import com.nigelsmall.zerograph.resources.NodeSetResource;
 import org.zeromq.ZMQ;
 
 import java.io.IOException;
@@ -26,26 +27,23 @@ public class Worker implements Runnable {
             System.out.println("<<< " + string);
             try {
                 Request request = new Request(string);
-                handle(request);
+                switch (request.getResource()) {
+                    case CypherResource.NAME:
+                        new CypherResource(env, external).handle(request);
+                        break;
+                    case NodeResource.NAME:
+                        new NodeResource(env, external).handle(request);
+                        break;
+                    case NodeSetResource.NAME:
+                        new NodeSetResource(env, external).handle(request);
+                        break;
+                    default:
+                        new Response(Response.NOT_FOUND, new Object[] { request.getResource() }).send(external);
+                }
             } catch (BadRequest badRequest) {
                 badRequest.getResponse().send(external);
-            } catch (IOException ex) {
-                new Response(Response.SERVER_ERROR).send(external);
             }
             System.out.println();
-        }
-    }
-
-    public void handle(Request request) throws IOException {
-        switch (request.getResource()) {
-            case CypherResource.NAME:
-                new CypherResource(env, external).handle(request);
-                break;
-            case NodeResource.NAME:
-                new NodeResource(env, external).handle(request);
-                break;
-            default:
-                new Response(Response.NOT_FOUND, new Object[] {request.getResource()}).send(external);
         }
     }
 

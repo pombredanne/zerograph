@@ -24,7 +24,7 @@ public class NodeResource extends Resource {
     }
 
     /**
-     * GET node <db_name> <node_id>
+     * GET node {db} {node_id}
      *
      * @param request
      */
@@ -36,7 +36,7 @@ public class NodeResource extends Resource {
             long nodeID = getIntegerArgument(request, 1);
             try (Transaction tx = database.beginTx()) {
                 try {
-                    response = new Response(Response.OK, new Object[] { database.getNodeById(nodeID) });
+                    response = new Response(Response.OK, database.getNodeById(nodeID));
                 } catch (NotFoundException ex) {
                     response = new Response(Response.NOT_FOUND);
                 }
@@ -49,7 +49,27 @@ public class NodeResource extends Resource {
     }
 
     /**
-     * POST node <db_name> <labels> <properties>
+     * PUT node {db} {node_id} {labels} {properties}
+     *
+     * @param request
+     */
+    @Override
+    public void put(Request request) {
+        send(new Response(Response.NOT_IMPLEMENTED));
+    }
+
+    /**
+     * PATCH node {db} {node_id} {labels} {properties}
+     *
+     * @param request
+     */
+    @Override
+    public void patch(Request request) {
+        send(new Response(Response.NOT_IMPLEMENTED));
+    }
+
+    /**
+     * POST node {db} {labels} {properties}
      *
      * @param request
      */
@@ -69,13 +89,23 @@ public class NodeResource extends Resource {
                     node.setProperty(key.toString(), properties.get(key));
                 }
                 tx.success();
-                response = new Response(Response.OK, new Object[] { node });
+                response = new Response(Response.OK, node);
             }
         } catch (BadRequest ex) {
             response = ex.getResponse();
         } finally {
             send(response);
         }
+    }
+
+    /**
+     * DELETE node {db} {node_id}
+     *
+     * @param request
+     */
+    @Override
+    public void delete(Request request) {
+        send(new Response(Response.NOT_IMPLEMENTED));
     }
 
 }

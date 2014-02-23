@@ -31,6 +31,14 @@ public abstract class Resource {
         return env.getDatabase(getStringArgument(request, index));
     }
 
+    public Object getArgument(Request request, int index) throws BadRequest {
+        try {
+            return request.getData(index);
+        } catch (IOException ex) {
+            throw new BadRequest("Argument cannot be parsed");
+        }
+    }
+
     public String getStringArgument(Request request, int index) throws BadRequest {
         try {
             return request.getStringData(index);
@@ -78,36 +86,28 @@ public abstract class Resource {
                 delete(request);
                 break;
             default:
-                send(Response.METHOD_NOT_ALLOWED, request.getMethod());
+                send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
         }
     }
 
     public void get(Request request) {
-        send(Response.METHOD_NOT_ALLOWED, request.getMethod());
+        send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 
     public void put(Request request) {
-        send(Response.METHOD_NOT_ALLOWED, request.getMethod());
+        send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+    }
+
+    public void patch(Request request) {
+        send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 
     public void post(Request request) {
-        send(Response.METHOD_NOT_ALLOWED, request.getMethod());
+        send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 
     public void delete(Request request) {
-        send(Response.METHOD_NOT_ALLOWED, request.getMethod());
-    }
-
-    public void send(int status) {
-        send(status, new Object[0]);
-    }
-
-    public void send(int status, String message) {
-        send(status, new String[]{message});
-    }
-
-    public void send(int status, Object[] data) {
-        new Response(status, data).send(socket);
+        send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 
     public void send(Response response) {
