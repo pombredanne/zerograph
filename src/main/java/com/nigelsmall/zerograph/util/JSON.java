@@ -1,4 +1,4 @@
-package com.nigelsmall.borneo.util;
+package com.nigelsmall.zerograph.util;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.neo4j.graphdb.Label;

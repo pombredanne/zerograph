@@ -1,9 +1,9 @@
-package com.nigelsmall.borneo.resources;
+package com.nigelsmall.zerograph.resources;
 
-import com.nigelsmall.borneo.BadRequest;
-import com.nigelsmall.borneo.Environment;
-import com.nigelsmall.borneo.Request;
-import com.nigelsmall.borneo.Response;
+import com.nigelsmall.zerograph.BadRequest;
+import com.nigelsmall.zerograph.Environment;
+import com.nigelsmall.zerograph.Request;
+import com.nigelsmall.zerograph.Response;
 import org.zeromq.ZMQ;
 
 public abstract class Resource {

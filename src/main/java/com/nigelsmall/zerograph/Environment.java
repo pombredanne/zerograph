@@ -1,4 +1,4 @@
-package com.nigelsmall.borneo;
+package com.nigelsmall.zerograph;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;

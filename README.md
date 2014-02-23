@@ -1,4 +1,4 @@
-# Borneo
+# Zerograph
 
 To run server:
 
@@ -11,5 +11,5 @@ To run test client:
 ```bash
 $ pip3 install pyzmq
 $ cd test/main/python
-$ python3 -m borneo.repl
+$ python3 -m zerograph.repl
 ```

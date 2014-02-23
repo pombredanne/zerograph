@@ -1,7 +1,7 @@
-package com.nigelsmall.borneo;
+package com.nigelsmall.zerograph;
 
-import com.nigelsmall.borneo.resources.CypherResource;
-import com.nigelsmall.borneo.resources.NodeResource;
+import com.nigelsmall.zerograph.resources.CypherResource;
+import com.nigelsmall.zerograph.resources.NodeResource;
 import org.zeromq.ZMQ;
 
 import java.io.IOException;

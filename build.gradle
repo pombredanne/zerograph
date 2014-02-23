@@ -29,7 +29,7 @@ group = 'com.nigelsmall'
 version = '0.1.0'
 jar {
     manifest {
-        attributes 'Implementation-Title': 'borneo', 'Implementation-Version': version
+        attributes 'Implementation-Title': 'zerograph', 'Implementation-Version': version
     }
 }
 
@@ -37,4 +37,4 @@ task wrapper(type: Wrapper) {
     gradleVersion = '1.8'
 }
 
-mainClassName = "com.nigelsmall.borneo.BorneoServer"
+mainClassName = "com.nigelsmall.zerograph.Service"

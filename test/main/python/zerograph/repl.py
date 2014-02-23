@@ -35,7 +35,7 @@ def post_cypher(query):
 if __name__ == "__main__":
     done = False
     while not done:
-        line = input("\x1b[32;1mborneo>\x1b[0m ")
+        line = input("\x1b[32;1mzerograph>\x1b[0m ")
         if line.lower() == "quit":
             done = True
         else:

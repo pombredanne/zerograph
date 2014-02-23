@@ -1,4 +1,4 @@
-package com.nigelsmall.borneo;
+package com.nigelsmall.zerograph;
 
 public class BadRequest extends Exception {
 

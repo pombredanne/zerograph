@@ -1,6 +1,6 @@
-package com.nigelsmall.borneo;
+package com.nigelsmall.zerograph;
 
-import com.nigelsmall.borneo.util.JSON;
+import com.nigelsmall.zerograph.util.JSON;
 import org.zeromq.ZMQ;
 
 import java.io.IOException;
