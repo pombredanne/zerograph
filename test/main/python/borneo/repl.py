@@ -26,7 +26,7 @@ def receive():
 
 
 def post_cypher(query):
-    send("POST", "cypher", query)
+    send("POST", "cypher", "default", query)
     message = receive()
     while message.startswith("100"):
         message = receive()
