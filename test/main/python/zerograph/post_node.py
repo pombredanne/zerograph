@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-# -*- encoding: utf-8 -*-
 
 import json
 import readline
+import sys
 
 import zmq
 
@@ -26,21 +26,14 @@ def receive():
     return message
 
 
-def post_cypher(query):
-    send("POST", "cypher", "default", query)
+def post_node(labels, properties):
+    send("POST", "node", "default", labels, properties)
     message = receive()
     while message.startswith("100"):
         message = receive()
 
 
 if __name__ == "__main__":
-    try:
-        done = False
-        while not done:
-            line = input("\x1b[32;1mzerograph>\x1b[0m ")
-            if line.lower() == "quit":
-                done = True
-            else:
-                post_cypher(line)
-    except EOFError:
-        print("⌁")
+    labels = ["Person"]
+    properties = {"name": "Bob", "age": 44}
+    post_node(labels, properties)

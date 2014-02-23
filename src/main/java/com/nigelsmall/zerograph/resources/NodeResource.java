@@ -4,10 +4,16 @@ import com.nigelsmall.zerograph.BadRequest;
 import com.nigelsmall.zerograph.Environment;
 import com.nigelsmall.zerograph.Request;
 import com.nigelsmall.zerograph.Response;
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.zeromq.ZMQ;
+
+import java.util.List;
+import java.util.Map;
 
 public class NodeResource extends Resource {
 
@@ -24,27 +30,52 @@ public class NodeResource extends Resource {
      */
     @Override
     public void get(Request request) {
-        String databaseName;
-        Long nodeID;
-
+        Response response = new Response(Response.SERVER_ERROR);
         try {
-            databaseName = getStringArgument(request, 0);
-            nodeID = getLongArgument(request, 1);
-        } catch (BadRequest ex) {
-            send(Response.BAD_REQUEST, ex.getMessage());
-            return;
-        }
-
-        GraphDatabaseService database = environment().getDatabase(databaseName);
-
-        try (Transaction tx = database.beginTx()) {
-            try {
-                send(Response.OK, new Object[] { database.getNodeById(nodeID) });
-            } catch (NotFoundException ex) {
-                send(Response.NOT_FOUND);
+            GraphDatabaseService database = getDatabaseArgument(request, 0);
+            long nodeID = getIntegerArgument(request, 1);
+            try (Transaction tx = database.beginTx()) {
+                try {
+                    response = new Response(Response.OK, new Object[] { database.getNodeById(nodeID) });
+                } catch (NotFoundException ex) {
+                    response = new Response(Response.NOT_FOUND);
+                }
             }
+        } catch (BadRequest ex) {
+            response = ex.getResponse();
+        } finally {
+            send(response);
         }
+    }
 
+    /**
+     * POST node <db_name> <labels> <properties>
+     *
+     * @param request
+     */
+    @Override
+    public void post(Request request) {
+        Response response = new Response(Response.SERVER_ERROR);
+        try {
+            GraphDatabaseService database = getDatabaseArgument(request, 0);
+            List labelNames = getListArgument(request, 1);
+            Map properties = getMapArgument(request, 2);
+            try (Transaction tx = database.beginTx()) {
+                Label[] labels = new Label[labelNames.size()];
+                for (int i = 0; i < labels.length; i++)
+                    labels[i] = DynamicLabel.label(labelNames.get(i).toString());
+                Node node = database.createNode(labels);
+                for (Object key : properties.keySet()) {
+                    node.setProperty(key.toString(), properties.get(key));
+                }
+                tx.success();
+                response = new Response(Response.OK, new Object[] { node });
+            }
+        } catch (BadRequest ex) {
+            response = ex.getResponse();
+        } finally {
+            send(response);
+        }
     }
 
 }

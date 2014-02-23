@@ -1,5 +1,6 @@
 package com.nigelsmall.zerograph.resources;
 
+import com.nigelsmall.zerograph.BadRequest;
 import com.nigelsmall.zerograph.Environment;
 import com.nigelsmall.zerograph.Request;
 import com.nigelsmall.zerograph.Response;
@@ -29,51 +30,35 @@ public class CypherResource extends Resource {
      */
     @Override
     public void post(Request request) {
-
-        Object[] data = request.getData();
-
-        if (data.length < 2) {
-            send(Response.BAD_REQUEST, "Not enough terms");
-            return;
-        }
-
-        String databaseName, query;
+        Response response = new Response(Response.SERVER_ERROR);
         try {
-            databaseName = (String)data[0];
-            query = (String)data[1];
-        } catch (ClassCastException ex) {
-            send(Response.BAD_REQUEST, "Database name and query must be stringular");
-            return;
-        }
-
-        GraphDatabaseService database = environment().getDatabase(databaseName);
-        ExecutionEngine engine = environment().getEngine(databaseName);
-
-        try (Transaction tx = database.beginTx()) {
-
-            ExecutionResult result;
-            try {
+            GraphDatabaseService database = getDatabaseArgument(request, 0);
+            String query = getStringArgument(request, 1);
+            try (Transaction tx = database.beginTx()) {
+                ExecutionEngine engine = new ExecutionEngine(database);
+                ExecutionResult result;
                 result = engine.execute( query );
-            } catch (CypherException ex) {
-                send(Response.BAD_REQUEST, ex.getMessage());
-                return;
-            }
 
-            List<String> columns = result.columns();
-            send(Response.CONTINUE, columns.toArray(new Object[columns.size()]));
+                List<String> columns = result.columns();
+                send(Response.CONTINUE, columns.toArray(new Object[columns.size()]));
 
-            for (Map<String, Object> row : result) {
-                ArrayList<Object> values = new ArrayList<>();
-                for (String column : columns) {
-                    values.add(row.get(column));
+                for (Map<String, Object> row : result) {
+                    ArrayList<Object> values = new ArrayList<>();
+                    for (String column : columns) {
+                        values.add(row.get(column));
+                    }
+                    send(Response.CONTINUE, values.toArray(new Object[values.size()]));
                 }
-                send(Response.CONTINUE, values.toArray(new Object[values.size()]));
+                tx.success();
+                response = new Response(Response.OK);
             }
-            tx.success();
+        } catch (BadRequest ex) {
+            response = ex.getResponse();
+        } catch (CypherException ex) {
+            response = new Response(Response.BAD_REQUEST, new Object[] { ex.getMessage() });
+        } finally {
+            send(response);
         }
-
-        send(Response.OK);
-
     }
 
 }
