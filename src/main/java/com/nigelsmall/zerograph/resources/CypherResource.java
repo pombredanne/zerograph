@@ -16,7 +16,7 @@ import java.util.Map;
 
 public class CypherResource extends Resource {
 
-    final public static String PATTERN = "cypher";
+    final public static String NAME = "cypher";
 
     public CypherResource(Environment env, ZMQ.Socket socket) {
         super(env, socket);

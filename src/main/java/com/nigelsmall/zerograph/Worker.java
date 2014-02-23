@@ -5,7 +5,6 @@ import com.nigelsmall.zerograph.resources.NodeResource;
 import org.zeromq.ZMQ;
 
 import java.io.IOException;
-import java.util.regex.Pattern;
 
 public class Worker implements Runnable {
 
@@ -38,14 +37,15 @@ public class Worker implements Runnable {
     }
 
     public void handle(Request request) throws IOException {
-        if (Pattern.matches(CypherResource.PATTERN, request.getResource())) {
-            new CypherResource(env, external).handle(request);
-        }
-        else if (Pattern.matches(NodeResource.PATTERN, request.getResource())) {
-            new NodeResource(env, external).handle(request);
-        }
-        else {
-            new Response(Response.NOT_FOUND, new Object[] {request.getResource()}).send(external);
+        switch (request.getResource()) {
+            case CypherResource.NAME:
+                new CypherResource(env, external).handle(request);
+                break;
+            case NodeResource.NAME:
+                new NodeResource(env, external).handle(request);
+                break;
+            default:
+                new Response(Response.NOT_FOUND, new Object[] {request.getResource()}).send(external);
         }
     }
 

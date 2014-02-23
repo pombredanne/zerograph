@@ -8,7 +8,7 @@ import org.zeromq.ZMQ;
 
 public abstract class Resource {
 
-    final public static String PATTERN = null;
+    final public static String NAME = null;
 
     final private Environment env;
     final private ZMQ.Socket socket;

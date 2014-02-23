@@ -11,7 +11,7 @@ import org.zeromq.ZMQ;
 
 public class NodeResource extends Resource {
 
-    final public static String PATTERN = "node";
+    final public static String NAME = "node";
 
     public NodeResource(Environment env, ZMQ.Socket socket) {
         super(env, socket);
