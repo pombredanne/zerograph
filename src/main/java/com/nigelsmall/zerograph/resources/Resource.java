@@ -8,8 +8,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.zeromq.ZMQ;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
 public abstract class Resource {
 
@@ -28,46 +26,14 @@ public abstract class Resource {
     }
 
     public GraphDatabaseService getDatabaseArgument(Request request, int index) throws BadRequest {
-        return env.getDatabase(getStringArgument(request, index));
+        return env.getDatabase(getArgument(request, index, String.class));
     }
 
-    public Object getArgument(Request request, int index) throws BadRequest {
+    public <T> T getArgument(Request request, int index, Class<T> klass) throws BadRequest {
         try {
-            return request.getData(index);
+            return request.getData(index, klass);
         } catch (IOException ex) {
-            throw new BadRequest("Argument cannot be parsed");
-        }
-    }
-
-    public String getStringArgument(Request request, int index) throws BadRequest {
-        try {
-            return request.getStringData(index);
-        } catch (IOException ex) {
-            throw new BadRequest("String argument cannot be parsed");
-        }
-    }
-
-    public int getIntegerArgument(Request request, int index) throws BadRequest {
-        try {
-            return request.getIntegerData(index);
-        } catch (IOException ex) {
-            throw new BadRequest("Integer argument cannot be parsed");
-        }
-    }
-
-    public List getListArgument(Request request, int index) throws BadRequest {
-        try {
-            return request.getListData(index);
-        } catch (IOException ex) {
-            throw new BadRequest("List argument cannot be parsed");
-        }
-    }
-
-    public Map getMapArgument(Request request, int index) throws BadRequest {
-        try {
-            return request.getMapData(index);
-        } catch (IOException ex) {
-            throw new BadRequest("Map argument cannot be parsed");
+            throw new BadRequest("Failed to parse argument " + index);
         }
     }
 
@@ -78,6 +44,9 @@ public abstract class Resource {
                 break;
             case "PUT":
                 put(request);
+                break;
+            case "PATCH":
+                patch(request);
                 break;
             case "POST":
                 post(request);

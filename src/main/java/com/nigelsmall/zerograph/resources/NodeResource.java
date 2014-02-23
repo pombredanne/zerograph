@@ -33,7 +33,7 @@ public class NodeResource extends Resource {
         Response response = new Response(Response.SERVER_ERROR);
         try {
             GraphDatabaseService database = getDatabaseArgument(request, 0);
-            long nodeID = getIntegerArgument(request, 1);
+            long nodeID = getArgument(request, 1, Integer.class);
             try (Transaction tx = database.beginTx()) {
                 try {
                     response = new Response(Response.OK, database.getNodeById(nodeID));
@@ -78,8 +78,8 @@ public class NodeResource extends Resource {
         Response response = new Response(Response.SERVER_ERROR);
         try {
             GraphDatabaseService database = getDatabaseArgument(request, 0);
-            List labelNames = getListArgument(request, 1);
-            Map properties = getMapArgument(request, 2);
+            List labelNames = getArgument(request, 1, List.class);
+            Map properties = getArgument(request, 2, Map.class);
             try (Transaction tx = database.beginTx()) {
                 Label[] labels = new Label[labelNames.size()];
                 for (int i = 0; i < labels.length; i++)

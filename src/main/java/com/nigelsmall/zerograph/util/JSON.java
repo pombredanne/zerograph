@@ -63,24 +63,8 @@ public class JSON {
         }
     }
 
-    public static Object decode(String value) throws IOException {
-        return mapper.readValue(value, Object.class);
-    }
-
-    public static String decodeString(String value) throws IOException {
-        return mapper.readValue(value, String.class);
-    }
-
-    public static Integer decodeInteger(String value) throws IOException {
-        return mapper.readValue(value, Integer.class);
-    }
-
-    public static List decodeList(String value) throws IOException {
-        return mapper.readValue(value, List.class);
-    }
-
-    public static Map decodeMap(String value) throws IOException {
-        return mapper.readValue(value, Map.class);
+    public static <T> T decode(String value, Class<T> klass) throws IOException {
+        return mapper.readValue(value, klass);
     }
 
 }

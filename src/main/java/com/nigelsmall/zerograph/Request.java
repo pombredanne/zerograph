@@ -4,8 +4,6 @@ import com.nigelsmall.zerograph.util.JSON;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Request is tab-separated string of terms
@@ -48,24 +46,8 @@ public class Request {
         return this.resource;
     }
 
-    public Object getData(int index) throws IOException {
-        return JSON.decode(data[index]);
-    }
-
-    public String getStringData(int index) throws IOException {
-        return JSON.decodeString(data[index]);
-    }
-
-    public int getIntegerData(int index) throws IOException {
-        return JSON.decodeInteger(data[index]);
-    }
-
-    public List getListData(int index) throws IOException {
-        return JSON.decodeList(data[index]);
-    }
-
-    public Map getMapData(int index) throws IOException {
-        return JSON.decodeMap(data[index]);
+    public <T> T getData(int index, Class<T> klass) throws IOException {
+        return JSON.decode(data[index], klass);
     }
 
 }

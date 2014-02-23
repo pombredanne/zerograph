@@ -33,9 +33,9 @@ public class NodeSetResource extends Resource {
         Response response = new Response(Response.SERVER_ERROR);
         try {
             GraphDatabaseService database = getDatabaseArgument(request, 0);
-            Label label = DynamicLabel.label(getStringArgument(request, 1));
-            String key = getStringArgument(request, 2);
-            Object value = getArgument(request, 3);
+            Label label = DynamicLabel.label(getArgument(request, 1, String.class));
+            String key = getArgument(request, 2, String.class);
+            Object value = getArgument(request, 3, Object.class);
             try (Transaction tx = database.beginTx()) {
                 HashMap<String, Integer> stats = new HashMap<>();
                 stats.put("matched", 0);
@@ -76,9 +76,9 @@ public class NodeSetResource extends Resource {
         Response response = new Response(Response.SERVER_ERROR);
         try {
             GraphDatabaseService database = getDatabaseArgument(request, 0);
-            Label label = DynamicLabel.label(getStringArgument(request, 1));
-            String key = getStringArgument(request, 2);
-            Object value = getArgument(request, 3);
+            Label label = DynamicLabel.label(getArgument(request, 1, String.class));
+            String key = getArgument(request, 2, String.class);
+            Object value = getArgument(request, 3, Object.class);
             try (Transaction tx = database.beginTx()) {
                 HashMap<String, Integer> stats = new HashMap<>();
                 stats.put("deleted", 0);

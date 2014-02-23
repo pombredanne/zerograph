@@ -33,7 +33,7 @@ public class CypherResource extends Resource {
         Response response = new Response(Response.SERVER_ERROR);
         try {
             GraphDatabaseService database = getDatabaseArgument(request, 0);
-            String query = getStringArgument(request, 1);
+            String query = getArgument(request, 1, String.class);
             try (Transaction tx = database.beginTx()) {
                 ExecutionEngine engine = new ExecutionEngine(database);
                 ExecutionResult result;
