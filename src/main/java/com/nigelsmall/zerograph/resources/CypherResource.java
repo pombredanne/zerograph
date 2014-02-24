@@ -9,6 +9,7 @@ import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.zeromq.ZMQ;
 
 import java.util.ArrayList;
@@ -55,6 +56,8 @@ public class CypherResource extends Resource {
             response = ex.getResponse();
         } catch (CypherException ex) {
             response = new Response(Response.BAD_REQUEST, ex.getMessage());
+        } catch (TransactionFailureException ex) {
+            response = new Response(Response.CONFLICT, ex.getMessage());  // TODO - derive cause from nested Exceptions
         } finally {
             send(response);
         }

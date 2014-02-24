@@ -9,6 +9,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.zeromq.ZMQ;
 
 import java.util.HashMap;
@@ -53,14 +54,14 @@ public class NodeSetResource extends Resource {
     }
 
     /**
-     * PUT nodeset {db} {label} {key} {value}
+     * PATCH nodeset {db} {label} {key} {value}
      *
      * MERGE-RETURN
      *
      * @param request
      */
     @Override
-    public void put(Request request) {
+    public void patch(Request request) {
         send(new Response(Response.NOT_IMPLEMENTED));
     }
 
@@ -86,10 +87,13 @@ public class NodeSetResource extends Resource {
                     node.delete();
                     stats.put("deleted", stats.get("deleted") + 1);
                 }
+                tx.success();
                 response = new Response(Response.OK, stats);
             }
         } catch (BadRequest ex) {
             response = ex.getResponse();
+        } catch (TransactionFailureException ex) {
+            response = new Response(Response.CONFLICT, ex.getMessage());  // TODO - derive cause from nested Exceptions
         } finally {
             send(response);
         }
