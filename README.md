@@ -10,6 +10,6 @@ To run test client:
 
 ```bash
 $ pip3 install pyzmq
-$ cd test/main/python
+$ cd src/client/python
 $ python3 -m zerograph.repl
 ```
