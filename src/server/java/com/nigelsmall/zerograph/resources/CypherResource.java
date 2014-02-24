@@ -41,7 +41,6 @@ public class CypherResource extends Resource {
                 result = engine.execute(query);
                 List<String> columns = result.columns();
                 send(new Response(Response.CONTINUE, columns.toArray(new Object[columns.size()])));
-
                 for (Map<String, Object> row : result) {
                     ArrayList<Object> values = new ArrayList<>();
                     for (String column : columns) {

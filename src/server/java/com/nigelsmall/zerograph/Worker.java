@@ -5,8 +5,6 @@ import com.nigelsmall.zerograph.resources.NodeResource;
 import com.nigelsmall.zerograph.resources.NodeSetResource;
 import org.zeromq.ZMQ;
 
-import java.io.IOException;
-
 public class Worker implements Runnable {
 
     final public static String ADDRESS = "inproc://workers";

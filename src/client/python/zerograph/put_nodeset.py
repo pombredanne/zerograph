@@ -26,15 +26,14 @@ def receive():
     return message
 
 
-def get_nodeset(label, key, value):
-    send("GET", "nodeset", "default", label, key, value)
+def put_nodeset(label, key, value):
+    send("PUT", "nodeset", "default", label, key, value)
     message = receive()
-    while message.startswith("100"):
+    while socket.getsockopt(zmq.RCVMORE):
         message = receive()
-
 
 if __name__ == "__main__":
     label = sys.argv[1]
     key = sys.argv[2]
     value = sys.argv[3]
-    get_nodeset(label, key, value)
+    put_nodeset(label, key, value)
