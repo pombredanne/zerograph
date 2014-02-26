@@ -16,6 +16,7 @@ public class Response {
     // Borrowed from HTTP
     final public static int CONTINUE = 100;
     final public static int OK = 200;
+    final public static int NO_CONTENT = 204;
     final public static int BAD_REQUEST = 400;
     final public static int NOT_FOUND = 404;
     final public static int CONFLICT = 409;
