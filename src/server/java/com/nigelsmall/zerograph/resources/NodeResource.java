@@ -1,9 +1,8 @@
 package com.nigelsmall.zerograph.resources;
 
-import com.nigelsmall.zerograph.BadRequest;
-import com.nigelsmall.zerograph.Environment;
 import com.nigelsmall.zerograph.Request;
 import com.nigelsmall.zerograph.Response;
+import com.nigelsmall.zerograph.except.ClientError;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -19,71 +18,56 @@ public class NodeResource extends Resource {
 
     final public static String NAME = "node";
 
-    public NodeResource(Environment env, ZMQ.Socket socket) {
-        super(env, socket);
+    public NodeResource(GraphDatabaseService database, ZMQ.Socket socket) {
+        super(database, socket);
     }
 
     /**
-     * GET node {db} {node_id}
+     * GET node {node_id}
      *
      * Fetch a single node by ID.
      */
     @Override
-    public void get(Request request) {
-        Response response = new Response(Response.SERVER_ERROR);
-        try {
-            GraphDatabaseService database = getDatabaseArgument(request, 0);
-            long nodeID = getArgument(request, 1, Integer.class);
-            try (Transaction tx = database.beginTx()) {
-                Node node = database.getNodeById(nodeID);
-                response = new Response(Response.OK, node);
-            }
-        } catch (BadRequest ex) {
-            response = ex.getResponse();
+    public void get(Request request) throws ClientError {
+        long nodeID = getArgument(request, 0, Integer.class);
+        try (Transaction tx = database().beginTx()) {
+            Node node = database().getNodeById(nodeID);
+            tx.success();
+            send(new Response(Response.OK, node));
         } catch (NotFoundException ex) {
-            response = new Response(Response.NOT_FOUND);
-        } finally {
-            send(response);
+            throw new ClientError(new Response(Response.NOT_FOUND, nodeID));
         }
     }
 
     /**
-     * PUT node {db} {node_id} {labels} {properties}
+     * PUT node {nid} {labels} {properties}
      *
      * Replace all labels and properties on a node identified by ID.
      * This will not create a node with the given ID if one does not
      * already exist.
      */
     @Override
-    public void put(Request request) {
-        Response response = new Response(Response.SERVER_ERROR);
-        try {
-            GraphDatabaseService database = getDatabaseArgument(request, 0);
-            long nodeID = getArgument(request, 1, Integer.class);
-            List labelNames = getArgument(request, 2, List.class);
-            Map properties = getArgument(request, 3, Map.class);
-            try (Transaction tx = database.beginTx()) {
-                Node node = database.getNodeById(nodeID);
-                tx.acquireWriteLock(node);
-                tx.acquireReadLock(node);
-                removeLabels(node);
-                removeProperties(node);
-                addLabels(node, labelNames);
-                addProperties(node, properties);
-                tx.success();
-                response = new Response(Response.OK, node);
-            }
-        } catch (BadRequest ex) {
-            response = ex.getResponse();
+    public void put(Request request) throws ClientError {
+        long nodeID = getArgument(request, 0, Integer.class);
+        List labelNames = getArgument(request, 1, List.class);
+        Map properties = getArgument(request, 2, Map.class);
+        try (Transaction tx = database().beginTx()) {
+            Node node = database().getNodeById(nodeID);
+            tx.acquireWriteLock(node);
+            tx.acquireReadLock(node);
+            removeLabels(node);
+            removeProperties(node);
+            addLabels(node, labelNames);
+            addProperties(node, properties);
+            tx.success();
+            send(new Response(Response.OK, node));
         } catch (NotFoundException ex) {
-            response = new Response(Response.NOT_FOUND);
-        } finally {
-            send(response);
+            throw new ClientError(new Response(Response.NOT_FOUND, nodeID));
         }
     }
 
     /**
-     * PATCH node {db} {node_id} {labels} {properties}
+     * PATCH node {node_id} {labels} {properties}
      *
      * Add new labels and properties to a node identified by ID.
      * This will not create a node with the given ID if one does not
@@ -91,84 +75,57 @@ public class NodeResource extends Resource {
      * maintained.
      */
     @Override
-    public void patch(Request request) {
-        Response response = new Response(Response.SERVER_ERROR);
-        try {
-            GraphDatabaseService database = getDatabaseArgument(request, 0);
-            long nodeID = getArgument(request, 1, Integer.class);
-            List labelNames = getArgument(request, 2, List.class);
-            Map properties = getArgument(request, 3, Map.class);
-            try (Transaction tx = database.beginTx()) {
-                Node node = database.getNodeById(nodeID);
-                tx.acquireWriteLock(node);
-                tx.acquireReadLock(node);
-                addLabels(node, labelNames);
-                addProperties(node, properties);
-                tx.success();
-                response = new Response(Response.OK, node);
-            }
-        } catch (BadRequest ex) {
-            response = ex.getResponse();
+    public void patch(Request request) throws ClientError {
+        long nodeID = getArgument(request, 0, Integer.class);
+        List labelNames = getArgument(request, 1, List.class);
+        Map properties = getArgument(request, 2, Map.class);
+        try (Transaction tx = database().beginTx()) {
+            Node node = database().getNodeById(nodeID);
+            tx.acquireWriteLock(node);
+            tx.acquireReadLock(node);
+            addLabels(node, labelNames);
+            addProperties(node, properties);
+            tx.success();
+            send(new Response(Response.OK, node));
         } catch (NotFoundException ex) {
-            response = new Response(Response.NOT_FOUND);
-        } finally {
-            send(response);
+            throw new ClientError(new Response(Response.NOT_FOUND, nodeID));
         }
     }
 
     /**
-     * POST node {db} {labels} {properties}
+     * POST node {labels} {properties}
      *
      * Create a new node with the given labels and properties.
      */
     @Override
-    public void post(Request request) {
-        Response response = new Response(Response.SERVER_ERROR);
-        try {
-            GraphDatabaseService database = getDatabaseArgument(request, 0);
-            List labelNames = getArgument(request, 1, List.class);
-            Map properties = getArgument(request, 2, Map.class);
-            try (Transaction tx = database.beginTx()) {
-                Node node = database.createNode();
-                tx.acquireWriteLock(node);
-                tx.acquireReadLock(node);
-                addLabels(node, labelNames);
-                addProperties(node, properties);
-                tx.success();
-                response = new Response(Response.OK, node);
-            }
-        } catch (BadRequest ex) {
-            response = ex.getResponse();
-        } finally {
-            send(response);
+    public void post(Request request) throws ClientError {
+        List labelNames = getArgument(request, 0, List.class);
+        Map properties = getArgument(request, 1, Map.class);
+        try (Transaction tx = database().beginTx()) {
+            Node node = database().createNode();
+            tx.acquireWriteLock(node);
+            tx.acquireReadLock(node);
+            addLabels(node, labelNames);
+            addProperties(node, properties);
+            tx.success();
+            send(new Response(Response.OK, node));
         }
     }
 
     /**
-     * DELETE node {db} {node_id}
+     * DELETE node {node_id}
      *
      * Delete a node identified by ID.
      */
     @Override
-    public void delete(Request request) {
-        Response response = new Response(Response.SERVER_ERROR);
-        try {
-            GraphDatabaseService database = getDatabaseArgument(request, 0);
-            long nodeID = getArgument(request, 1, Integer.class);
-            try (Transaction tx = database.beginTx()) {
-                Node node = database.getNodeById(nodeID);
-                tx.acquireWriteLock(node);
-                tx.acquireReadLock(node);
-                node.delete();
-                tx.success();
-                response = new Response(Response.NO_CONTENT);
-            }
-        } catch (BadRequest ex) {
-            response = ex.getResponse();
-        } catch (NotFoundException ex) {
-            response = new Response(Response.NOT_FOUND);
-        } finally {
-            send(response);
+    public void delete(Request request) throws ClientError {
+        long nodeID = getArgument(request, 0, Integer.class);
+        try (Transaction tx = database().beginTx()) {
+            Node node = database().getNodeById(nodeID);
+            tx.acquireWriteLock(node);
+            node.delete();
+            tx.success();
+            send(new Response(Response.NO_CONTENT));
         }
     }
 

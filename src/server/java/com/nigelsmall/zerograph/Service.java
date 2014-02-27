@@ -10,20 +10,23 @@ import java.io.IOException;
  */
 public class Service {
 
-    final public static String ADDRESS = "tcp://*:47474";
     final public static String STORAGE_DIR = "/tmp/zerograph";
     final public static int WORKER_COUNT = 40;
 
-    private Environment env;
+    final private Environment env;
+    final private int port;
+    final private String address;
 
     private ZMQ.Socket external;  // incoming requests from clients
     private ZMQ.Socket internal;  // request forwarding to workers
 
-    public Service(Environment env) {
+    public Service(Environment env, int port) {
         this.env = env;
+        this.port = port;
+        this.address = "tcp://*:" + port;
     }
 
-    public void start(String address) throws InterruptedException, IOException {
+    public void start() throws InterruptedException, IOException {
         // bind sockets
         this.external = env.getContext().socket(ZMQ.ROUTER);
         this.external.bind(address);
@@ -31,7 +34,7 @@ public class Service {
         this.internal.bind(Worker.ADDRESS);
         // start worker threads
         for(int i = 0; i < WORKER_COUNT; i++) {
-            new Thread(new Worker(env)).start();
+            new Thread(new Worker(env, port)).start();
         }
         // pass through
         ZMQ.proxy(external, internal, null);
@@ -45,8 +48,8 @@ public class Service {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         Environment env = new Environment(STORAGE_DIR);
-        Service service = new Service(env);
-        service.start(ADDRESS);
+        Service service = new Service(env, 47474);
+        service.start();
     }
 
 }

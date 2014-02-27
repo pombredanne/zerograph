@@ -1,5 +1,6 @@
 package com.nigelsmall.zerograph;
 
+import com.nigelsmall.zerograph.except.ClientError;
 import com.nigelsmall.zerograph.util.JSON;
 
 import java.io.IOException;
@@ -18,11 +19,11 @@ public class Request {
     final private String resource;
     final private String[] data;
 
-    public Request(String string) throws BadRequest {
+    public Request(String string) throws ClientError {
         this.string = string;
         String[] parts = string.split("\t");
         if (parts.length < 2) {
-            throw new BadRequest(string);
+            throw new ClientError(new Response(Response.BAD_REQUEST, string));
         }
         this.method = parts[0];
         this.resource = parts[1];

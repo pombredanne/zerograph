@@ -14,10 +14,14 @@ socket = context.socket(zmq.REQ)
 socket.connect("tcp://localhost:47474")
 
 
-def send(verb, resource, *args):
-    line = verb + "\t" + resource + "\t" + "\t".join(json.dumps(arg) for arg in args)
+def send(verb, resource, data, commit):
+    line = verb + "\t" + resource + "\t" + "\t".join(json.dumps(datum) for datum in data)
     print(">>> " + line)
-    socket.send(line.encode("utf-8"))
+    if commit:
+        flags = 0
+    else:
+        flags = zmq.SNDMORE
+    socket.send(line.encode("utf-8"), flags)
 
 
 def receive():
@@ -26,8 +30,8 @@ def receive():
     return message
 
 
-def post_cypher(query):
-    send("POST", "cypher", "default", query)
+def post_cypher(query, commit):
+    send("POST", "cypher", [query], commit)
     message = receive()
     while message.startswith("100"):
         message = receive()
@@ -41,6 +45,11 @@ if __name__ == "__main__":
             if line.lower() == "quit":
                 done = True
             else:
-                post_cypher(line)
+                if line.endswith("&"):
+                    line = line.rstrip("&").rstrip()
+                    commit = False
+                else:
+                    commit = True
+                post_cypher(line, commit)
     except EOFError:
         print("⌁")

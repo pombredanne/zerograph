@@ -1,6 +1,5 @@
 package com.nigelsmall.zerograph;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.zeromq.ZMQ;
@@ -13,7 +12,7 @@ public class Environment {
 
     final private ZMQ.Context context;
     final private String databaseHome;
-    final private HashMap<String, GraphDatabaseService> databases;
+    final private HashMap<Integer, GraphDatabaseService> databases;
 
     public Environment(String databaseHome) {
         this.context = ZMQ.context(1);
@@ -25,12 +24,12 @@ public class Environment {
         return this.context;
     }
 
-    public synchronized GraphDatabaseService getDatabase(String name) {
-        if (databases.containsKey(name)) {
-            return databases.get(name);
+    public synchronized GraphDatabaseService getDatabase(int port) {
+        if (databases.containsKey(port)) {
+            return databases.get(port);
         } else {
-            GraphDatabaseService database = factory.newEmbeddedDatabase(databaseHome + "/" + name);
-            databases.put(name, database);
+            GraphDatabaseService database = factory.newEmbeddedDatabase(databaseHome + "/" + port);
+            databases.put(port, database);
             return database;
         }
     }
