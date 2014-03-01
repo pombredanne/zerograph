@@ -16,8 +16,8 @@ public class NodeSetResource extends Resource {
 
     final public static String NAME = "nodeset";
 
-    public NodeSetResource(GraphDatabaseService database, Transaction transaction, ZMQ.Socket socket) {
-        super(database, transaction, socket);
+    public NodeSetResource(GraphDatabaseService database, ZMQ.Socket socket) {
+        super(database, socket);
     }
 
     /**
@@ -31,7 +31,7 @@ public class NodeSetResource extends Resource {
      * @param request
      */
     @Override
-    public void get(Request request) throws ClientError, ServerError {
+    public void get(Transaction transaction, Request request) throws ClientError, ServerError {
         Label label = DynamicLabel.label(getArgument(request, 0, String.class));
         String key = getArgument(request, 1, String.class);
         Object value = getArgument(request, 2, Object.class);
@@ -55,7 +55,7 @@ public class NodeSetResource extends Resource {
      * @param request
      */
     @Override
-    public void put(Request request) throws ClientError, ServerError {
+    public void put(Transaction transaction, Request request) throws ClientError, ServerError {
         String labelName = getArgument(request, 0, String.class);
         String key = getArgument(request, 1, String.class);
         Object value = getArgument(request, 2, Object.class);
@@ -86,7 +86,7 @@ public class NodeSetResource extends Resource {
      * @param request
      */
     @Override
-    public void delete(Request request) throws ClientError, ServerError {
+    public void delete(Transaction transaction, Request request) throws ClientError, ServerError {
         Label label = DynamicLabel.label(getArgument(request, 0, String.class));
         String key = getArgument(request, 1, String.class);
         Object value = getArgument(request, 2, Object.class);

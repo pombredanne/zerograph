@@ -6,7 +6,6 @@ import com.nigelsmall.zerograph.except.ClientError;
 import com.nigelsmall.zerograph.except.ServerError;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.EntityNotFoundException;
-import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -20,8 +19,8 @@ public class CypherResource extends Resource {
 
     final public static String NAME = "cypher";
 
-    public CypherResource(GraphDatabaseService database, Transaction transaction, ZMQ.Socket socket) {
-        super(database, transaction, socket);
+    public CypherResource(GraphDatabaseService database, ZMQ.Socket socket) {
+        super(database, socket);
     }
 
     /**
@@ -30,7 +29,7 @@ public class CypherResource extends Resource {
      * @param request
      */
     @Override
-    public void post(Request request) throws ClientError, ServerError {
+    public void post(Transaction transaction, Request request) throws ClientError, ServerError {
         String query = getArgument(request, 0, String.class);
         try {
             ExecutionResult result = execute(query);

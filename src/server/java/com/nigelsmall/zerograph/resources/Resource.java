@@ -8,8 +8,6 @@ import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Lock;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.zeromq.ZMQ;
 
@@ -22,12 +20,10 @@ public abstract class Resource {
 
     final private GraphDatabaseService database;
     final private ExecutionEngine engine;
-    final private Transaction transaction;
     final private ZMQ.Socket socket;
 
-    public Resource(GraphDatabaseService database, Transaction transaction, ZMQ.Socket socket) {
+    public Resource(GraphDatabaseService database, ZMQ.Socket socket) {
         this.database = database;
-        this.transaction = transaction;
         this.engine = new ExecutionEngine(database);
         this.socket = socket;
     }
@@ -48,14 +44,6 @@ public abstract class Resource {
         return this.engine.profile(query, params);
     }
 
-    public Lock acquireReadLock(PropertyContainer entity) {
-        return transaction.acquireReadLock(entity);
-    }
-
-    public Lock acquireWriteLock(PropertyContainer entity) {
-        return transaction.acquireWriteLock(entity);
-    }
-
     public <T> T getArgument(Request request, int index, Class<T> klass) throws ClientError {
         try {
             return request.getData(index, klass);
@@ -64,45 +52,45 @@ public abstract class Resource {
         }
     }
 
-    public void handle(Request request) throws ClientError, ServerError {
+    public void handle(Transaction transaction, Request request) throws ClientError, ServerError {
         switch (request.getMethod()) {
             case "GET":
-                get(request);
+                get(transaction, request);
                 break;
             case "PUT":
-                put(request);
+                put(transaction, request);
                 break;
             case "PATCH":
-                patch(request);
+                patch(transaction, request);
                 break;
             case "POST":
-                post(request);
+                post(transaction, request);
                 break;
             case "DELETE":
-                delete(request);
+                delete(transaction, request);
                 break;
             default:
                 send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
         }
     }
 
-    public void get(Request request) throws ClientError, ServerError {
+    public void get(Transaction transaction, Request request) throws ClientError, ServerError {
         send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 
-    public void put(Request request) throws ClientError, ServerError {
+    public void put(Transaction transaction, Request request) throws ClientError, ServerError {
         send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 
-    public void patch(Request request) throws ClientError, ServerError {
+    public void patch(Transaction transaction, Request request) throws ClientError, ServerError {
         send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 
-    public void post(Request request) throws ClientError, ServerError {
+    public void post(Transaction transaction, Request request) throws ClientError, ServerError {
         send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 
-    public void delete(Request request) throws ClientError, ServerError {
+    public void delete(Transaction transaction, Request request) throws ClientError, ServerError {
         send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 

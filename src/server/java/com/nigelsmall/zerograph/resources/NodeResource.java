@@ -10,14 +10,12 @@ import org.zeromq.ZMQ;
 import java.util.List;
 import java.util.Map;
 
-import static com.nigelsmall.zerograph.util.Helpers.*;
-
 public class NodeResource extends Resource {
 
     final public static String NAME = "node";
 
-    public NodeResource(GraphDatabaseService database, Transaction transaction, ZMQ.Socket socket) {
-        super(database, transaction, socket);
+    public NodeResource(GraphDatabaseService database, ZMQ.Socket socket) {
+        super(database, socket);
     }
 
     /**
@@ -26,7 +24,7 @@ public class NodeResource extends Resource {
      * Fetch a single node by ID.
      */
     @Override
-    public void get(Request request) throws ClientError, ServerError {
+    public void get(Transaction transaction, Request request) throws ClientError, ServerError {
         long nodeID = getArgument(request, 0, Integer.class);
         try {
             Node node = database().getNodeById(nodeID);
@@ -44,14 +42,14 @@ public class NodeResource extends Resource {
      * already exist.
      */
     @Override
-    public void put(Request request) throws ClientError, ServerError {
+    public void put(Transaction transaction, Request request) throws ClientError, ServerError {
         long nodeID = getArgument(request, 0, Integer.class);
         List labelNames = getArgument(request, 1, List.class);
         Map properties = getArgument(request, 2, Map.class);
         try {
             Node node = database().getNodeById(nodeID);
-            Lock writeLock = acquireWriteLock(node);
-            Lock readLock = acquireReadLock(node);
+            Lock writeLock = transaction.acquireWriteLock(node);
+            Lock readLock = transaction.acquireReadLock(node);
             removeLabels(node);
             removeProperties(node);
             addLabels(node, labelNames);
@@ -73,14 +71,14 @@ public class NodeResource extends Resource {
      * maintained.
      */
     @Override
-    public void patch(Request request) throws ClientError, ServerError {
+    public void patch(Transaction transaction, Request request) throws ClientError, ServerError {
         long nodeID = getArgument(request, 0, Integer.class);
         List labelNames = getArgument(request, 1, List.class);
         Map properties = getArgument(request, 2, Map.class);
         try {
             Node node = database().getNodeById(nodeID);
-            Lock writeLock = acquireWriteLock(node);
-            Lock readLock = acquireReadLock(node);
+            Lock writeLock = transaction.acquireWriteLock(node);
+            Lock readLock = transaction.acquireReadLock(node);
             addLabels(node, labelNames);
             addProperties(node, properties);
             readLock.release();
@@ -97,12 +95,12 @@ public class NodeResource extends Resource {
      * Create a new node with the given labels and properties.
      */
     @Override
-    public void post(Request request) throws ClientError, ServerError {
+    public void post(Transaction transaction, Request request) throws ClientError, ServerError {
         List labelNames = getArgument(request, 0, List.class);
         Map properties = getArgument(request, 1, Map.class);
         Node node = database().createNode();
-        Lock writeLock = acquireWriteLock(node);
-        Lock readLock = acquireReadLock(node);
+        Lock writeLock = transaction.acquireWriteLock(node);
+        Lock readLock = transaction.acquireReadLock(node);
         addLabels(node, labelNames);
         addProperties(node, properties);
         readLock.release();
@@ -116,13 +114,37 @@ public class NodeResource extends Resource {
      * Delete a node identified by ID.
      */
     @Override
-    public void delete(Request request) throws ClientError, ServerError {
+    public void delete(Transaction transaction, Request request) throws ClientError, ServerError {
         long nodeID = getArgument(request, 0, Integer.class);
         Node node = database().getNodeById(nodeID);
-        Lock writeLock = acquireWriteLock(node);
+        Lock writeLock = transaction.acquireWriteLock(node);
         node.delete();
         writeLock.release();
         sendOK();
+    }
+
+    public static void addLabels(Node node, List labelNames) {
+        for (Object labelName : labelNames) {
+            node.addLabel(DynamicLabel.label(labelName.toString()));
+        }
+    }
+
+    public static void removeLabels(Node node) {
+        for (Label label : node.getLabels()) {
+            node.removeLabel(label);
+        }
+    }
+
+    public static void addProperties(PropertyContainer entity, Map properties) {
+        for (Object key : properties.keySet()) {
+            entity.setProperty(key.toString(), properties.get(key));
+        }
+    }
+
+    public static void removeProperties(PropertyContainer entity) {
+        for (Object key : entity.getPropertyKeys()) {
+            entity.removeProperty(key.toString());
+        }
     }
 
 }

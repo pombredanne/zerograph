@@ -25,12 +25,20 @@ public class Worker implements Runnable {
     final private GraphDatabaseService database;
     final private ZMQ.Socket external;
 
+    final private CypherResource cypherResource;
+    final private NodeResource nodeResource;
+    final private NodeSetResource nodeSetResource;
+
     public Worker(Environment env, int port) {
         this.uuid = UUID.randomUUID();
         this.env = env;
         this.database = env.getDatabase(port);
         this.external = env.getContext().socket(ZMQ.REP);
         this.external.connect(ADDRESS);
+
+        this.cypherResource = new CypherResource(this.database, this.external);
+        this.nodeResource = new NodeResource(this.database, this.external);
+        this.nodeSetResource = new NodeSetResource(this.database, this.external);
     }
 
     @Override
@@ -43,8 +51,10 @@ public class Worker implements Runnable {
                 while (more) {
                     String frame = external.recvStr();
                     for (String line : frame.split("\\r|\\n|\\r\\n")) {
-                        System.out.println("<<< " + line);
-                        requests.add(new Request(line));
+                        if (line.length() > 0) {
+                            System.out.println("<<< " + line);
+                            requests.add(new Request(line));
+                        }
                     }
                     more = external.hasReceiveMore();
                 }
@@ -58,13 +68,13 @@ public class Worker implements Runnable {
                 for (Request request : requests) {
                     switch (request.getResource()) {
                         case CypherResource.NAME:
-                            new CypherResource(database, tx, external).handle(request);
+                            cypherResource.handle(tx, request);
                             break;
                         case NodeResource.NAME:
-                            new NodeResource(database, tx, external).handle(request);
+                            nodeResource.handle(tx, request);
                             break;
                         case NodeSetResource.NAME:
-                            new NodeSetResource(database, tx, external).handle(request);
+                            nodeSetResource.handle(tx, request);
                             break;
                         default:
                             throw new ClientError(new Response(Response.NOT_FOUND, request.getResource()));
