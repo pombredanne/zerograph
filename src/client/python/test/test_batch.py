@@ -35,3 +35,12 @@ def test_create_ten_thousand_nodes():
         batch.do_create_node(["Number"], {"value": n, "uuid": uuid4().hex})
     for rs in batch.submit():
         print(rs)
+
+
+#def test_create_two_nodes_and_a_rel():
+#    session = Session("tcp://localhost:47474")
+#    batch = session.batch()
+#    batch.do_create_node(["Person"], {"name": "Alice"})
+#    batch.do_create_node(["Person"], {"name": "Bob"})
+#    for rs in batch.submit():
+#        print(rs)

@@ -10,7 +10,7 @@ import org.zeromq.ZMQ;
 import java.util.List;
 import java.util.Map;
 
-public class NodeResource extends Resource {
+public class NodeResource extends PropertyContainerResource {
 
     final public static String NAME = "node";
 
@@ -35,7 +35,7 @@ public class NodeResource extends Resource {
     }
 
     /**
-     * PUT node {nid} {labels} {properties}
+     * PUT node {node_id} {labels} {properties}
      *
      * Replace all labels and properties on a node identified by ID.
      * This will not create a node with the given ID if one does not
@@ -121,30 +121,6 @@ public class NodeResource extends Resource {
         node.delete();
         writeLock.release();
         sendOK();
-    }
-
-    public static void addLabels(Node node, List labelNames) {
-        for (Object labelName : labelNames) {
-            node.addLabel(DynamicLabel.label(labelName.toString()));
-        }
-    }
-
-    public static void removeLabels(Node node) {
-        for (Label label : node.getLabels()) {
-            node.removeLabel(label);
-        }
-    }
-
-    public static void addProperties(PropertyContainer entity, Map properties) {
-        for (Object key : properties.keySet()) {
-            entity.setProperty(key.toString(), properties.get(key));
-        }
-    }
-
-    public static void removeProperties(PropertyContainer entity) {
-        for (Object key : entity.getPropertyKeys()) {
-            entity.removeProperty(key.toString());
-        }
     }
 
 }
