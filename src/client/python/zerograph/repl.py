@@ -26,13 +26,6 @@ def receive():
     return message
 
 
-def post_cypher(query, commit):
-    send("POST", "cypher", [query], commit)
-    message = receive()
-    while message.startswith("100"):
-        message = receive()
-
-
 if __name__ == "__main__":
     try:
         count = 0
@@ -53,7 +46,7 @@ if __name__ == "__main__":
                 if flags == 0:
                     for i in range(count):
                         message = receive()
-                        while message.startswith("100"):
+                        while socket.getsockopt(zmq.RCVMORE):
                             message = receive()
     except EOFError:
         print("⌁")

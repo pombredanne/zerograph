@@ -59,13 +59,10 @@ public class Response {
         return this.data;
     }
 
-    public boolean send(ZMQ.Socket socket) {
+    public boolean send(ZMQ.Socket socket, int flags) {
         String string = this.toString();
         System.out.println(">>> " + string);
-
-        int flags = this.status / 100 == 1 ? ZMQ.SNDMORE : 0;
-        return socket.send(string.getBytes(ZMQ.CHARSET), flags);
-
+        return socket.send(string, flags);
     }
 
 }

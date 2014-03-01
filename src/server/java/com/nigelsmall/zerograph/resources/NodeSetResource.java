@@ -3,6 +3,7 @@ package com.nigelsmall.zerograph.resources;
 import com.nigelsmall.zerograph.Request;
 import com.nigelsmall.zerograph.Response;
 import com.nigelsmall.zerograph.except.ClientError;
+import com.nigelsmall.zerograph.except.ServerError;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.*;
@@ -15,8 +16,8 @@ public class NodeSetResource extends Resource {
 
     final public static String NAME = "nodeset";
 
-    public NodeSetResource(GraphDatabaseService database, ZMQ.Socket socket) {
-        super(database, socket);
+    public NodeSetResource(GraphDatabaseService database, Transaction transaction, ZMQ.Socket socket) {
+        super(database, transaction, socket);
     }
 
     /**
@@ -30,19 +31,17 @@ public class NodeSetResource extends Resource {
      * @param request
      */
     @Override
-    public void get(Request request) throws ClientError {
+    public void get(Request request) throws ClientError, ServerError {
         Label label = DynamicLabel.label(getArgument(request, 0, String.class));
         String key = getArgument(request, 1, String.class);
         Object value = getArgument(request, 2, Object.class);
-        try (Transaction tx = database().beginTx()) {
-            HashMap<String, Integer> stats = new HashMap<>();
-            stats.put("nodes_matched", 0);
-            for (Node node : database().findNodesByLabelAndProperty(label, key, value)) {
-                send(new Response(Response.CONTINUE, node));
-                stats.put("nodes_matched", stats.get("nodes_matched") + 1);
-            }
-            send(new Response(Response.OK, stats));
+        HashMap<String, Integer> stats = new HashMap<>();
+        stats.put("nodes_matched", 0);
+        for (Node node : database().findNodesByLabelAndProperty(label, key, value)) {
+            sendContinue(node);
+            stats.put("nodes_matched", stats.get("nodes_matched") + 1);
         }
+        sendOK(stats);
     }
 
     /**
@@ -56,11 +55,11 @@ public class NodeSetResource extends Resource {
      * @param request
      */
     @Override
-    public void put(Request request) throws ClientError {
+    public void put(Request request) throws ClientError, ServerError {
         String labelName = getArgument(request, 0, String.class);
         String key = getArgument(request, 1, String.class);
         Object value = getArgument(request, 2, Object.class);
-        try (Transaction tx = database().beginTx()) {
+        try {
             HashMap<String, Integer> stats = new HashMap<>();
             String query = "MERGE (a:`" + labelName.replace("`", "``") +
                     "` {`" + key.replace("`", "``") + "`:{value}}) RETURN a";
@@ -68,13 +67,12 @@ public class NodeSetResource extends Resource {
             params.put("value", value);
             ExecutionResult result = execute(query, params);
             for (Map<String, Object> row : result) {
-                send(new Response(Response.CONTINUE, row.get("a")));
+                sendContinue(row.get("a"));
             }
             stats.put("nodes_created", result.getQueryStatistics().getNodesCreated());
-            tx.success();
-            send(new Response(Response.OK, stats));
+            sendOK(stats);
         } catch (CypherException ex) {
-            send(new Response(Response.SERVER_ERROR, ex.getMessage()));
+            throw new ServerError(new Response(Response.SERVER_ERROR, ex.getMessage()));
         }
     }
 
@@ -88,20 +86,17 @@ public class NodeSetResource extends Resource {
      * @param request
      */
     @Override
-    public void delete(Request request) throws ClientError {
+    public void delete(Request request) throws ClientError, ServerError {
         Label label = DynamicLabel.label(getArgument(request, 0, String.class));
         String key = getArgument(request, 1, String.class);
         Object value = getArgument(request, 2, Object.class);
-        try (Transaction tx = database().beginTx()) {
-            HashMap<String, Integer> stats = new HashMap<>();
-            stats.put("nodes_deleted", 0);
-            for (Node node : database().findNodesByLabelAndProperty(label, key, value)) {
-                node.delete();
-                stats.put("nodes_deleted", stats.get("nodes_deleted") + 1);
-            }
-            tx.success();
-            send(new Response(Response.OK, stats));
+        HashMap<String, Integer> stats = new HashMap<>();
+        stats.put("nodes_deleted", 0);
+        for (Node node : database().findNodesByLabelAndProperty(label, key, value)) {
+            node.delete();
+            stats.put("nodes_deleted", stats.get("nodes_deleted") + 1);
         }
+        sendOK(stats);
     }
 
 }

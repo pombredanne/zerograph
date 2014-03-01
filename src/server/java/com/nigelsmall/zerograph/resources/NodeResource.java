@@ -3,10 +3,8 @@ package com.nigelsmall.zerograph.resources;
 import com.nigelsmall.zerograph.Request;
 import com.nigelsmall.zerograph.Response;
 import com.nigelsmall.zerograph.except.ClientError;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.Transaction;
+import com.nigelsmall.zerograph.except.ServerError;
+import org.neo4j.graphdb.*;
 import org.zeromq.ZMQ;
 
 import java.util.List;
@@ -18,8 +16,8 @@ public class NodeResource extends Resource {
 
     final public static String NAME = "node";
 
-    public NodeResource(GraphDatabaseService database, ZMQ.Socket socket) {
-        super(database, socket);
+    public NodeResource(GraphDatabaseService database, Transaction transaction, ZMQ.Socket socket) {
+        super(database, transaction, socket);
     }
 
     /**
@@ -28,12 +26,11 @@ public class NodeResource extends Resource {
      * Fetch a single node by ID.
      */
     @Override
-    public void get(Request request) throws ClientError {
+    public void get(Request request) throws ClientError, ServerError {
         long nodeID = getArgument(request, 0, Integer.class);
-        try (Transaction tx = database().beginTx()) {
+        try {
             Node node = database().getNodeById(nodeID);
-            tx.success();
-            send(new Response(Response.OK, node));
+            sendOK(node);
         } catch (NotFoundException ex) {
             throw new ClientError(new Response(Response.NOT_FOUND, nodeID));
         }
@@ -47,20 +44,21 @@ public class NodeResource extends Resource {
      * already exist.
      */
     @Override
-    public void put(Request request) throws ClientError {
+    public void put(Request request) throws ClientError, ServerError {
         long nodeID = getArgument(request, 0, Integer.class);
         List labelNames = getArgument(request, 1, List.class);
         Map properties = getArgument(request, 2, Map.class);
-        try (Transaction tx = database().beginTx()) {
+        try {
             Node node = database().getNodeById(nodeID);
-            tx.acquireWriteLock(node);
-            tx.acquireReadLock(node);
+            Lock writeLock = acquireWriteLock(node);
+            Lock readLock = acquireReadLock(node);
             removeLabels(node);
             removeProperties(node);
             addLabels(node, labelNames);
             addProperties(node, properties);
-            tx.success();
-            send(new Response(Response.OK, node));
+            readLock.release();
+            writeLock.release();
+            sendOK(node);
         } catch (NotFoundException ex) {
             throw new ClientError(new Response(Response.NOT_FOUND, nodeID));
         }
@@ -75,18 +73,19 @@ public class NodeResource extends Resource {
      * maintained.
      */
     @Override
-    public void patch(Request request) throws ClientError {
+    public void patch(Request request) throws ClientError, ServerError {
         long nodeID = getArgument(request, 0, Integer.class);
         List labelNames = getArgument(request, 1, List.class);
         Map properties = getArgument(request, 2, Map.class);
-        try (Transaction tx = database().beginTx()) {
+        try {
             Node node = database().getNodeById(nodeID);
-            tx.acquireWriteLock(node);
-            tx.acquireReadLock(node);
+            Lock writeLock = acquireWriteLock(node);
+            Lock readLock = acquireReadLock(node);
             addLabels(node, labelNames);
             addProperties(node, properties);
-            tx.success();
-            send(new Response(Response.OK, node));
+            readLock.release();
+            writeLock.release();
+            sendOK(node);
         } catch (NotFoundException ex) {
             throw new ClientError(new Response(Response.NOT_FOUND, nodeID));
         }
@@ -98,18 +97,17 @@ public class NodeResource extends Resource {
      * Create a new node with the given labels and properties.
      */
     @Override
-    public void post(Request request) throws ClientError {
+    public void post(Request request) throws ClientError, ServerError {
         List labelNames = getArgument(request, 0, List.class);
         Map properties = getArgument(request, 1, Map.class);
-        try (Transaction tx = database().beginTx()) {
-            Node node = database().createNode();
-            tx.acquireWriteLock(node);
-            tx.acquireReadLock(node);
-            addLabels(node, labelNames);
-            addProperties(node, properties);
-            tx.success();
-            send(new Response(Response.OK, node));
-        }
+        Node node = database().createNode();
+        Lock writeLock = acquireWriteLock(node);
+        Lock readLock = acquireReadLock(node);
+        addLabels(node, labelNames);
+        addProperties(node, properties);
+        readLock.release();
+        writeLock.release();
+        sendOK(node);
     }
 
     /**
@@ -118,15 +116,13 @@ public class NodeResource extends Resource {
      * Delete a node identified by ID.
      */
     @Override
-    public void delete(Request request) throws ClientError {
+    public void delete(Request request) throws ClientError, ServerError {
         long nodeID = getArgument(request, 0, Integer.class);
-        try (Transaction tx = database().beginTx()) {
-            Node node = database().getNodeById(nodeID);
-            tx.acquireWriteLock(node);
-            node.delete();
-            tx.success();
-            send(new Response(Response.NO_CONTENT));
-        }
+        Node node = database().getNodeById(nodeID);
+        Lock writeLock = acquireWriteLock(node);
+        node.delete();
+        writeLock.release();
+        sendOK();
     }
 
 }

@@ -3,7 +3,9 @@ package com.nigelsmall.zerograph.resources;
 import com.nigelsmall.zerograph.Request;
 import com.nigelsmall.zerograph.Response;
 import com.nigelsmall.zerograph.except.ClientError;
+import com.nigelsmall.zerograph.except.ServerError;
 import org.neo4j.cypher.CypherException;
+import org.neo4j.cypher.EntityNotFoundException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -18,8 +20,8 @@ public class CypherResource extends Resource {
 
     final public static String NAME = "cypher";
 
-    public CypherResource(GraphDatabaseService database, ZMQ.Socket socket) {
-        super(database, socket);
+    public CypherResource(GraphDatabaseService database, Transaction transaction, ZMQ.Socket socket) {
+        super(database, transaction, socket);
     }
 
     /**
@@ -28,25 +30,25 @@ public class CypherResource extends Resource {
      * @param request
      */
     @Override
-    public void post(Request request) throws ClientError {
+    public void post(Request request) throws ClientError, ServerError {
         String query = getArgument(request, 0, String.class);
-        try (Transaction tx = database().beginTx()) {
-            ExecutionEngine engine = new ExecutionEngine(database());
-            ExecutionResult result;
-            result = engine.execute(query);
+        try {
+            ExecutionResult result = execute(query);
             List<String> columns = result.columns();
-            send(new Response(Response.CONTINUE, columns.toArray(new Object[columns.size()])));
+            sendContinue(columns.toArray(new Object[columns.size()]));
             for (Map<String, Object> row : result) {
                 ArrayList<Object> values = new ArrayList<>();
                 for (String column : columns) {
                     values.add(row.get(column));
                 }
-                send(new Response(Response.CONTINUE, values.toArray(new Object[values.size()])));
+                sendContinue(values.toArray(new Object[values.size()]));
             }
-            tx.success();
-            send(new Response(Response.OK));
+            sendOK();
+        } catch (EntityNotFoundException ex) {
+            throw new ClientError(new Response(Response.NOT_FOUND, ex.getMessage()));
         } catch (CypherException ex) {
-            send(new Response(Response.BAD_REQUEST, ex.getMessage()));
+            //ex.printStackTrace(System.err);
+            throw new ClientError(new Response(Response.BAD_REQUEST, ex.getMessage()));
         }
     }
 
