@@ -32,7 +32,9 @@ The following is an example of a request batch and the responses returned:
 
 <<< 200 /*Node*/{"id":123,"labels":["Person"],"properties":{"name":"Alice"}}
 <<< 200 /*Node*/{"id":124,"labels":["Person"],"properties":{"name":"Bob"}}
-<<< 200 /*Rel*/{"id":234,"start":{"id":123,"labels":["Person"],"properties":{"name":"Alice"}},"end":{"id":124,"labels":["Person"],"properties":{"name":"Bob"}},"type":"KNOWS","properties":{"since":1999}}
+<<< 200 /*Rel*/{"id":234,"start":{"id":123,"labels":["Person"],"properties":
+        {"name":"Alice"}},"end":{"id":124,"labels":["Person"],"properties":
+        {"name":"Bob"}},"type":"KNOWS","properties":{"since":1999}}
 <<< 200
 
 Each request line has one or more corresponding response lines and a final
