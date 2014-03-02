@@ -7,14 +7,18 @@ import com.nigelsmall.zerograph.except.ServerError;
 import org.neo4j.graphdb.*;
 import org.zeromq.ZMQ;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class RelResource extends PropertyContainerResource {
 
     final public static String NAME = "rel";
 
+    final private HashMap<String, RelationshipType> relationshipTypes;
+
     public RelResource(GraphDatabaseService database, ZMQ.Socket socket) {
         super(database, socket);
+        this.relationshipTypes = new HashMap<>();
     }
 
     /**
@@ -97,7 +101,7 @@ public class RelResource extends PropertyContainerResource {
         Node endNode = resolveNode(request.getData(1));
         String typeName = request.getStringData(2);
         Map properties = request.getMapData(3);
-        Relationship rel = startNode.createRelationshipTo(endNode, DynamicRelationshipType.withName(typeName));
+        Relationship rel = startNode.createRelationshipTo(endNode, getRelationshipType(typeName));
         Lock writeLock = tx.acquireWriteLock(rel);
         Lock readLock = tx.acquireReadLock(rel);
         addProperties(rel, properties);
@@ -137,5 +141,14 @@ public class RelResource extends PropertyContainerResource {
         }
     }
 
+    private RelationshipType getRelationshipType(String name) {
+        if (relationshipTypes.containsKey(name)) {
+            return relationshipTypes.get(name);
+        } else {
+            DynamicRelationshipType relationshipType = DynamicRelationshipType.withName(name);
+            relationshipTypes.put(name, relationshipType);
+            return relationshipType;
+        }
+    }
 
 }

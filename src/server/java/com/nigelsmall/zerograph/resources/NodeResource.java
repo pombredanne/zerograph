@@ -7,6 +7,7 @@ import com.nigelsmall.zerograph.except.ServerError;
 import org.neo4j.graphdb.*;
 import org.zeromq.ZMQ;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -14,8 +15,11 @@ public class NodeResource extends PropertyContainerResource {
 
     final public static String NAME = "node";
 
+    final private HashMap<String, Label> labels;
+
     public NodeResource(GraphDatabaseService database, ZMQ.Socket socket) {
         super(database, socket);
+        this.labels = new HashMap<>();
     }
 
     /**
@@ -126,6 +130,28 @@ public class NodeResource extends PropertyContainerResource {
         writeLock.release();
         sendOK();
         return null;
+    }
+
+    public void addLabels(Node node, List labelNames) {
+        for (Object labelName : labelNames) {
+            node.addLabel(getLabel(labelName.toString()));
+        }
+    }
+
+    public void removeLabels(Node node) {
+        for (Label label : node.getLabels()) {
+            node.removeLabel(label);
+        }
+    }
+
+    private Label getLabel(String name) {
+        if (labels.containsKey(name)) {
+            return labels.get(name);
+        } else {
+            Label label = DynamicLabel.label(name);
+            labels.put(name, label);
+            return label;
+        }
     }
 
 }
