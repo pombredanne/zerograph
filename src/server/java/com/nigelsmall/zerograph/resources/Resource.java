@@ -8,10 +8,12 @@ import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.zeromq.ZMQ;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 public abstract class Resource {
@@ -44,54 +46,41 @@ public abstract class Resource {
         return this.engine.profile(query, params);
     }
 
-    public <T> T getArgument(Request request, int index, Class<T> klass) throws ClientError {
-        try {
-            return request.getData(index, klass);
-        } catch (IOException ex) {
-            throw new ClientError(new Response(Response.BAD_REQUEST, "Failed to parse argument " + index));
-        }
-    }
-
-    public void handle(Transaction transaction, Request request) throws ClientError, ServerError {
+    public PropertyContainer handle(Transaction tx, Request request) throws ClientError, ServerError {
         switch (request.getMethod()) {
             case "GET":
-                get(transaction, request);
-                break;
+                return get(tx, request);
             case "PUT":
-                put(transaction, request);
-                break;
+                return put(tx, request);
             case "PATCH":
-                patch(transaction, request);
-                break;
+                return patch(tx, request);
             case "POST":
-                post(transaction, request);
-                break;
+                return post(tx, request);
             case "DELETE":
-                delete(transaction, request);
-                break;
+                return delete(tx, request);
             default:
-                send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+                throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
         }
     }
 
-    public void get(Transaction transaction, Request request) throws ClientError, ServerError {
-        send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+    public PropertyContainer get(Transaction tx, Request request) throws ClientError, ServerError {
+        throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 
-    public void put(Transaction transaction, Request request) throws ClientError, ServerError {
-        send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+    public PropertyContainer put(Transaction tx, Request request) throws ClientError, ServerError {
+        throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 
-    public void patch(Transaction transaction, Request request) throws ClientError, ServerError {
-        send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+    public PropertyContainer patch(Transaction tx, Request request) throws ClientError, ServerError {
+        throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 
-    public void post(Transaction transaction, Request request) throws ClientError, ServerError {
-        send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+    public PropertyContainer post(Transaction tx, Request request) throws ClientError, ServerError {
+        throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 
-    public void delete(Transaction transaction, Request request) throws ClientError, ServerError {
-        send(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+    public PropertyContainer delete(Transaction tx, Request request) throws ClientError, ServerError {
+        throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 
     private void send(Response response) {

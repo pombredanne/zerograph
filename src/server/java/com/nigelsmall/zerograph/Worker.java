@@ -5,8 +5,10 @@ import com.nigelsmall.zerograph.except.ServerError;
 import com.nigelsmall.zerograph.resources.CypherResource;
 import com.nigelsmall.zerograph.resources.NodeResource;
 import com.nigelsmall.zerograph.resources.NodeSetResource;
+import com.nigelsmall.zerograph.resources.RelResource;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.zeromq.ZMQ;
@@ -28,6 +30,7 @@ public class Worker implements Runnable {
     final private CypherResource cypherResource;
     final private NodeResource nodeResource;
     final private NodeSetResource nodeSetResource;
+    final private RelResource relResource;
 
     public Worker(Environment env, int port) {
         this.uuid = UUID.randomUUID();
@@ -39,6 +42,7 @@ public class Worker implements Runnable {
         this.cypherResource = new CypherResource(this.database, this.external);
         this.nodeResource = new NodeResource(this.database, this.external);
         this.nodeSetResource = new NodeSetResource(this.database, this.external);
+        this.relResource = new RelResource(this.database, this.external);
     }
 
     @Override
@@ -63,18 +67,23 @@ public class Worker implements Runnable {
                 continue;
             }
             // handle requests
+            ArrayList<PropertyContainer> outputValues = new ArrayList<>(requests.size());
             try (Transaction tx = database.beginTx()) {
                 System.out.println("--- Began transaction in worker " + this.uuid.toString() + " ---");
                 for (Request request : requests) {
+                    request.resolvePointers(outputValues);
                     switch (request.getResource()) {
                         case CypherResource.NAME:
-                            cypherResource.handle(tx, request);
+                            outputValues.add(cypherResource.handle(tx, request));
                             break;
                         case NodeResource.NAME:
-                            nodeResource.handle(tx, request);
+                            outputValues.add(nodeResource.handle(tx, request));
                             break;
                         case NodeSetResource.NAME:
-                            nodeSetResource.handle(tx, request);
+                            outputValues.add(nodeSetResource.handle(tx, request));
+                            break;
+                        case RelResource.NAME:
+                            outputValues.add(relResource.handle(tx, request));
                             break;
                         default:
                             throw new ClientError(new Response(Response.NOT_FOUND, request.getResource()));

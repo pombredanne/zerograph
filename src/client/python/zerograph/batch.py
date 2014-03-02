@@ -3,27 +3,32 @@
 
 from __future__ import unicode_literals
 
-import json
-
 import zmq
 
-from .types import hydrate
+from .types import hydrate, dehydrate, Pointer
 
 
 class Batch(object):
 
     def __init__(self, socket):
         self.__socket = socket
+        self.__count = 0
 
     def do(self, method, resource, *args):
-        line = method + "\t" + resource + "\t" + "\t".join(json.dumps(arg) for arg in args)
+        line = method + "\t" + resource + "\t" + "\t".join(map(dehydrate, args))
         self.__socket.send(line.encode("utf-8"), zmq.SNDMORE)
+        pointer = Pointer(self.__count)
+        self.__count += 1
+        return pointer
 
     def do_execute(self, query):
-        self.do("POST", "cypher", query)
+        return self.do("POST", "cypher", query)
 
     def do_create_node(self, labels, properties):
-        self.do("POST", "node", labels, properties)
+        return self.do("POST", "node", labels, properties)
+
+    def do_create_rel(self, start_node, end_node, type, properties):
+        return self.do("POST", "rel", start_node, end_node, type, properties)
 
     def submit(self):
         self.__socket.send(b"")

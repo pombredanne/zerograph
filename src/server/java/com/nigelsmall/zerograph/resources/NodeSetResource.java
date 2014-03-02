@@ -31,17 +31,22 @@ public class NodeSetResource extends Resource {
      * @param request
      */
     @Override
-    public void get(Transaction transaction, Request request) throws ClientError, ServerError {
-        Label label = DynamicLabel.label(getArgument(request, 0, String.class));
-        String key = getArgument(request, 1, String.class);
-        Object value = getArgument(request, 2, Object.class);
+    public PropertyContainer get(Transaction tx, Request request) throws ClientError, ServerError {
+        Label label = DynamicLabel.label(request.getStringData(0));
+        String key = request.getStringData(1);
+        Object value = request.getData(2);
         HashMap<String, Integer> stats = new HashMap<>();
         stats.put("nodes_matched", 0);
+        Node firstNode = null;
         for (Node node : database().findNodesByLabelAndProperty(label, key, value)) {
             sendContinue(node);
+            if (firstNode == null) {
+                firstNode = node;
+            }
             stats.put("nodes_matched", stats.get("nodes_matched") + 1);
         }
         sendOK(stats);
+        return firstNode;
     }
 
     /**
@@ -55,10 +60,10 @@ public class NodeSetResource extends Resource {
      * @param request
      */
     @Override
-    public void put(Transaction transaction, Request request) throws ClientError, ServerError {
-        String labelName = getArgument(request, 0, String.class);
-        String key = getArgument(request, 1, String.class);
-        Object value = getArgument(request, 2, Object.class);
+    public PropertyContainer put(Transaction tx, Request request) throws ClientError, ServerError {
+        String labelName = request.getStringData(0);
+        String key = request.getStringData(1);
+        Object value = request.getData(2);
         try {
             HashMap<String, Integer> stats = new HashMap<>();
             String query = "MERGE (a:`" + labelName.replace("`", "``") +
@@ -66,11 +71,17 @@ public class NodeSetResource extends Resource {
             HashMap<String, Object> params = new HashMap<>(1);
             params.put("value", value);
             ExecutionResult result = execute(query, params);
+            Node firstNode = null;
             for (Map<String, Object> row : result) {
-                sendContinue(row.get("a"));
+                Node node = (Node)row.get("a");
+                sendContinue(node);
+                if (firstNode == null) {
+                    firstNode = node;
+                }
             }
             stats.put("nodes_created", result.getQueryStatistics().getNodesCreated());
             sendOK(stats);
+            return firstNode;
         } catch (CypherException ex) {
             throw new ServerError(new Response(Response.SERVER_ERROR, ex.getMessage()));
         }
@@ -86,10 +97,10 @@ public class NodeSetResource extends Resource {
      * @param request
      */
     @Override
-    public void delete(Transaction transaction, Request request) throws ClientError, ServerError {
-        Label label = DynamicLabel.label(getArgument(request, 0, String.class));
-        String key = getArgument(request, 1, String.class);
-        Object value = getArgument(request, 2, Object.class);
+    public PropertyContainer delete(Transaction tx, Request request) throws ClientError, ServerError {
+        Label label = DynamicLabel.label(request.getStringData(0));
+        String key = request.getStringData(1);
+        Object value = request.getData(2);
         HashMap<String, Integer> stats = new HashMap<>();
         stats.put("nodes_deleted", 0);
         for (Node node : database().findNodesByLabelAndProperty(label, key, value)) {
@@ -97,6 +108,7 @@ public class NodeSetResource extends Resource {
             stats.put("nodes_deleted", stats.get("nodes_deleted") + 1);
         }
         sendOK(stats);
+        return null;
     }
 
 }

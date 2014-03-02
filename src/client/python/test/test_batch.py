@@ -37,10 +37,12 @@ def test_create_ten_thousand_nodes():
         print(rs)
 
 
-#def test_create_two_nodes_and_a_rel():
-#    session = Session("tcp://localhost:47474")
-#    batch = session.batch()
-#    batch.do_create_node(["Person"], {"name": "Alice"})
-#    batch.do_create_node(["Person"], {"name": "Bob"})
-#    for rs in batch.submit():
-#        print(rs)
+def test_create_two_nodes_and_a_rel_100x():
+    session = Session("tcp://localhost:47474")
+    batch = session.batch()
+    for n in range(100):
+        alice = batch.do_create_node(["Person"], {"name": "Alice"})
+        bob = batch.do_create_node(["Person"], {"name": "Bob"})
+        batch.do_create_rel(alice, bob, "KNOWS", {"since": 1999})
+    for rs in batch.submit():
+        print(rs)

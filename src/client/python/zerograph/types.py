@@ -1,6 +1,9 @@
 
 import json
 
+from .data import Data
+
+
 class Entity(object):
 
     def __init__(self, attributes):
@@ -35,7 +38,14 @@ class Node(PropertyContainer):
         self.__labels = set(attributes.get("labels", set()))
 
     def __repr__(self):
-        return "<Node id={0} labels={1}, properties={2}>".format(self._id, self.labels, self.properties)
+        return "<Node id={0} labels={1} properties={2}>".format(self._id, self.labels, self.properties)
+
+    def __eq__(self, other):
+        return self.labels == other.labels and \
+               self.properties == other.properties
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     @property
     def labels(self):
@@ -51,7 +61,7 @@ class Rel(PropertyContainer):
         self.__type = attributes["type"]
 
     def __repr__(self):
-        return "<Rel id={0} start={1} end={2} type={3}, properties={4}>".format(self._id, self.start, self.end, self.labels, self.properties)
+        return "<Rel id={0} start={1} end={2} type={3} properties={4}>".format(self._id, self.start, self.end, repr(self.type), self.properties)
 
     @property
     def start(self):
@@ -66,17 +76,39 @@ class Rel(PropertyContainer):
         return self.__type
 
 
+class Pointer(object):
+
+    def __init__(self, attributes):
+        self.__address = attributes
+
+    def __repr__(self):
+        return "<Pointer address={0}>".format(self.address)
+
+    def __eq__(self, other):
+        return self.address == other.address
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    @property
+    def address(self):
+        return self.__address
+
+
 def hydrate(string):
-    if string.startswith("/*"):
-        cls, string = string[2:].partition("*/")[0::2]
-        value = json.loads(string)
-        if cls == "Node":
-            return Node(value)
-        elif cls == "Rel":
-            return Rel(value)
-        elif cls == "Path":
-            return Path(value)
-        else:
-            return value
+    data = Data.decode(string)
+    if data.class_name == "Node":
+        return Node(data.value)
+    elif data.class_name == "Rel":
+        return Rel(data.value)
+    elif data.class_name == "Pointer":
+        return Pointer(data.value)
     else:
-        return json.loads(string)
+        return data.value
+
+
+def dehydrate(obj):
+    if isinstance(obj, Pointer):
+        return Data("Pointer", obj.address).encode()
+    else:
+        return json.dumps(obj, separators=",:")

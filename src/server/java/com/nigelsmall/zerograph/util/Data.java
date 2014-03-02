@@ -12,12 +12,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class JSON {
+public class Data {
 
     final private static String NODE_HINT = "/*Node*/";
     final private static String REL_HINT = "/*Rel*/";
+    final private static String POINTER_HINT = "/*Pointer*/";
 
     final private static ObjectMapper mapper = new ObjectMapper();
+
+    private static Object decodePointer(String string) throws IOException {
+        int address = mapper.readValue(string, Integer.class);
+        return new Pointer(address);
+    }
 
     private static List<String> labels(Node node) {
         ArrayList<String> labelList = new ArrayList<>();
@@ -35,7 +41,7 @@ public class JSON {
         return propertyMap;
     }
 
-    public static Map<String, Object> attributes(Node node) throws IOException {
+    private static Map<String, Object> attributes(Node node) throws IOException {
         HashMap<String, Object> attributes = new HashMap<>();
         attributes.put("id", node.getId());
         attributes.put("labels", labels(node));
@@ -43,7 +49,7 @@ public class JSON {
         return attributes;
     }
 
-    public static Map<String, Object> attributes(Relationship rel) throws IOException {
+    private static Map<String, Object> attributes(Relationship rel) throws IOException {
         HashMap<String, Object> attributes = new HashMap<>();
         attributes.put("id", rel.getId());
         attributes.put("start", attributes(rel.getStartNode()));
@@ -63,8 +69,38 @@ public class JSON {
         }
     }
 
-    public static <T> T decode(String value, Class<T> klass) throws IOException {
-        return mapper.readValue(value, klass);
+    public static Object decode(String string) throws IOException {
+        switch (string) {
+            case "null":
+                return null;
+            case "true":
+                return true;
+            case "false":
+                return false;
+            default:
+                if (string.length() > 0) {
+                    char ch = string.charAt(0);
+                    if ((ch >= '0' && ch <= '9') || ch == '-') {
+                        return mapper.readValue(string, Number.class);
+                    } else if (ch == '"') {
+                        return mapper.readValue(string, String.class);
+                    } else if (ch == '[') {
+                        return mapper.readValue(string, List.class);
+                    } else if (ch == '{') {
+                        return mapper.readValue(string, Map.class);
+                    } else if (ch == '/') {
+                        if (string.startsWith(POINTER_HINT)) {
+                            return decodePointer(string.substring(POINTER_HINT.length()));
+                        } else {
+                            throw new IllegalArgumentException(string);
+                        }
+                    } else {
+                        throw new IllegalArgumentException(string);
+                    }
+                } else {
+                    throw new IllegalArgumentException(string);
+                }
+        }
     }
 
 }

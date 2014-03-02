@@ -24,11 +24,12 @@ public class NodeResource extends PropertyContainerResource {
      * Fetch a single node by ID.
      */
     @Override
-    public void get(Transaction transaction, Request request) throws ClientError, ServerError {
-        long nodeID = getArgument(request, 0, Integer.class);
+    public PropertyContainer get(Transaction tx, Request request) throws ClientError, ServerError {
+        long nodeID = request.getIntegerData(0);
         try {
             Node node = database().getNodeById(nodeID);
             sendOK(node);
+            return node;
         } catch (NotFoundException ex) {
             throw new ClientError(new Response(Response.NOT_FOUND, nodeID));
         }
@@ -42,14 +43,14 @@ public class NodeResource extends PropertyContainerResource {
      * already exist.
      */
     @Override
-    public void put(Transaction transaction, Request request) throws ClientError, ServerError {
-        long nodeID = getArgument(request, 0, Integer.class);
-        List labelNames = getArgument(request, 1, List.class);
-        Map properties = getArgument(request, 2, Map.class);
+    public PropertyContainer put(Transaction tx, Request request) throws ClientError, ServerError {
+        long nodeID = request.getIntegerData(0);
+        List labelNames = request.getListData(1);
+        Map properties = request.getMapData(2);
         try {
             Node node = database().getNodeById(nodeID);
-            Lock writeLock = transaction.acquireWriteLock(node);
-            Lock readLock = transaction.acquireReadLock(node);
+            Lock writeLock = tx.acquireWriteLock(node);
+            Lock readLock = tx.acquireReadLock(node);
             removeLabels(node);
             removeProperties(node);
             addLabels(node, labelNames);
@@ -57,6 +58,7 @@ public class NodeResource extends PropertyContainerResource {
             readLock.release();
             writeLock.release();
             sendOK(node);
+            return node;
         } catch (NotFoundException ex) {
             throw new ClientError(new Response(Response.NOT_FOUND, nodeID));
         }
@@ -71,19 +73,20 @@ public class NodeResource extends PropertyContainerResource {
      * maintained.
      */
     @Override
-    public void patch(Transaction transaction, Request request) throws ClientError, ServerError {
-        long nodeID = getArgument(request, 0, Integer.class);
-        List labelNames = getArgument(request, 1, List.class);
-        Map properties = getArgument(request, 2, Map.class);
+    public PropertyContainer patch(Transaction tx, Request request) throws ClientError, ServerError {
+        long nodeID = request.getIntegerData(0);
+        List labelNames = request.getListData(1);
+        Map properties = request.getMapData(2);
         try {
             Node node = database().getNodeById(nodeID);
-            Lock writeLock = transaction.acquireWriteLock(node);
-            Lock readLock = transaction.acquireReadLock(node);
+            Lock writeLock = tx.acquireWriteLock(node);
+            Lock readLock = tx.acquireReadLock(node);
             addLabels(node, labelNames);
             addProperties(node, properties);
             readLock.release();
             writeLock.release();
             sendOK(node);
+            return node;
         } catch (NotFoundException ex) {
             throw new ClientError(new Response(Response.NOT_FOUND, nodeID));
         }
@@ -95,17 +98,18 @@ public class NodeResource extends PropertyContainerResource {
      * Create a new node with the given labels and properties.
      */
     @Override
-    public void post(Transaction transaction, Request request) throws ClientError, ServerError {
-        List labelNames = getArgument(request, 0, List.class);
-        Map properties = getArgument(request, 1, Map.class);
+    public PropertyContainer post(Transaction tx, Request request) throws ClientError, ServerError {
+        List labelNames = request.getListData(0);
+        Map properties = request.getMapData(1);
         Node node = database().createNode();
-        Lock writeLock = transaction.acquireWriteLock(node);
-        Lock readLock = transaction.acquireReadLock(node);
+        Lock writeLock = tx.acquireWriteLock(node);
+        Lock readLock = tx.acquireReadLock(node);
         addLabels(node, labelNames);
         addProperties(node, properties);
         readLock.release();
         writeLock.release();
         sendOK(node);
+        return node;
     }
 
     /**
@@ -114,13 +118,14 @@ public class NodeResource extends PropertyContainerResource {
      * Delete a node identified by ID.
      */
     @Override
-    public void delete(Transaction transaction, Request request) throws ClientError, ServerError {
-        long nodeID = getArgument(request, 0, Integer.class);
+    public PropertyContainer delete(Transaction tx, Request request) throws ClientError, ServerError {
+        long nodeID = request.getIntegerData(0);
         Node node = database().getNodeById(nodeID);
-        Lock writeLock = transaction.acquireWriteLock(node);
+        Lock writeLock = tx.acquireWriteLock(node);
         node.delete();
         writeLock.release();
         sendOK();
+        return null;
     }
 
 }

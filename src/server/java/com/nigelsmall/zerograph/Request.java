@@ -1,10 +1,15 @@
 package com.nigelsmall.zerograph;
 
 import com.nigelsmall.zerograph.except.ClientError;
-import com.nigelsmall.zerograph.util.JSON;
+import com.nigelsmall.zerograph.util.Data;
+import com.nigelsmall.zerograph.util.Pointer;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.neo4j.graphdb.PropertyContainer;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Request is tab-separated string of terms
@@ -14,10 +19,12 @@ import java.util.ArrayList;
  */
 public class Request {
 
+    final private static ObjectMapper mapper = new ObjectMapper();
+
     final private String string;
     final private String method;
     final private String resource;
-    final private String[] data;
+    final private Object[] data;
 
     public Request(String string) throws ClientError {
         this.string = string;
@@ -28,11 +35,15 @@ public class Request {
         this.method = parts[0];
         this.resource = parts[1];
         int dataSize = parts.length - 2;
-        ArrayList<String> data = new ArrayList<>(dataSize);
+        ArrayList<Object> data = new ArrayList<>(dataSize);
         for (int i = 0; i < dataSize; i++) {
-            data.add(parts[i + 2]);
+            try {
+                data.add(Data.decode(parts[i + 2]));
+            } catch (IOException ex) {
+                throw new ClientError(new Response(Response.BAD_REQUEST, parts[i + 2]));
+            }
         }
-        this.data = data.toArray(new String[dataSize]);
+        this.data = data.toArray(new Object[dataSize]);
     }
 
     public String toString() {
@@ -47,8 +58,57 @@ public class Request {
         return this.resource;
     }
 
-    public <T> T getData(int index, Class<T> klass) throws IOException {
-        return JSON.decode(data[index], klass);
+    public Object getData(int index) {
+        if (index >= 0 && index < this.data.length) {
+            return this.data[index];
+        } else {
+            throw new IndexOutOfBoundsException();
+        }
+    }
+
+    public Integer getIntegerData(int index) {
+        Object datum = getData(index);
+        if (datum instanceof Integer) {
+            return (Integer)datum;
+        } else {
+            throw new IllegalArgumentException("Integer data expected");
+        }
+    }
+
+    public String getStringData(int index) {
+        Object datum = getData(index);
+        if (datum instanceof String) {
+            return (String)datum;
+        } else {
+            throw new IllegalArgumentException("String data expected");
+        }
+    }
+
+    public List getListData(int index) {
+        Object datum = getData(index);
+        if (datum instanceof List) {
+            return (List)datum;
+        } else {
+            throw new IllegalArgumentException("List data expected");
+        }
+    }
+
+    public Map getMapData(int index) {
+        Object datum = getData(index);
+        if (datum instanceof Map) {
+            return (Map)datum;
+        } else {
+            throw new IllegalArgumentException("Map data expected");
+        }
+    }
+
+    public void resolvePointers(List<PropertyContainer> values) {
+        for (int i = 0; i < data.length; i++) {
+            if (data[i] instanceof Pointer) {
+                Pointer pointer = (Pointer)data[i];
+                data[i] = values.get(pointer.getAddress());
+            }
+        }
     }
 
 }

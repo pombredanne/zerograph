@@ -1,6 +1,6 @@
 package com.nigelsmall.zerograph;
 
-import com.nigelsmall.zerograph.util.JSON;
+import com.nigelsmall.zerograph.util.Data;
 import org.zeromq.ZMQ;
 
 import java.io.IOException;
@@ -35,7 +35,7 @@ public class Response {
         for (Object datum : data) {
             builder.append('\t');
             try {
-                builder.append(JSON.encode(datum));
+                builder.append(Data.encode(datum));
             } catch (IOException ex) {
                 builder.append('?');  // TODO
             }
