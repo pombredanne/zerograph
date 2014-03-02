@@ -10,7 +10,6 @@ import java.io.IOException;
  */
 public class Server {
 
-    final public static String STORAGE_DIR = "/tmp/zerograph";
     final public static int WORKER_COUNT = 40;
 
     final private Environment env;
@@ -47,7 +46,12 @@ public class Server {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        Environment env = new Environment(STORAGE_DIR);
+        String storageDir = System.getenv("ZG_DATA");
+        if (storageDir == null) {
+            System.err.println("-------\nPlease define a root database directory\ne.g. export ZG_DATA=/var/zerograph\n-------");
+            System.exit(1);
+        }
+        Environment env = new Environment(storageDir);
         Server server = new Server(env, 47474);
         server.start();
     }

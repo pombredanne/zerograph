@@ -3,10 +3,12 @@
 To run server:
 
 ```bash
+$ mkdir ~/zg
+$ export ZG_DATA=~/zg
 $ gradle run
 ```
 
-To run test client:
+To run test shell:
 
 ```bash
 $ pip3 install pyzmq

@@ -82,9 +82,9 @@ class Response(object):
                 if line:
                     parts = line.split("\t")
                     status = int(parts[0])
-                    if status >= 400:
-                        raise ERRORS[status](*parts[1:])
                     data = tuple(hydrate(part) for part in parts[1:])
+                    if status >= 400:
+                        raise ERRORS[status](*data)
                     yield cls(status, *data)
 
     @classmethod
