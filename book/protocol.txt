@@ -1,0 +1,32 @@
+Zerograph Protocol
+==================
+
+The Zerograph protocol is a line-based text protocol that allows batches of
+requests and responses to be exchanged alternately between client and server.
+It borrows a number of concepts from HTTP and REST including methods and
+response status codes.
+
+The protocol expects all communication between client and server to be
+carried out over ZeroMQ sockets and the SNDMORE/RCVMORE flags may be used to
+transmit both requests and responses over multiple frames.
+
+Each client request consists of a batch of one or more requests on separate
+lines. Each line consists of multiple terms separated by TAB characters
+which, within this document, will be generally represented by simple
+whitespace. Where potentially ambiguous, the symbol [->] will be used
+instead.
+
+The symbols >>> and <<< will also be used at the start of lines to indicate
+client-to-server requests and server-to-client responses respectively. These
+are not part of the messages themselves.
+
+The following is an example of a request batch and the responses returned:
+
+>>> POST node ["Person"] {"name":"Alice"}
+>>> POST node ["Person"] {"name":"Bob"}
+>>> POST rel /*Pointer*/0 /*Pointer*/1 KNOWS {"since":1999}
+
+<<< 200 /*Node*/{"id":123,"labels":["Person"],"properties":{"name":"Alice"}}
+<<< 200 /*Node*/{"id":124,"labels":["Person"],"properties":{"name":"Bob"}}
+<<< 200 /*Node*/{"id":123,"labels":["Person"],"properties":{"name":"Alice"}}
+<<< 200

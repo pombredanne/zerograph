@@ -46,14 +46,21 @@ public class Server {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        String storageDir = System.getenv("ZG_DATA");
-        if (storageDir == null) {
-            System.err.println("-------\nPlease define a root database directory\ne.g. export ZG_DATA=/var/zerograph\n-------");
-            System.exit(1);
-        }
-        Environment env = new Environment(storageDir);
+        String storagePath = getStoragePath();
+        Environment env = new Environment(storagePath);
         Server server = new Server(env, 47474);
         server.start();
+    }
+
+    public static String getStoragePath() {
+        String storagePath = System.getenv("ZG_STORAGE_PATH");
+        if (storagePath != null)
+            return storagePath;
+        String userName = System.getProperty("user.name");
+        if ("root".equals(userName))
+            return "/var/zerograph";
+        else
+            return System.getProperty("user.home") + "/" + ".zerograph";
     }
 
 }

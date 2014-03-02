@@ -1,14 +1,28 @@
 # Zerograph
 
-To run server:
+## Server
+
+To run the server:
 
 ```bash
-$ mkdir ~/zg
-$ export ZG_DATA=~/zg
 $ gradle run
 ```
 
-To run test shell:
+### Storage
+
+If running as root, the databases will be stored in ``/var/zerograph`` by
+default. For other users, the ``$HOME/.zerograph`` directory will be used.
+These defaults can be overridden using the ``ZG_STORAGE_PATH`` environment
+variable.
+
+### Service
+
+The default database instance listens on port 47474.
+
+
+## Client
+
+To run the Python test shell:
 
 ```bash
 $ pip3 install pyzmq
