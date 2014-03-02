@@ -30,3 +30,24 @@ The following is an example of a request batch and the responses returned:
 <<< 200 /*Node*/{"id":124,"labels":["Person"],"properties":{"name":"Bob"}}
 <<< 200 /*Rel*/{"id":234,"start":{"id":123,"labels":["Person"],"properties":{"name":"Alice"}},"end":{"id":124,"labels":["Person"],"properties":{"name":"Bob"}},"type":"KNOWS","properties":{"since":1999}}
 <<< 200
+
+Each request line has one or more corresponding response lines and a final
+response line is appended to describe the success or failure of the overall
+batch. This is necessary as the whole batch is executed within a single
+transaction and some problems may not arise until the entire transaction is
+committed.
+
+Responses consisting of multiple lines will use a 100 status code for all
+lines except the last as in the example below:
+
+>>> POST cypher "START n=node(*) RETURN n LIMIT 3"
+
+<<< 100 "n"
+<<< 100 /*Node*/{"id":0,"labels":["Person"],"properties":{"name":"Alice"}}
+<<< 100 /*Node*/{"id":1,"labels":["Person"],"properties":{"name":"Bob"}}
+<<< 100 /*Node*/{"id":2,"labels":["Person"],"properties":{"name":"Carol"}}
+<<< 200
+<<< 200
+
+Here, the response consists of one header line, three data lines, one footer
+line and an overall batch summary line.
