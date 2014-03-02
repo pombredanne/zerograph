@@ -84,7 +84,9 @@ public abstract class Resource {
     }
 
     private void send(Response response) {
-        response.send(socket, ZMQ.SNDMORE);
+        String string = response.toString();
+        System.out.println(">>> " + string);
+        socket.sendMore(string);
     }
 
     public void sendContinue(Object... data) {
@@ -93,6 +95,14 @@ public abstract class Resource {
 
     public void sendOK(Object... data) {
         send(new Response(Response.OK, data));
+    }
+
+    public void sendCreated(Object... data) {
+        send(new Response(Response.CREATED, data));
+    }
+
+    public void sendNoContent() {
+        send(new Response(Response.NO_CONTENT));
     }
 
 }

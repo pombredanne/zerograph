@@ -34,7 +34,7 @@ public class RelResource extends PropertyContainerResource {
             sendOK(rel);
             return rel;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, relID));
+            throw new ClientError(new Response(Response.NOT_FOUND, "Relationship " + relID + " not found"));
         }
     }
 
@@ -60,7 +60,7 @@ public class RelResource extends PropertyContainerResource {
             sendOK(rel);
             return rel;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, relID));
+            throw new ClientError(new Response(Response.NOT_FOUND, "Relationship " + relID + " not found"));
         }
     }
 
@@ -86,7 +86,7 @@ public class RelResource extends PropertyContainerResource {
             sendOK(rel);
             return rel;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, relID));
+            throw new ClientError(new Response(Response.NOT_FOUND, "Relationship " + relID + " not found"));
         }
     }
 
@@ -107,7 +107,7 @@ public class RelResource extends PropertyContainerResource {
         addProperties(rel, properties);
         readLock.release();
         writeLock.release();
-        sendOK(rel);
+        sendCreated(rel);
         return rel;
     }
 
@@ -119,12 +119,16 @@ public class RelResource extends PropertyContainerResource {
     @Override
     public PropertyContainer delete(Transaction tx, Request request) throws ClientError, ServerError {
         long relID = request.getIntegerData(0);
-        Relationship rel = database().getRelationshipById(relID);
-        Lock writeLock = tx.acquireWriteLock(rel);
-        rel.delete();
-        writeLock.release();
-        sendOK();
-        return null;
+        try {
+            Relationship rel = database().getRelationshipById(relID);
+            Lock writeLock = tx.acquireWriteLock(rel);
+            rel.delete();
+            writeLock.release();
+            sendNoContent();
+            return null;
+        } catch (NotFoundException ex) {
+            throw new ClientError(new Response(Response.NOT_FOUND, "Relationship " + relID + " not found"));
+        }
     }
 
     private Node resolveNode(Object value) throws ClientError {
@@ -134,7 +138,7 @@ public class RelResource extends PropertyContainerResource {
             try {
                 return database().getNodeById((Integer)value);
             } catch (NotFoundException ex) {
-                throw new ClientError(new Response(Response.NOT_FOUND, value));
+                throw new ClientError(new Response(Response.NOT_FOUND, "Relationship " + value + " not found"));
             }
         } else {
             throw new ClientError(new Response(Response.BAD_REQUEST, value));

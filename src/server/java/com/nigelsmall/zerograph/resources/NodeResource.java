@@ -35,7 +35,7 @@ public class NodeResource extends PropertyContainerResource {
             sendOK(node);
             return node;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, nodeID));
+            throw new ClientError(new Response(Response.NOT_FOUND, "Node " + nodeID + " not found"));
         }
     }
 
@@ -64,7 +64,7 @@ public class NodeResource extends PropertyContainerResource {
             sendOK(node);
             return node;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, nodeID));
+            throw new ClientError(new Response(Response.NOT_FOUND, "Node " + nodeID + " not found"));
         }
     }
 
@@ -92,7 +92,7 @@ public class NodeResource extends PropertyContainerResource {
             sendOK(node);
             return node;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, nodeID));
+            throw new ClientError(new Response(Response.NOT_FOUND, "Node " + nodeID + " not found"));
         }
     }
 
@@ -112,7 +112,7 @@ public class NodeResource extends PropertyContainerResource {
         addProperties(node, properties);
         readLock.release();
         writeLock.release();
-        sendOK(node);
+        sendCreated(node);
         return node;
     }
 
@@ -124,12 +124,16 @@ public class NodeResource extends PropertyContainerResource {
     @Override
     public PropertyContainer delete(Transaction tx, Request request) throws ClientError, ServerError {
         long nodeID = request.getIntegerData(0);
-        Node node = database().getNodeById(nodeID);
-        Lock writeLock = tx.acquireWriteLock(node);
-        node.delete();
-        writeLock.release();
-        sendOK();
-        return null;
+        try {
+            Node node = database().getNodeById(nodeID);
+            Lock writeLock = tx.acquireWriteLock(node);
+            node.delete();
+            writeLock.release();
+            sendNoContent();
+            return null;
+        } catch (NotFoundException ex) {
+            throw new ClientError(new Response(Response.NOT_FOUND, "Node " + nodeID + " not found"));
+        }
     }
 
     public void addLabels(Node node, List labelNames) {

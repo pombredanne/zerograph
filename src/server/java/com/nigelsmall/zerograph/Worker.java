@@ -63,50 +63,55 @@ public class Worker implements Runnable {
                     more = external.hasReceiveMore();
                 }
             } catch (ClientError ex) {
-                ex.getResponse().send(external, 0);
+                send(ex.getResponse());
                 continue;
             }
             // handle requests
             ArrayList<PropertyContainer> outputValues = new ArrayList<>(requests.size());
-            try (Transaction tx = database.beginTx()) {
-                System.out.println("--- Began transaction in worker " + this.uuid.toString() + " ---");
-                for (Request request : requests) {
-                    request.resolvePointers(outputValues);
-                    switch (request.getResource()) {
-                        case CypherResource.NAME:
-                            outputValues.add(cypherResource.handle(tx, request));
-                            break;
-                        case NodeResource.NAME:
-                            outputValues.add(nodeResource.handle(tx, request));
-                            break;
-                        case NodeSetResource.NAME:
-                            outputValues.add(nodeSetResource.handle(tx, request));
-                            break;
-                        case RelResource.NAME:
-                            outputValues.add(relResource.handle(tx, request));
-                            break;
-                        default:
-                            throw new ClientError(new Response(Response.NOT_FOUND, request.getResource()));
+            try {
+                System.out.println("--- Beginning transaction in worker " + this.uuid.toString() + " ---");
+                try (Transaction tx = database.beginTx()) {
+                    for (Request request : requests) {
+                        request.resolvePointers(outputValues);
+                        switch (request.getResource()) {
+                            case CypherResource.NAME:
+                                outputValues.add(cypherResource.handle(tx, request));
+                                break;
+                            case NodeResource.NAME:
+                                outputValues.add(nodeResource.handle(tx, request));
+                                break;
+                            case NodeSetResource.NAME:
+                                outputValues.add(nodeSetResource.handle(tx, request));
+                                break;
+                            case RelResource.NAME:
+                                outputValues.add(relResource.handle(tx, request));
+                                break;
+                            default:
+                                throw new ClientError(new Response(Response.NOT_FOUND, request.getResource()));
+                        }
                     }
+                    tx.success();
                 }
-                external.send("");
-                tx.success();
-                System.out.println("--- Completed transaction in worker " + this.uuid.toString() + " ---");
+                send(new Response(Response.OK));
+                System.out.println("--- Successfully completed transaction in worker " + this.uuid.toString() + " ---");
+            } catch (IllegalArgumentException ex) {
+                send(new Response(Response.BAD_REQUEST, ex.getMessage()));
             } catch (TransactionFailureException ex) {
-                new Response(Response.CONFLICT, ex.getMessage()).send(external, 0);  // TODO - derive cause from nested Exceptions
+                send(new Response(Response.CONFLICT, ex.getMessage()));  // TODO - derive cause from nested Exceptions
             } catch (ClientError ex) {
-                //ex.printStackTrace(System.err);
-                // 4XX
-                ex.getResponse().send(external, 0);
-            } catch (ServerError ex) {
-                //ex.printStackTrace(System.err);
-                // 5XX
-                new Response(Response.SERVER_ERROR).send(external, 0);
-                // TODO: log
+                send(ex.getResponse());
+            } catch (Exception ex) {
+                send(new Response(Response.SERVER_ERROR, ex.getMessage()));
             } finally {
                 System.out.println();
             }
         }
+    }
+
+    public boolean send(Response response) {
+        String string = response.toString();
+        System.out.println(">>> " + string);
+        return external.send(string);
     }
 
 }

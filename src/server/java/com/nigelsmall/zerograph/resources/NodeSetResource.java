@@ -79,8 +79,13 @@ public class NodeSetResource extends Resource {
                     firstNode = node;
                 }
             }
-            stats.put("nodes_created", result.getQueryStatistics().getNodesCreated());
-            sendOK(stats);
+            int nodesCreated = result.getQueryStatistics().getNodesCreated();
+            stats.put("nodes_created", nodesCreated);
+            if (nodesCreated == 0) {
+                sendOK(stats);
+            } else {
+                sendCreated(stats);
+            }
             return firstNode;
         } catch (CypherException ex) {
             throw new ServerError(new Response(Response.SERVER_ERROR, ex.getMessage()));

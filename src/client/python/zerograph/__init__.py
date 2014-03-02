@@ -1,1 +1,1 @@
-from zerograph.session import Session
+from .zerograph import *

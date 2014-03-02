@@ -16,11 +16,12 @@ public class Response {
     // Borrowed from HTTP
     final public static int CONTINUE = 100;
     final public static int OK = 200;
+    final public static int CREATED = 201;
     final public static int NO_CONTENT = 204;
     final public static int BAD_REQUEST = 400;
     final public static int NOT_FOUND = 404;
-    final public static int CONFLICT = 409;
     final public static int METHOD_NOT_ALLOWED = 405;
+    final public static int CONFLICT = 409;
     final public static int SERVER_ERROR = 500;
     final public static int NOT_IMPLEMENTED = 501;
 
@@ -57,12 +58,6 @@ public class Response {
 
     public Object[] getData() {
         return this.data;
-    }
-
-    public boolean send(ZMQ.Socket socket, int flags) {
-        String string = this.toString();
-        System.out.println(">>> " + string);
-        return socket.send(string, flags);
     }
 
 }
