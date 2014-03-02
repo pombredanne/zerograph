@@ -1,5 +1,5 @@
-Zerograph Protocol
-==================
+The Zerograph Protocol
+======================
 
 The Zerograph protocol is a line-based text protocol that allows batches of
 requests and responses to be exchanged alternately between client and server.
@@ -9,6 +9,10 @@ response status codes.
 The protocol expects all communication between client and server to be
 carried out over ZeroMQ sockets and the SNDMORE/RCVMORE flags may be used to
 transmit both requests and responses over multiple frames.
+
+
+Requests and Responses
+----------------------
 
 Each client request consists of a batch of one or more requests on separate
 lines. Each line consists of multiple terms separated by TAB characters
