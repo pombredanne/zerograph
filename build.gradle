@@ -45,4 +45,4 @@ task wrapper(type: Wrapper) {
     gradleVersion = '1.8'
 }
 
-mainClassName = "com.nigelsmall.zerograph.Service"
+mainClassName = "com.nigelsmall.zerograph.Server"

@@ -8,7 +8,7 @@ import java.io.IOException;
  * Experimental Neo4j Server using ZeroMQ
  *
  */
-public class Service {
+public class Server {
 
     final public static String STORAGE_DIR = "/tmp/zerograph";
     final public static int WORKER_COUNT = 40;
@@ -20,7 +20,7 @@ public class Service {
     private ZMQ.Socket external;  // incoming requests from clients
     private ZMQ.Socket internal;  // request forwarding to workers
 
-    public Service(Environment env, int port) {
+    public Server(Environment env, int port) {
         this.env = env;
         this.port = port;
         this.address = "tcp://*:" + port;
@@ -48,8 +48,8 @@ public class Service {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         Environment env = new Environment(STORAGE_DIR);
-        Service service = new Service(env, 47474);
-        service.start();
+        Server server = new Server(env, 47474);
+        server.start();
     }
 
 }
