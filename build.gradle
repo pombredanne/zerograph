@@ -33,7 +33,7 @@ dependencies {
     compile "org.codehaus.jackson:jackson-mapper-asl:1.9.7"
 }
 
-group = 'com.nigelsmall'
+group = 'org.zerograph'
 version = '0'
 jar {
     manifest {
@@ -45,4 +45,4 @@ task wrapper(type: Wrapper) {
     gradleVersion = '1.8'
 }
 
-mainClassName = "com.nigelsmall.zerograph.Server"
+mainClassName = "org.zerograph.Server"

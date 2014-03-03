@@ -1,6 +1,6 @@
-package com.nigelsmall.zerograph.except;
+package org.zerograph.except;
 
-import com.nigelsmall.zerograph.Response;
+import org.zerograph.Response;
 
 public class ServerError extends Exception {
 

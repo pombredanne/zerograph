@@ -1,4 +1,4 @@
-package com.nigelsmall.zerograph;
+package org.zerograph;
 
 import org.zeromq.ZMQ;
 

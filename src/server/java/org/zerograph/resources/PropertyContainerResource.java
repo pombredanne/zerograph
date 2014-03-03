@@ -1,9 +1,8 @@
-package com.nigelsmall.zerograph.resources;
+package org.zerograph.resources;
 
 import org.neo4j.graphdb.*;
 import org.zeromq.ZMQ;
 
-import java.util.List;
 import java.util.Map;
 
 public abstract class PropertyContainerResource extends Resource {

@@ -1,4 +1,4 @@
-package com.nigelsmall.zerograph;
+package org.zerograph;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -13,16 +13,18 @@ public class Environment {
     final private GraphDatabaseFactory factory = new GraphDatabaseFactory();
 
     final private ZMQ.Context context;
-    final private String storagePath;
+    final private File storagePath;
     final private HashMap<Integer, GraphDatabaseService> databases;
 
     public Environment(String storagePath) throws FileNotFoundException {
         this.context = ZMQ.context(1);
-        this.storagePath = storagePath;
+        this.storagePath = new File(storagePath);
         this.databases = new HashMap<>();
-        if (!new File(this.storagePath).mkdirs()) {
-            throw new FileNotFoundException("Cannot create storage path " +
-                    this.storagePath);
+        if (!this.storagePath.isDirectory()) {
+            if (!this.storagePath.mkdirs()) {
+                throw new FileNotFoundException("Cannot create storage path " +
+                        this.storagePath);
+            }
         }
     }
 

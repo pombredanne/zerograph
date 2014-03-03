@@ -1,9 +1,9 @@
-package com.nigelsmall.zerograph.resources;
+package org.zerograph.resources;
 
-import com.nigelsmall.zerograph.Request;
-import com.nigelsmall.zerograph.Response;
-import com.nigelsmall.zerograph.except.ClientError;
-import com.nigelsmall.zerograph.except.ServerError;
+import org.zerograph.Request;
+import org.zerograph.Response;
+import org.zerograph.except.ClientError;
+import org.zerograph.except.ServerError;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
@@ -12,8 +12,6 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.zeromq.ZMQ;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 public abstract class Resource {

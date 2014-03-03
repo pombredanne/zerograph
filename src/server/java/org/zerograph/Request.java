@@ -1,8 +1,8 @@
-package com.nigelsmall.zerograph;
+package org.zerograph;
 
-import com.nigelsmall.zerograph.except.ClientError;
-import com.nigelsmall.zerograph.util.Data;
-import com.nigelsmall.zerograph.util.Pointer;
+import org.zerograph.except.ClientError;
+import org.zerograph.util.Data;
+import org.zerograph.util.Pointer;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.neo4j.graphdb.PropertyContainer;
 

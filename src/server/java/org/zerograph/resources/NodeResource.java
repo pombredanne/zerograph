@@ -1,9 +1,9 @@
-package com.nigelsmall.zerograph.resources;
+package org.zerograph.resources;
 
-import com.nigelsmall.zerograph.Request;
-import com.nigelsmall.zerograph.Response;
-import com.nigelsmall.zerograph.except.ClientError;
-import com.nigelsmall.zerograph.except.ServerError;
+import org.zerograph.Request;
+import org.zerograph.Response;
+import org.zerograph.except.ClientError;
+import org.zerograph.except.ServerError;
 import org.neo4j.graphdb.*;
 import org.zeromq.ZMQ;
 

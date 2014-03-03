@@ -1,4 +1,4 @@
-package com.nigelsmall.zerograph.util;
+package org.zerograph.util;
 
 public class Pointer {
 

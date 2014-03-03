@@ -1,12 +1,10 @@
-package com.nigelsmall.zerograph;
+package org.zerograph;
 
-import com.nigelsmall.zerograph.except.ClientError;
-import com.nigelsmall.zerograph.except.ServerError;
-import com.nigelsmall.zerograph.resources.CypherResource;
-import com.nigelsmall.zerograph.resources.NodeResource;
-import com.nigelsmall.zerograph.resources.NodeSetResource;
-import com.nigelsmall.zerograph.resources.RelResource;
-import org.neo4j.cypher.CypherException;
+import org.zerograph.except.ClientError;
+import org.zerograph.resources.CypherResource;
+import org.zerograph.resources.NodeResource;
+import org.zerograph.resources.NodeSetResource;
+import org.zerograph.resources.RelResource;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
@@ -14,8 +12,6 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.zeromq.ZMQ;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 
 public class Worker implements Runnable {

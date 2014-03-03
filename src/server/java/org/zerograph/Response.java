@@ -1,7 +1,6 @@
-package com.nigelsmall.zerograph;
+package org.zerograph;
 
-import com.nigelsmall.zerograph.util.Data;
-import org.zeromq.ZMQ;
+import org.zerograph.util.Data;
 
 import java.io.IOException;
 
