@@ -44,21 +44,27 @@ public class Service implements Runnable {
         }
     }
 
-    public void run() {
-        // bind sockets
-        System.out.println("Starting up " + this.port);
+    private void bind() {
         this.external = env.getContext().socket(ZMQ.ROUTER);
         this.external.bind(address);
         this.internal = env.getContext().socket(ZMQ.DEALER);
         this.internal.bind(Worker.ADDRESS);
-        // start worker threads
-        for(int i = 0; i < WORKER_COUNT; i++) {
+    }
+
+    private void startWorkers(int count) {
+        for(int i = 0; i < count; i++) {
             new Thread(new Worker(env, port)).start();
         }
-        // pass through
+    }
+
+    public void run() {
+        System.out.println("Starting up " + this.port);
+        bind();
+        startWorkers(WORKER_COUNT);
         ZMQ.proxy(external, internal, null);
-        // shut down
-        // TODO: why doesn't it go here?
+    }
+
+    public void shutdown() {
         System.out.println("Shutting down " + this.port);
         this.external.close();
         this.internal.close();
