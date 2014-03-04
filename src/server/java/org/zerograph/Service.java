@@ -46,6 +46,7 @@ public class Service implements Runnable {
 
     public void run() {
         // bind sockets
+        System.out.println("Starting up " + this.port);
         this.external = env.getContext().socket(ZMQ.ROUTER);
         this.external.bind(address);
         this.internal = env.getContext().socket(ZMQ.DEALER);
@@ -57,6 +58,8 @@ public class Service implements Runnable {
         // pass through
         ZMQ.proxy(external, internal, null);
         // shut down
+        // TODO: why doesn't it go here?
+        System.out.println("Shutting down " + this.port);
         this.external.close();
         this.internal.close();
         this.env.getContext().term();
