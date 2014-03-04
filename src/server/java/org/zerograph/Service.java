@@ -2,13 +2,11 @@ package org.zerograph;
 
 import org.zeromq.ZMQ;
 
-import java.io.IOException;
+import java.util.HashMap;
 
-/**
- * Experimental Neo4j Server using ZeroMQ
- *
- */
-public class Server {
+public class Service implements Runnable {
+
+    final static private HashMap<Integer, Thread> instances = new HashMap<>(1);
 
     final public static int WORKER_COUNT = 40;
 
@@ -19,13 +17,34 @@ public class Server {
     private ZMQ.Socket external;  // incoming requests from clients
     private ZMQ.Socket internal;  // request forwarding to workers
 
-    public Server(Environment env, int port) {
-        this.env = env;
+    public Service(int port) {
+        this.env = Environment.getInstance();
         this.port = port;
         this.address = "tcp://*:" + port;
     }
 
-    public void start() throws InterruptedException, IOException {
+    public synchronized static void start(int port) {
+        if (instances.containsKey(port)) {
+            // TODO: already running
+        } else {
+            Service service = new Service(port);
+            Thread thread = new Thread(service);
+            thread.start();
+            instances.put(port, thread);
+        }
+    }
+
+    public synchronized static void stop(int port) {
+        if (instances.containsKey(port)) {
+            Thread thread = instances.get(port);
+            // TODO: can't kill current db
+            thread.interrupt();
+        } else {
+            // TODO: not running
+        }
+    }
+
+    public void run() {
         // bind sockets
         this.external = env.getContext().socket(ZMQ.ROUTER);
         this.external.bind(address);
@@ -37,30 +56,10 @@ public class Server {
         }
         // pass through
         ZMQ.proxy(external, internal, null);
-    }
-
-    public void stop() {
+        // shut down
         this.external.close();
         this.internal.close();
         this.env.getContext().term();
-    }
-
-    public static void main(String[] args) throws IOException, InterruptedException {
-        String storagePath = getStoragePath();
-        Environment env = new Environment(storagePath);
-        Server server = new Server(env, 47474);
-        server.start();
-    }
-
-    public static String getStoragePath() {
-        String storagePath = System.getenv("ZG_STORAGE_PATH");
-        if (storagePath != null)
-            return storagePath;
-        String userName = System.getProperty("user.name");
-        if ("root".equals(userName))
-            return "/var/zerograph";
-        else
-            return System.getProperty("user.home") + "/" + ".zerograph";
     }
 
 }

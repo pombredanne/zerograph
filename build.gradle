@@ -45,4 +45,4 @@ task wrapper(type: Wrapper) {
     gradleVersion = '1.8'
 }
 
-mainClassName = "org.zerograph.Server"
+mainClassName = "org.zerograph.Bootstrap"

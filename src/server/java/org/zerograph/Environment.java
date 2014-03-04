@@ -10,20 +10,26 @@ import java.util.HashMap;
 
 public class Environment {
 
+    final private static Environment instance = new Environment();
+
     final private GraphDatabaseFactory factory = new GraphDatabaseFactory();
 
     final private ZMQ.Context context;
     final private File storagePath;
     final private HashMap<Integer, GraphDatabaseService> databases;
 
-    public Environment(String storagePath) throws FileNotFoundException {
+    public static Environment getInstance() {
+        return instance;
+    }
+
+    public Environment() {
         this.context = ZMQ.context(1);
-        this.storagePath = new File(storagePath);
+        this.storagePath = new File(getStoragePath());
         this.databases = new HashMap<>();
         if (!this.storagePath.isDirectory()) {
             if (!this.storagePath.mkdirs()) {
-                throw new FileNotFoundException("Cannot create storage path " +
-                        this.storagePath);
+                System.err.println("Cannot create storage path " + this.storagePath);
+                System.exit(1);
             }
         }
     }
@@ -40,6 +46,17 @@ public class Environment {
             databases.put(port, database);
             return database;
         }
+    }
+
+    public static String getStoragePath() {
+        String storagePath = System.getenv("ZG_STORAGE_PATH");
+        if (storagePath != null)
+            return storagePath;
+        String userName = System.getProperty("user.name");
+        if ("root".equals(userName))
+            return "/var/zerograph";
+        else
+            return System.getProperty("user.home") + "/" + ".zerograph";
     }
 
 }
