@@ -11,13 +11,13 @@ public abstract class PropertyContainerResource extends Resource {
         super(database, socket);
     }
 
-    public static void addProperties(PropertyContainer entity, Map properties) {
+    public void addProperties(PropertyContainer entity, Map properties) {
         for (Object key : properties.keySet()) {
             entity.setProperty(key.toString(), properties.get(key));
         }
     }
 
-    public static void removeProperties(PropertyContainer entity) {
+    public void removeProperties(PropertyContainer entity) {
         for (Object key : entity.getPropertyKeys()) {
             entity.removeProperty(key.toString());
         }

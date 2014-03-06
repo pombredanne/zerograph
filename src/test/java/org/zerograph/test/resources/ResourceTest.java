@@ -28,10 +28,13 @@ public class ResourceTest {
 
     @After
     public void tearDown() {
-        server.send("");
         client.close();
         server.close();
         database.shutdown();
+    }
+
+    public void sendClose() {
+        server.send("");
     }
 
 }
