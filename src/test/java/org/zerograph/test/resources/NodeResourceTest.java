@@ -3,7 +3,6 @@ package org.zerograph.test.resources;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.*;
-import org.neo4j.tooling.GlobalGraphOperations;
 import org.zerograph.Request;
 import org.zerograph.except.ClientError;
 import org.zerograph.except.ServerError;

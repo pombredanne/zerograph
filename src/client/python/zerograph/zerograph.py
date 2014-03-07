@@ -183,35 +183,44 @@ class Batch(object):
     def execute(self, query):
         return self.prepare(Response.tabular, "POST", "cypher", query)
 
+    def get_db(self, port):
+        return self.prepare(Response.single, "GET", "db", int(port))
+
+    def start_db(self, port):
+        return self.prepare(Response.single, "PUT", "db", int(port))
+
+    def stop_db(self, port):
+        return self.prepare(Response.single, "DELETE", "db", int(port))
+
     def get_node(self, node_id):
-        return self.prepare(Response.single, "GET", "node", node_id)
+        return self.prepare(Response.single, "GET", "node", int(node_id))
 
     def put_node(self, node_id, labels, properties):
-        return self.prepare(Response.single, "PUT", "node", node_id, labels, properties)
+        return self.prepare(Response.single, "PUT", "node", int(node_id), labels, properties)
 
     def patch_node(self, node_id, labels, properties):
-        return self.prepare(Response.single, "PATCH", "node", node_id, labels, properties)
+        return self.prepare(Response.single, "PATCH", "node", int(node_id), labels, properties)
 
     def create_node(self, labels, properties):
         return self.prepare(Response.single, "POST", "node", labels, properties)
 
     def delete_node(self, node_id):
-        return self.prepare(Response.single, "DELETE", "node", node_id)
+        return self.prepare(Response.single, "DELETE", "node", int(node_id))
 
     def get_rel(self, rel_id):
-        return self.prepare(Response.single, "GET", "rel", rel_id)
+        return self.prepare(Response.single, "GET", "rel", int(rel_id))
 
     def put_rel(self, rel_id, properties):
-        return self.prepare(Response.single, "PUT", "rel", rel_id, properties)
+        return self.prepare(Response.single, "PUT", "rel", int(rel_id), properties)
 
     def patch_rel(self, rel_id, properties):
-        return self.prepare(Response.single, "PATCH", "rel", rel_id, properties)
+        return self.prepare(Response.single, "PATCH", "rel", int(rel_id), properties)
 
     def create_rel(self, start_node, end_node, type, properties):
         return self.prepare(Response.single, "POST", "rel", start_node, end_node, type, properties)
 
     def delete_rel(self, rel_id):
-        return self.prepare(Response.single, "DELETE", "rel", rel_id)
+        return self.prepare(Response.single, "DELETE", "rel", int(rel_id))
 
     def submit(self):
         self.__socket.send(b"")  # to close multipart message
@@ -226,16 +235,35 @@ class Batch(object):
 class Zerograph(object):
 
     def __init__(self, host="localhost", port=47474):
-        self.__address = "tcp://{0}:{1}".format(host, port)
+        self.__host = host
+        self.__port = port
+        self.__address = "tcp://{0}:{1}".format(self.__host, self.__port)
         self.__context = zmq.Context()
         self.__socket = self.__context.socket(zmq.REQ)
         self.__socket.connect(self.__address)
+
+    @property
+    def host(self):
+        return self.__host
+
+    @property
+    def port(self):
+        return self.__port
 
     def create_batch(self):
         return Batch(self.__socket)
 
     def execute(self, query):
         return Batch.single(self.__socket, Batch.execute, query)
+
+    def get_db(self, port):
+        return Batch.single(self.__socket, Batch.get_db, port)
+
+    def start_db(self, port):
+        return Batch.single(self.__socket, Batch.start_db, port)
+
+    def stop_db(self, port):
+        return Batch.single(self.__socket, Batch.stop_db, port)
 
     def get_node(self, node_id):
         return Batch.single(self.__socket, Batch.get_node, node_id)

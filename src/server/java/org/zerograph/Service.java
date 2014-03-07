@@ -1,5 +1,7 @@
 package org.zerograph;
 
+import org.zerograph.except.ServiceAlreadyRunningException;
+import org.zerograph.except.ServiceNotRunningException;
 import org.zeromq.ZMQ;
 
 import java.util.HashMap;
@@ -23,25 +25,34 @@ public class Service implements Runnable {
         this.address = "tcp://*:" + port;
     }
 
-    public synchronized static void start(int port) {
+    public synchronized static boolean isRunning(int port) {
+        return instances.containsKey(port);
+    }
+
+    public synchronized static void start(int port) throws ServiceAlreadyRunningException {
         if (instances.containsKey(port)) {
-            // TODO: already running
+            throw new ServiceAlreadyRunningException(port);
         } else {
             Service service = new Service(port);
             Thread thread = new Thread(service);
-            thread.start();
+            try {
+                thread.start();
+            } catch (Exception ex) {
+                throw new ServiceAlreadyRunningException(port);
+            }
             instances.put(port, thread);
         }
     }
 
-    public synchronized static void stop(int port) {
+    public synchronized static void stop(int port) throws ServiceNotRunningException {
         if (instances.containsKey(port)) {
             Thread thread = instances.get(port);
             // TODO: can't kill current db
             thread.interrupt();
         } else {
-            // TODO: not running
+            throw new ServiceNotRunningException(port);
         }
+        instances.remove(port);
     }
 
     private void bind() {
@@ -62,6 +73,7 @@ public class Service implements Runnable {
         bind();
         startWorkers(WORKER_COUNT);
         ZMQ.proxy(external, internal, null);
+        shutdown();
     }
 
     public void shutdown() {

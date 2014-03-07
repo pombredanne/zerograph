@@ -1,10 +1,7 @@
 package org.zerograph;
 
 import org.zerograph.except.ClientError;
-import org.zerograph.resources.CypherResource;
-import org.zerograph.resources.NodeResource;
-import org.zerograph.resources.NodeSetResource;
-import org.zerograph.resources.RelResource;
+import org.zerograph.resources.*;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
@@ -24,6 +21,7 @@ public class Worker implements Runnable {
     final private ZMQ.Socket external;
 
     final private CypherResource cypherResource;
+    final private DatabaseResource databaseResource;
     final private NodeResource nodeResource;
     final private NodeSetResource nodeSetResource;
     final private RelResource relResource;
@@ -36,6 +34,7 @@ public class Worker implements Runnable {
         this.external.connect(ADDRESS);
 
         this.cypherResource = new CypherResource(this.database, this.external);
+        this.databaseResource = new DatabaseResource(this.database, this.external);
         this.nodeResource = new NodeResource(this.database, this.external);
         this.nodeSetResource = new NodeSetResource(this.database, this.external);
         this.relResource = new RelResource(this.database, this.external);
@@ -72,6 +71,9 @@ public class Worker implements Runnable {
                         switch (request.getResource()) {
                             case CypherResource.NAME:
                                 outputValues.add(cypherResource.handle(tx, request));
+                                break;
+                            case DatabaseResource.NAME:
+                                outputValues.add(databaseResource.handle(tx, request));
                                 break;
                             case NodeResource.NAME:
                                 outputValues.add(nodeResource.handle(tx, request));
