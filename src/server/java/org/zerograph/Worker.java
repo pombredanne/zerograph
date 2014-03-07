@@ -16,7 +16,7 @@ public class Worker implements Runnable {
     final public static String ADDRESS = "inproc://workers";
 
     final private UUID uuid;
-    final private Environment env;
+    final private Service service;
     final private GraphDatabaseService database;
     final private ZMQ.Socket external;
 
@@ -26,11 +26,11 @@ public class Worker implements Runnable {
     final private NodeSetResource nodeSetResource;
     final private RelResource relResource;
 
-    public Worker(Environment env, int port) {
+    public Worker(Service service) {
         this.uuid = UUID.randomUUID();
-        this.env = env;
-        this.database = env.getDatabase(port);
-        this.external = env.getContext().socket(ZMQ.REP);
+        this.service = service;
+        this.database = service.getDatabase();
+        this.external = service.getContext().socket(ZMQ.REP);
         this.external.connect(ADDRESS);
 
         this.cypherResource = new CypherResource(this.database, this.external);

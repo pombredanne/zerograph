@@ -14,7 +14,6 @@ public class Environment {
 
     final private GraphDatabaseFactory factory = new GraphDatabaseFactory();
 
-    final private ZMQ.Context context;
     final private File storagePath;
     final private HashMap<Integer, GraphDatabaseService> databases;
 
@@ -23,7 +22,6 @@ public class Environment {
     }
 
     public Environment() {
-        this.context = ZMQ.context(1);
         this.storagePath = new File(getStoragePath());
         this.databases = new HashMap<>();
         if (!this.storagePath.isDirectory()) {
@@ -32,10 +30,6 @@ public class Environment {
                 System.exit(1);
             }
         }
-    }
-
-    public ZMQ.Context getContext() {
-        return this.context;
     }
 
     public synchronized GraphDatabaseService getDatabase(int port) {

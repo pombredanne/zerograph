@@ -1,5 +1,6 @@
 package org.zerograph;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.zerograph.except.ServiceAlreadyRunningException;
 import org.zerograph.except.ServiceNotRunningException;
 import org.zeromq.ZMQ;
@@ -16,13 +17,27 @@ public class Service implements Runnable {
     final private int port;
     final private String address;
 
+    final private ZMQ.Context context;
+
     private ZMQ.Socket external;  // incoming requests from clients
     private ZMQ.Socket internal;  // request forwarding to workers
+
+    final private GraphDatabaseService database;
 
     public Service(int port) {
         this.env = Environment.getInstance();
         this.port = port;
         this.address = "tcp://*:" + port;
+        this.context = ZMQ.context(1);
+        this.database = env.getDatabase(port);
+    }
+
+    public ZMQ.Context getContext() {
+        return this.context;
+    }
+
+    public GraphDatabaseService getDatabase() {
+        return this.database;
     }
 
     public synchronized static boolean isRunning(int port) {
@@ -56,15 +71,15 @@ public class Service implements Runnable {
     }
 
     private void bind() {
-        this.external = env.getContext().socket(ZMQ.ROUTER);
+        this.external = context.socket(ZMQ.ROUTER);
         this.external.bind(address);
-        this.internal = env.getContext().socket(ZMQ.DEALER);
+        this.internal = context.socket(ZMQ.DEALER);
         this.internal.bind(Worker.ADDRESS);
     }
 
     private void startWorkers(int count) {
         for(int i = 0; i < count; i++) {
-            new Thread(new Worker(env, port)).start();
+            new Thread(new Worker(this)).start();
         }
     }
 
@@ -78,9 +93,9 @@ public class Service implements Runnable {
 
     public void shutdown() {
         System.out.println("Shutting down " + this.port);
-        this.external.close();
-        this.internal.close();
-        this.env.getContext().term();
+        external.close();
+        internal.close();
+        context.term();
     }
 
 }
