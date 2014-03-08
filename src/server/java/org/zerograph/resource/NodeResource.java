@@ -1,4 +1,4 @@
-package org.zerograph.resources;
+package org.zerograph.resource;
 
 import org.zerograph.Request;
 import org.zerograph.Response;
@@ -11,15 +11,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class NodeResource extends PropertyContainerResource {
+public class NodeResource extends BasePropertyContainerResource {
 
     final public static String NAME = "node";
 
-    final private HashMap<String, Label> labels;
+    final private HashMap<String, Label> labelCache;
 
-    public NodeResource(GraphDatabaseService database, ZMQ.Socket socket) {
-        super(database, socket);
-        this.labels = new HashMap<>();
+    public NodeResource(ZMQ.Socket socket, GraphDatabaseService database) {
+        super(socket, database);
+        this.labelCache = new HashMap<>();
     }
 
     /**
@@ -28,7 +28,7 @@ public class NodeResource extends PropertyContainerResource {
      * Fetch a single node by ID.
      */
     @Override
-    public PropertyContainer get(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer get(Request request, Transaction tx) throws ClientError, ServerError {
         long nodeID = request.getIntegerData(0);
         try {
             Node node = database().getNodeById(nodeID);
@@ -47,7 +47,7 @@ public class NodeResource extends PropertyContainerResource {
      * already exist.
      */
     @Override
-    public PropertyContainer put(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer put(Request request, Transaction tx) throws ClientError, ServerError {
         long nodeID = request.getIntegerData(0);
         List labelNames = request.getListData(1);
         Map properties = request.getMapData(2);
@@ -77,7 +77,7 @@ public class NodeResource extends PropertyContainerResource {
      * maintained.
      */
     @Override
-    public PropertyContainer patch(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer patch(Request request, Transaction tx) throws ClientError, ServerError {
         long nodeID = request.getIntegerData(0);
         List labelNames = request.getListData(1);
         Map properties = request.getMapData(2);
@@ -102,7 +102,7 @@ public class NodeResource extends PropertyContainerResource {
      * Create a new node with the given labels and properties.
      */
     @Override
-    public PropertyContainer post(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer post(Request request, Transaction tx) throws ClientError, ServerError {
         List labelNames = request.getListData(0);
         Map properties = request.getMapData(1);
         Node node = database().createNode();
@@ -122,7 +122,7 @@ public class NodeResource extends PropertyContainerResource {
      * Delete a node identified by ID.
      */
     @Override
-    public PropertyContainer delete(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer delete(Request request, Transaction tx) throws ClientError, ServerError {
         long nodeID = request.getIntegerData(0);
         try {
             Node node = database().getNodeById(nodeID);
@@ -149,11 +149,11 @@ public class NodeResource extends PropertyContainerResource {
     }
 
     private Label getLabel(String name) {
-        if (labels.containsKey(name)) {
-            return labels.get(name);
+        if (labelCache.containsKey(name)) {
+            return labelCache.get(name);
         } else {
             Label label = DynamicLabel.label(name);
-            labels.put(name, label);
+            labelCache.put(name, label);
             return label;
         }
     }

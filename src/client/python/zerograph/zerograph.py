@@ -1,15 +1,38 @@
 #!/usr/bin/env python
 
 from inspect import isgeneratorfunction
+import json
 import logging
 
 import zmq
 
-from .entities import hydrate, dehydrate, Pointer
+from .data import Data
+from .entities import *
 
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
+
+
+def hydrate(string):
+    data = Data.decode(string)
+    if data.class_name == "Graph":
+        return Graph(data.value)
+    elif data.class_name == "Node":
+        return Node(data.value)
+    elif data.class_name == "Rel":
+        return Rel(data.value)
+    elif data.class_name == "Pointer":
+        return Pointer(data.value)
+    else:
+        return data.value
+
+
+def dehydrate(obj):
+    if isinstance(obj, Pointer):
+        return Data("Pointer", obj.address).encode()
+    else:
+        return json.dumps(obj, separators=",:")
 
 
 class ClientError(Exception):
@@ -161,7 +184,7 @@ class Table(object):
         return self.__stats
 
 
-class Batch(object):
+class _Batch(object):
 
     @classmethod
     def single(cls, socket, method, *args, **kwargs):
@@ -180,17 +203,32 @@ class Batch(object):
         self.__response_handlers.append(response_handler)
         return pointer
 
+    def submit(self):
+        self.__socket.send(b"")  # to close multipart message
+        for handler in self.__response_handlers:
+            if isgeneratorfunction(handler):
+                yield list(handler(self.__socket))
+            else:
+                yield handler(self.__socket)
+        next(Response.receive(self.__socket))  # overall batch response
+
+
+class ZerographBatch(_Batch):
+
+    def get_graph(self, host, port):
+        return self.prepare(Response.single, "GET", "graph", host, int(port))
+
+    def open_graph(self, host, port, create=False):
+        return self.prepare(Response.single, "PUT", "graph", host, int(port))
+
+    def close_graph(self, host, port, delete=False):
+        return self.prepare(Response.single, "DELETE", "graph", host, int(port))
+
+
+class GraphBatch(_Batch):
+
     def execute(self, query):
         return self.prepare(Response.tabular, "POST", "cypher", query)
-
-    def get_db(self, port):
-        return self.prepare(Response.single, "GET", "db", int(port))
-
-    def start_db(self, port):
-        return self.prepare(Response.single, "PUT", "db", int(port))
-
-    def stop_db(self, port):
-        return self.prepare(Response.single, "DELETE", "db", int(port))
 
     def get_node(self, node_id):
         return self.prepare(Response.single, "GET", "node", int(node_id))
@@ -222,19 +260,10 @@ class Batch(object):
     def delete_rel(self, rel_id):
         return self.prepare(Response.single, "DELETE", "rel", int(rel_id))
 
-    def submit(self):
-        self.__socket.send(b"")  # to close multipart message
-        for handler in self.__response_handlers:
-            if isgeneratorfunction(handler):
-                yield list(handler(self.__socket))
-            else:
-                yield handler(self.__socket)
-        next(Response.receive(self.__socket))  # overall batch response
 
+class _Client(object):
 
-class Zerograph(object):
-
-    def __init__(self, host="localhost", port=47474):
+    def __init__(self, host, port):
         self.__host = host
         self.__port = port
         self.__address = "tcp://{0}:{1}".format(self.__host, self.__port)
@@ -250,47 +279,65 @@ class Zerograph(object):
     def port(self):
         return self.__port
 
+    @property
+    def socket(self):
+        return self.__socket
+
+
+class Zerograph(_Client):
+
+    def __init__(self, host="localhost", port=47470):
+        _Client.__init__(self, host, port)
+
+    def get_graph(self, port):
+        return ZerographBatch.single(self.socket, ZerographBatch.get_graph, self.host, port)
+
+    def open_graph(self, port, create=False):
+        return ZerographBatch.single(self.socket, ZerographBatch.open_graph, self.host, port)
+
+
+class Graph(_Client):
+
+    # TODO: add access to a Graph's Zerograph
+    # TODO: add close method
+
+    def __init__(self, attributes):
+        host = attributes["host"]
+        port = attributes["port"]
+        _Client.__init__(self, host, port)
+
     def create_batch(self):
-        return Batch(self.__socket)
+        return GraphBatch(self.__socket)
 
     def execute(self, query):
-        return Batch.single(self.__socket, Batch.execute, query)
-
-    def get_db(self, port):
-        return Batch.single(self.__socket, Batch.get_db, port)
-
-    def start_db(self, port):
-        return Batch.single(self.__socket, Batch.start_db, port)
-
-    def stop_db(self, port):
-        return Batch.single(self.__socket, Batch.stop_db, port)
+        return GraphBatch.single(self.socket, GraphBatch.execute, query)
 
     def get_node(self, node_id):
-        return Batch.single(self.__socket, Batch.get_node, node_id)
+        return GraphBatch.single(self.socket, GraphBatch.get_node, node_id)
 
     def put_node(self, node_id, labels, properties):
-        return Batch.single(self.__socket, Batch.put_node, node_id, labels, properties)
+        return GraphBatch.single(self.socket, GraphBatch.put_node, node_id, labels, properties)
 
     def patch_node(self, node_id, labels, properties):
-        return Batch.single(self.__socket, Batch.patch_node, node_id, labels, properties)
+        return GraphBatch.single(self.socket, GraphBatch.patch_node, node_id, labels, properties)
 
     def create_node(self, labels, properties):
-        return Batch.single(self.__socket, Batch.create_node, labels, properties)
+        return GraphBatch.single(self.socket, GraphBatch.create_node, labels, properties)
 
     def delete_node(self, node_id):
-        return Batch.single(self.__socket, Batch.delete_node, node_id)
+        return GraphBatch.single(self.socket, GraphBatch.delete_node, node_id)
 
     def get_rel(self, rel_id):
-        return Batch.single(self.__socket, Batch.get_rel, rel_id)
+        return GraphBatch.single(self.socket, GraphBatch.get_rel, rel_id)
 
     def put_rel(self, rel_id, properties):
-        return Batch.single(self.__socket, Batch.put_rel, rel_id, properties)
+        return GraphBatch.single(self.socket, GraphBatch.put_rel, rel_id, properties)
 
     def patch_rel(self, rel_id, properties):
-        return Batch.single(self.__socket, Batch.patch_rel, rel_id, properties)
+        return GraphBatch.single(self.socket, GraphBatch.patch_rel, rel_id, properties)
 
     def create_rel(self, start_node, end_node, type, properties):
-        return Batch.single(self.__socket, Batch.create_rel, start_node, end_node, type, properties)
+        return GraphBatch.single(self.socket, GraphBatch.create_rel, start_node, end_node, type, properties)
 
     def delete_rel(self, rel_id):
-        return Batch.single(self.__socket, Batch.delete_rel, rel_id)
+        return GraphBatch.single(self.socket, GraphBatch.delete_rel, rel_id)

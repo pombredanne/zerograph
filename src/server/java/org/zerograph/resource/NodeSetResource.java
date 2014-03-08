@@ -1,7 +1,6 @@
-package org.zerograph.resources;
+package org.zerograph.resource;
 
-import org.zerograph.Request;
-import org.zerograph.Response;
+import org.zerograph.*;
 import org.zerograph.except.ClientError;
 import org.zerograph.except.ServerError;
 import org.neo4j.cypher.CypherException;
@@ -12,12 +11,12 @@ import org.zeromq.ZMQ;
 import java.util.HashMap;
 import java.util.Map;
 
-public class NodeSetResource extends Resource {
+public class NodeSetResource extends BaseGraphResource {
 
     final public static String NAME = "nodeset";
 
-    public NodeSetResource(GraphDatabaseService database, ZMQ.Socket socket) {
-        super(database, socket);
+    public NodeSetResource(ZMQ.Socket socket, GraphDatabaseService database) {
+        super(socket, database);
     }
 
     /**
@@ -31,7 +30,7 @@ public class NodeSetResource extends Resource {
      * @param request
      */
     @Override
-    public PropertyContainer get(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer get(Request request, Transaction tx) throws ClientError, ServerError {
         Label label = DynamicLabel.label(request.getStringData(0));
         String key = request.getStringData(1);
         Object value = request.getData(2);
@@ -60,7 +59,7 @@ public class NodeSetResource extends Resource {
      * @param request
      */
     @Override
-    public PropertyContainer put(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer put(Request request, Transaction tx) throws ClientError, ServerError {
         String labelName = request.getStringData(0);
         String key = request.getStringData(1);
         Object value = request.getData(2);
@@ -102,7 +101,7 @@ public class NodeSetResource extends Resource {
      * @param request
      */
     @Override
-    public PropertyContainer delete(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer delete(Request request, Transaction tx) throws ClientError, ServerError {
         Label label = DynamicLabel.label(request.getStringData(0));
         String key = request.getStringData(1);
         Object value = request.getData(2);

@@ -1,14 +1,14 @@
-package org.zerograph.resources;
+package org.zerograph.resource;
 
 import org.neo4j.graphdb.*;
 import org.zeromq.ZMQ;
 
 import java.util.Map;
 
-public abstract class PropertyContainerResource extends Resource {
+public abstract class BasePropertyContainerResource extends BaseGraphResource {
 
-    public PropertyContainerResource(GraphDatabaseService database, ZMQ.Socket socket) {
-        super(database, socket);
+    public BasePropertyContainerResource(ZMQ.Socket socket, GraphDatabaseService database) {
+        super(socket, database);
     }
 
     public void addProperties(PropertyContainer entity, Map properties) {

@@ -1,8 +1,4 @@
 
-import json
-
-from .data import Data
-
 
 class Entity(object):
 
@@ -93,22 +89,3 @@ class Pointer(object):
     @property
     def address(self):
         return self.__address
-
-
-def hydrate(string):
-    data = Data.decode(string)
-    if data.class_name == "Node":
-        return Node(data.value)
-    elif data.class_name == "Rel":
-        return Rel(data.value)
-    elif data.class_name == "Pointer":
-        return Pointer(data.value)
-    else:
-        return data.value
-
-
-def dehydrate(obj):
-    if isinstance(obj, Pointer):
-        return Data("Pointer", obj.address).encode()
-    else:
-        return json.dumps(obj, separators=",:")

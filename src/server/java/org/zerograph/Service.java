@@ -1,101 +1,72 @@
 package org.zerograph;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.zerograph.except.ServiceAlreadyRunningException;
-import org.zerograph.except.ServiceNotRunningException;
 import org.zeromq.ZMQ;
 
-import java.util.HashMap;
-
-public class Service implements Runnable {
-
-    final static private HashMap<Integer, Thread> instances = new HashMap<>(1);
+public abstract class Service implements Runnable {
 
     final public static int WORKER_COUNT = 40;
 
-    final private Environment env;
-    final private int port;
-    final private String address;
-
     final private ZMQ.Context context;
+    final private Environment environment;
+    final private String host;
+    final private int port;
 
     private ZMQ.Socket external;  // incoming requests from clients
     private ZMQ.Socket internal;  // request forwarding to workers
 
-    final private GraphDatabaseService database;
-
-    public Service(int port) {
-        this.env = Environment.getInstance();
+    public Service(String host, int port) {
+        this.host = host;
         this.port = port;
-        this.address = "tcp://*:" + port;
+        this.environment = Environment.getInstance();
         this.context = ZMQ.context(1);
-        this.database = env.getDatabase(port);
+    }
+
+    public String getHost() {
+        return this.host;
+    }
+
+    public int getPort() {
+        return this.port;
     }
 
     public ZMQ.Context getContext() {
-        return this.context;
+        return context;
     }
 
-    public GraphDatabaseService getDatabase() {
-        return this.database;
+    public Environment getEnvironment() {
+        return this.environment;
     }
 
-    public synchronized static boolean isRunning(int port) {
-        return instances.containsKey(port);
+    public String getInternalAddress() {
+        return "inproc://" + host + "-" + port;
     }
 
-    public synchronized static void start(int port) throws ServiceAlreadyRunningException {
-        if (instances.containsKey(port)) {
-            throw new ServiceAlreadyRunningException(port);
-        } else {
-            Service service = new Service(port);
-            Thread thread = new Thread(service);
-            try {
-                thread.start();
-            } catch (Exception ex) {
-                throw new ServiceAlreadyRunningException(port);
-            }
-            instances.put(port, thread);
-        }
+    public String getExternalAddress() {
+        return "tcp://" + host + ":" + port;
     }
 
-    public synchronized static void stop(int port) throws ServiceNotRunningException {
-        if (instances.containsKey(port)) {
-            Thread thread = instances.get(port);
-            // TODO: can't kill current db
-            thread.interrupt();
-        } else {
-            throw new ServiceNotRunningException(port);
-        }
-        instances.remove(port);
-    }
-
-    private void bind() {
-        this.external = context.socket(ZMQ.ROUTER);
-        this.external.bind(address);
-        this.internal = context.socket(ZMQ.DEALER);
-        this.internal.bind(Worker.ADDRESS);
-    }
-
-    private void startWorkers(int count) {
-        for(int i = 0; i < count; i++) {
-            new Thread(new Worker(this)).start();
-        }
-    }
+    public abstract void startWorkers(int count);
 
     public void run() {
-        System.out.println("Starting up " + this.port);
-        bind();
+        System.out.println("Starting service on " + this.port);
+        this.internal = context.socket(ZMQ.DEALER);
+        this.internal.bind(getInternalAddress());
+        this.external = context.socket(ZMQ.ROUTER);
+        this.external.bind(getExternalAddress());
         startWorkers(WORKER_COUNT);
         ZMQ.proxy(external, internal, null);
         shutdown();
     }
 
     public void shutdown() {
-        System.out.println("Shutting down " + this.port);
+        System.out.println("Stopping service on " + this.port);
         external.close();
         internal.close();
         context.term();
+    }
+
+    public void stop() {
+        // TODO: interrupt this thread and shut down gracefully
     }
 
 }

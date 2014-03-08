@@ -1,31 +1,32 @@
-package org.zerograph.resources;
+package org.zerograph.resource;
 
-import org.zerograph.Request;
-import org.zerograph.Response;
-import org.zerograph.except.ClientError;
-import org.zerograph.except.ServerError;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
+import org.zerograph.Request;
+import org.zerograph.Response;
+import org.zerograph.except.ClientError;
+import org.zerograph.except.ServerError;
 import org.zeromq.ZMQ;
 
 import java.util.Map;
 
-public abstract class Resource {
-
-    final public static String NAME = null;
+/**
+ * Base class for all resources used by a Graph.
+ *
+ */
+public abstract class BaseGraphResource extends BaseResource {
 
     final private GraphDatabaseService database;
     final private ExecutionEngine engine;
-    final private ZMQ.Socket socket;
 
-    public Resource(GraphDatabaseService database, ZMQ.Socket socket) {
+    public BaseGraphResource(ZMQ.Socket socket, GraphDatabaseService database) {
+        super(socket);
         this.database = database;
         this.engine = new ExecutionEngine(database);
-        this.socket = socket;
     }
 
     public GraphDatabaseService database() {
@@ -44,63 +45,41 @@ public abstract class Resource {
         return this.engine.profile(query, params);
     }
 
-    public PropertyContainer handle(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer handle(Request request, Transaction tx) throws ClientError, ServerError {
         switch (request.getMethod()) {
             case "GET":
-                return get(tx, request);
+                return get(request, tx);
             case "PUT":
-                return put(tx, request);
+                return put(request, tx);
             case "PATCH":
-                return patch(tx, request);
+                return patch(request, tx);
             case "POST":
-                return post(tx, request);
+                return post(request, tx);
             case "DELETE":
-                return delete(tx, request);
+                return delete(request, tx);
             default:
                 throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
         }
     }
 
-    public PropertyContainer get(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer get(Request request, Transaction tx) throws ClientError, ServerError {
         throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 
-    public PropertyContainer put(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer put(Request request, Transaction tx) throws ClientError, ServerError {
         throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 
-    public PropertyContainer patch(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer patch(Request request, Transaction tx) throws ClientError, ServerError {
         throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 
-    public PropertyContainer post(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer post(Request request, Transaction tx) throws ClientError, ServerError {
         throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
     }
 
-    public PropertyContainer delete(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer delete(Request request, Transaction tx) throws ClientError, ServerError {
         throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
-    }
-
-    private void send(Response response) {
-        String string = response.toString();
-        System.out.println(">>> " + string);
-        socket.sendMore(string);
-    }
-
-    public void sendContinue(Object... data) {
-        send(new Response(Response.CONTINUE, data));
-    }
-
-    public void sendOK(Object... data) {
-        send(new Response(Response.OK, data));
-    }
-
-    public void sendCreated(Object... data) {
-        send(new Response(Response.CREATED, data));
-    }
-
-    public void sendNoContent() {
-        send(new Response(Response.NO_CONTENT));
     }
 
 }

@@ -1,4 +1,4 @@
-package org.zerograph.resources;
+package org.zerograph.resource;
 
 import org.zerograph.Request;
 import org.zerograph.Response;
@@ -16,12 +16,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class CypherResource extends Resource {
+public class CypherResource extends BaseGraphResource {
 
     final public static String NAME = "cypher";
 
-    public CypherResource(GraphDatabaseService database, ZMQ.Socket socket) {
-        super(database, socket);
+    public CypherResource(ZMQ.Socket socket, GraphDatabaseService database) {
+        super(socket, database);
     }
 
     /**
@@ -30,7 +30,7 @@ public class CypherResource extends Resource {
      * @param request
      */
     @Override
-    public PropertyContainer post(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer post(Request request, Transaction tx) throws ClientError, ServerError {
         String query = request.getStringData(0);
         try {
             ExecutionResult result = execute(query);

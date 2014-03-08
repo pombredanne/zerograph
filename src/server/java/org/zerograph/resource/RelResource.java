@@ -1,4 +1,4 @@
-package org.zerograph.resources;
+package org.zerograph.resource;
 
 import org.zerograph.Request;
 import org.zerograph.Response;
@@ -10,14 +10,14 @@ import org.zeromq.ZMQ;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RelResource extends PropertyContainerResource {
+public class RelResource extends BasePropertyContainerResource {
 
     final public static String NAME = "rel";
 
     final private HashMap<String, RelationshipType> relationshipTypes;
 
-    public RelResource(GraphDatabaseService database, ZMQ.Socket socket) {
-        super(database, socket);
+    public RelResource(ZMQ.Socket socket, GraphDatabaseService database) {
+        super(socket, database);
         this.relationshipTypes = new HashMap<>();
     }
 
@@ -27,7 +27,7 @@ public class RelResource extends PropertyContainerResource {
      * Fetch a single relationship by ID.
      */
     @Override
-    public PropertyContainer get(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer get(Request request, Transaction tx) throws ClientError, ServerError {
         long relID = request.getIntegerData(0);
         try {
             Relationship rel = database().getRelationshipById(relID);
@@ -46,7 +46,7 @@ public class RelResource extends PropertyContainerResource {
      * already exist.
      */
     @Override
-    public PropertyContainer put(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer put(Request request, Transaction tx) throws ClientError, ServerError {
         long relID = request.getIntegerData(0);
         Map properties = request.getMapData(1);
         try {
@@ -73,7 +73,7 @@ public class RelResource extends PropertyContainerResource {
      * maintained.
      */
     @Override
-    public PropertyContainer patch(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer patch(Request request, Transaction tx) throws ClientError, ServerError {
         long relID = request.getIntegerData(0);
         Map properties = request.getMapData(1);
         try {
@@ -96,7 +96,7 @@ public class RelResource extends PropertyContainerResource {
      * Create a new relationship.
      */
     @Override
-    public PropertyContainer post(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer post(Request request, Transaction tx) throws ClientError, ServerError {
         Node startNode = resolveNode(request.getData(0));
         Node endNode = resolveNode(request.getData(1));
         String typeName = request.getStringData(2);
@@ -117,7 +117,7 @@ public class RelResource extends PropertyContainerResource {
      * Delete a relationship identified by ID.
      */
     @Override
-    public PropertyContainer delete(Transaction tx, Request request) throws ClientError, ServerError {
+    public PropertyContainer delete(Request request, Transaction tx) throws ClientError, ServerError {
         long relID = request.getIntegerData(0);
         try {
             Relationship rel = database().getRelationshipById(relID);

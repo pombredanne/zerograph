@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * Request is tab-separated string of terms
  *
- * VERB resource [data [data ...]]
+ * METHOD resource [data [data ...]]
  *
  */
 public class Request {

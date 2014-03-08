@@ -5,6 +5,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.zerograph.Graph;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import java.util.Map;
 
 public class Data {
 
+    final private static String GRAPH_HINT = "/*Graph*/";
     final private static String NODE_HINT = "/*Node*/";
     final private static String REL_HINT = "/*Rel*/";
     final private static String POINTER_HINT = "/*Pointer*/";
@@ -41,6 +43,13 @@ public class Data {
         return propertyMap;
     }
 
+    private static Map<String, Object> attributes(Graph graph) throws IOException {
+        HashMap<String, Object> attributes = new HashMap<>();
+        attributes.put("host", graph.getHost());
+        attributes.put("port", graph.getPort());
+        return attributes;
+    }
+
     private static Map<String, Object> attributes(Node node) throws IOException {
         HashMap<String, Object> attributes = new HashMap<>();
         attributes.put("id", node.getId());
@@ -60,7 +69,9 @@ public class Data {
     }
 
     public static String encode(Object value) throws IOException {
-        if (value instanceof Node) {
+        if (value instanceof Graph) {
+            return GRAPH_HINT + mapper.writeValueAsString(attributes((Graph) value));
+        } else if (value instanceof Node) {
             return NODE_HINT + mapper.writeValueAsString(attributes((Node) value));
         } else if(value instanceof Relationship) {
             return REL_HINT + mapper.writeValueAsString(attributes((Relationship) value));

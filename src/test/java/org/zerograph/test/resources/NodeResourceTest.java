@@ -6,7 +6,7 @@ import org.neo4j.graphdb.*;
 import org.zerograph.Request;
 import org.zerograph.except.ClientError;
 import org.zerograph.except.ServerError;
-import org.zerograph.resources.NodeResource;
+import org.zerograph.resource.NodeResource;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -17,7 +17,7 @@ public class NodeResourceTest extends ResourceTest {
 
     @Before
     public void createResource() {
-        resource = new NodeResource(database, server);
+        resource = new NodeResource(server, database);
     }
 
     protected Node createAlice() {
@@ -42,7 +42,7 @@ public class NodeResourceTest extends ResourceTest {
         try (Transaction tx = database.beginTx()) {
             Node created = createAlice();
             assert created.getId() == 0;
-            PropertyContainer got = resource.get(tx, new Request(rq));
+            PropertyContainer got = resource.get(new Request(rq), tx);
             assert got instanceof Node;
             assertAlice((Node)got);
         }
@@ -56,7 +56,7 @@ public class NodeResourceTest extends ResourceTest {
         String rs = "";
         try (Transaction tx = database.beginTx()) {
             try {
-                resource.get(tx, new Request(rq));
+                resource.get(new Request(rq), tx);
                 assert false;
             } catch (ClientError err) {
                 assert true;
@@ -73,7 +73,7 @@ public class NodeResourceTest extends ResourceTest {
         try (Transaction tx = database.beginTx()) {
             Node created = database.createNode();
             assert created.getId() == 0;
-            PropertyContainer got = resource.put(tx, new Request(rq));
+            PropertyContainer got = resource.put(new Request(rq), tx);
             assert got instanceof Node;
             assertAlice((Node)got);
         }
@@ -87,7 +87,7 @@ public class NodeResourceTest extends ResourceTest {
         String rs = "";
         try (Transaction tx = database.beginTx()) {
             try {
-                resource.put(tx, new Request(rq));
+                resource.put(new Request(rq), tx);
                 assert false;
             } catch (ClientError err) {
                 assert true;
@@ -104,7 +104,7 @@ public class NodeResourceTest extends ResourceTest {
         try (Transaction tx = database.beginTx()) {
             Node created = createAlice();
             assert created.getId() == 0;
-            PropertyContainer got = resource.patch(tx, new Request(rq));
+            PropertyContainer got = resource.patch(new Request(rq), tx);
             assert got instanceof Node;
             Node gotNode = (Node)got;
             assertAlice(gotNode);
@@ -122,7 +122,7 @@ public class NodeResourceTest extends ResourceTest {
         String rs = "";
         try (Transaction tx = database.beginTx()) {
             try {
-                resource.put(tx, new Request(rq));
+                resource.put(new Request(rq), tx);
                 assert false;
             } catch (ClientError err) {
                 assert true;
@@ -137,7 +137,7 @@ public class NodeResourceTest extends ResourceTest {
         String rq = "POST\tnode\t[\"Person\"]\t{\"name\":\"Alice\"}";
         String rs = "201\t/*Node*/{\"id\":0,\"labels\":[\"Person\"],\"properties\":{\"name\":\"Alice\"}}";
         try (Transaction tx = database.beginTx()) {
-            PropertyContainer created = resource.post(tx, new Request(rq));
+            PropertyContainer created = resource.post(new Request(rq), tx);
             assert created instanceof Node;
             Node node = (Node)created;
             assert node.hasLabel(DynamicLabel.label("Person"));
@@ -155,7 +155,7 @@ public class NodeResourceTest extends ResourceTest {
         try (Transaction tx = database.beginTx()) {
             Node created = database.createNode();
             assert created.getId() == 0;
-            resource.delete(tx, new Request(rq));
+            resource.delete(new Request(rq), tx);
         }
         try (Transaction tx = database.beginTx()) {
             try {
