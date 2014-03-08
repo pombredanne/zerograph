@@ -1,6 +1,7 @@
 package org.zerograph.resource;
 
 import org.zerograph.Response;
+import org.zerograph.Zerograph;
 import org.zeromq.ZMQ;
 
 
@@ -8,10 +9,16 @@ public abstract class BaseResource {
 
     final public static String NAME = null;
 
+    final private Zerograph zerograph;
     final private ZMQ.Socket socket;
 
-    public BaseResource(ZMQ.Socket socket) {
+    public BaseResource(Zerograph zerograph, ZMQ.Socket socket) {
+        this.zerograph = zerograph;
         this.socket = socket;
+    }
+
+    public Zerograph getZerograph() {
+        return this.zerograph;
     }
 
     private void send(Response response) {

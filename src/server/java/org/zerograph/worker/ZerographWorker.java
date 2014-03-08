@@ -15,9 +15,9 @@ public class ZerographWorker extends BaseWorker<Zerograph> {
 
     final private GraphResource graphResource;
 
-    public ZerographWorker(Zerograph service) {
-        super(service);
-        this.graphResource = new GraphResource(this.getSocket());
+    public ZerographWorker(Zerograph zerograph) {
+        super(zerograph, zerograph);
+        this.graphResource = new GraphResource(zerograph, this.getSocket());
     }
 
     @Override

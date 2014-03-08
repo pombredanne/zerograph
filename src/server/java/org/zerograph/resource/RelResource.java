@@ -2,6 +2,7 @@ package org.zerograph.resource;
 
 import org.zerograph.Request;
 import org.zerograph.Response;
+import org.zerograph.Zerograph;
 import org.zerograph.except.ClientError;
 import org.zerograph.except.ServerError;
 import org.neo4j.graphdb.*;
@@ -16,8 +17,8 @@ public class RelResource extends BasePropertyContainerResource {
 
     final private HashMap<String, RelationshipType> relationshipTypes;
 
-    public RelResource(ZMQ.Socket socket, GraphDatabaseService database) {
-        super(socket, database);
+    public RelResource(Zerograph zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
+        super(zerograph, socket, database);
         this.relationshipTypes = new HashMap<>();
     }
 

@@ -2,6 +2,7 @@ package org.zerograph.resource;
 
 import org.zerograph.Request;
 import org.zerograph.Response;
+import org.zerograph.Zerograph;
 import org.zerograph.except.ClientError;
 import org.zerograph.except.ServerError;
 import org.neo4j.cypher.CypherException;
@@ -20,8 +21,8 @@ public class CypherResource extends BaseGraphResource {
 
     final public static String NAME = "cypher";
 
-    public CypherResource(ZMQ.Socket socket, GraphDatabaseService database) {
-        super(socket, database);
+    public CypherResource(Zerograph zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
+        super(zerograph, socket, database);
     }
 
     /**

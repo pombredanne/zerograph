@@ -5,7 +5,12 @@ import org.zerograph.worker.ZerographWorker;
 public class Zerograph extends Service {
 
     public Zerograph(String host, int port) {
-        super(host, port);
+        super(null, host, port);
+    }
+
+    public Zerograph getZerograph() {
+        // a Zerograph is its own Zerograph
+        return this;
     }
 
     public void startWorkers(int count) {

@@ -6,19 +6,26 @@ public abstract class Service implements Runnable {
 
     final public static int WORKER_COUNT = 40;
 
-    final private ZMQ.Context context;
-    final private Environment environment;
+    final private Zerograph zerograph;
     final private String host;
     final private int port;
+
+    final private ZMQ.Context context;
+    final private Environment environment;
 
     private ZMQ.Socket external;  // incoming requests from clients
     private ZMQ.Socket internal;  // request forwarding to workers
 
-    public Service(String host, int port) {
+    public Service(Zerograph zerograph, String host, int port) {
+        this.zerograph = zerograph;
         this.host = host;
         this.port = port;
         this.environment = Environment.getInstance();
         this.context = ZMQ.context(1);
+    }
+
+    public Zerograph getZerograph() {
+        return this.zerograph;
     }
 
     public String getHost() {

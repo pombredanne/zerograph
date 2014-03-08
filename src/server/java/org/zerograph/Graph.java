@@ -12,7 +12,7 @@ public class Graph extends Service {
 
     final static private HashMap<Integer, Graph> instances = new HashMap<>(1);
 
-    public static synchronized Graph getInstance(String host, int port) throws ClientError {
+    public static synchronized Graph getInstance(Zerograph zerograph, String host, int port) throws ClientError {
         if (instances.containsKey(port)) {
             return instances.get(port);
         } else {
@@ -20,12 +20,12 @@ public class Graph extends Service {
         }
     }
 
-    public static synchronized Graph startInstance(String host, int port, boolean create) throws ServiceAlreadyStartedException {
+    public static synchronized Graph startInstance(Zerograph zerograph, String host, int port, boolean create) throws ServiceAlreadyStartedException {
         // TODO: handle create flag
         if (instances.containsKey(port)) {
             throw new ServiceAlreadyStartedException(port);
         } else {
-            Graph service = new Graph(host, port);
+            Graph service = new Graph(zerograph, host, port);
             Thread thread = new Thread(service);
             try {
                 thread.start();
@@ -37,7 +37,7 @@ public class Graph extends Service {
         }
     }
 
-    public static synchronized void stopInstance(String host, int port, boolean delete) throws ServiceNotStartedException {
+    public static synchronized void stopInstance(Zerograph zerograph, String host, int port, boolean delete) throws ServiceNotStartedException {
         // TODO: handle delete flag
         if (instances.containsKey(port)) {
             instances.get(port).stop();
@@ -49,8 +49,8 @@ public class Graph extends Service {
 
     final private GraphDatabaseService database;
 
-    public Graph(String host, int port) {
-        super(host, port);
+    public Graph(Zerograph zerograph, String host, int port) {
+        super(zerograph, host, port);
         this.database = getEnvironment().getDatabase(port);
     }
 
@@ -60,7 +60,7 @@ public class Graph extends Service {
 
     public void startWorkers(int count) {
         for(int i = 0; i < count; i++) {
-            new Thread(new GraphWorker(this)).start();
+            new Thread(new GraphWorker(getZerograph(), this)).start();
         }
     }
 

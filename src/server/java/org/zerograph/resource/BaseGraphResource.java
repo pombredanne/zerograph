@@ -8,6 +8,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.zerograph.Request;
 import org.zerograph.Response;
+import org.zerograph.Zerograph;
 import org.zerograph.except.ClientError;
 import org.zerograph.except.ServerError;
 import org.zeromq.ZMQ;
@@ -23,8 +24,8 @@ public abstract class BaseGraphResource extends BaseResource {
     final private GraphDatabaseService database;
     final private ExecutionEngine engine;
 
-    public BaseGraphResource(ZMQ.Socket socket, GraphDatabaseService database) {
-        super(socket);
+    public BaseGraphResource(Zerograph zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
+        super(zerograph, socket);
         this.database = database;
         this.engine = new ExecutionEngine(database);
     }

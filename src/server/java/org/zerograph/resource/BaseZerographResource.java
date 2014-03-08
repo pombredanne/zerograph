@@ -3,6 +3,7 @@ package org.zerograph.resource;
 import org.neo4j.graphdb.PropertyContainer;
 import org.zerograph.Request;
 import org.zerograph.Response;
+import org.zerograph.Zerograph;
 import org.zerograph.except.ClientError;
 import org.zerograph.except.ServerError;
 import org.zeromq.ZMQ;
@@ -13,8 +14,8 @@ import org.zeromq.ZMQ;
  */
 public abstract class BaseZerographResource extends BaseResource {
 
-    public BaseZerographResource(ZMQ.Socket socket) {
-        super(socket);
+    public BaseZerographResource(Zerograph zerograph, ZMQ.Socket socket) {
+        super(zerograph, socket);
     }
 
     public PropertyContainer handle(Request request) throws ClientError, ServerError {

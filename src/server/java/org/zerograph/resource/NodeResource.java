@@ -2,6 +2,7 @@ package org.zerograph.resource;
 
 import org.zerograph.Request;
 import org.zerograph.Response;
+import org.zerograph.Zerograph;
 import org.zerograph.except.ClientError;
 import org.zerograph.except.ServerError;
 import org.neo4j.graphdb.*;
@@ -17,8 +18,8 @@ public class NodeResource extends BasePropertyContainerResource {
 
     final private HashMap<String, Label> labelCache;
 
-    public NodeResource(ZMQ.Socket socket, GraphDatabaseService database) {
-        super(socket, database);
+    public NodeResource(Zerograph zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
+        super(zerograph, socket, database);
         this.labelCache = new HashMap<>();
     }
 

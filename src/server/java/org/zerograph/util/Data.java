@@ -6,6 +6,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.zerograph.Graph;
+import org.zerograph.Zerograph;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 public class Data {
 
+    final private static String ZEROGRAPH_HINT = "/*Zerograph*/";
     final private static String GRAPH_HINT = "/*Graph*/";
     final private static String NODE_HINT = "/*Node*/";
     final private static String REL_HINT = "/*Rel*/";
@@ -43,8 +45,16 @@ public class Data {
         return propertyMap;
     }
 
+    private static Map<String, Object> attributes(Zerograph zerograph) throws IOException {
+        HashMap<String, Object> attributes = new HashMap<>();
+        attributes.put("host", zerograph.getHost());
+        attributes.put("port", zerograph.getPort());
+        return attributes;
+    }
+
     private static Map<String, Object> attributes(Graph graph) throws IOException {
         HashMap<String, Object> attributes = new HashMap<>();
+        attributes.put("zerograph", attributes(graph.getZerograph()));
         attributes.put("host", graph.getHost());
         attributes.put("port", graph.getPort());
         return attributes;
@@ -69,7 +79,9 @@ public class Data {
     }
 
     public static String encode(Object value) throws IOException {
-        if (value instanceof Graph) {
+        if (value instanceof Zerograph) {
+            return ZEROGRAPH_HINT + mapper.writeValueAsString(attributes((Zerograph) value));
+        } else if (value instanceof Graph) {
             return GRAPH_HINT + mapper.writeValueAsString(attributes((Graph) value));
         } else if (value instanceof Node) {
             return NODE_HINT + mapper.writeValueAsString(attributes((Node) value));

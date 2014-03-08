@@ -3,6 +3,7 @@ package org.zerograph.worker;
 import org.zerograph.Service;
 import org.zerograph.Request;
 import org.zerograph.Response;
+import org.zerograph.Zerograph;
 import org.zerograph.except.ClientError;
 import org.zeromq.ZMQ;
 
@@ -12,15 +13,21 @@ import java.util.UUID;
 
 public abstract class BaseWorker<T extends Service> implements Runnable {
 
+    final private Zerograph zerograph;
     final private UUID uuid;
     final private T service;
     final private ZMQ.Socket socket;
 
-    public BaseWorker(T service) {
+    public BaseWorker(Zerograph zerograph, T service) {
+        this.zerograph = zerograph;
         this.uuid = UUID.randomUUID();
         this.service = service;
         this.socket = service.getContext().socket(ZMQ.REP);
         this.socket.connect(this.service.getInternalAddress());
+    }
+
+    public Zerograph getZerograph() {
+        return this.zerograph;
     }
 
     public UUID getUUID() {

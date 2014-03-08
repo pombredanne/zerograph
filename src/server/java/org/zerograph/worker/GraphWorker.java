@@ -3,6 +3,7 @@ package org.zerograph.worker;
 import org.zerograph.Graph;
 import org.zerograph.Request;
 import org.zerograph.Response;
+import org.zerograph.Zerograph;
 import org.zerograph.resource.CypherResource;
 import org.zerograph.resource.NodeResource;
 import org.zerograph.resource.NodeSetResource;
@@ -25,13 +26,13 @@ public class GraphWorker extends BaseWorker<Graph> {
     final private NodeSetResource nodeSetResource;
     final private RelResource relResource;
 
-    public GraphWorker(Graph service) {
-        super(service);
-        this.database = service.getDatabase();
-        this.cypherResource = new CypherResource(this.getSocket(), this.database);
-        this.nodeResource = new NodeResource(this.getSocket(), this.database);
-        this.nodeSetResource = new NodeSetResource(this.getSocket(), this.database);
-        this.relResource = new RelResource(this.getSocket(), this.database);
+    public GraphWorker(Zerograph zerograph, Graph graph) {
+        super(zerograph, graph);
+        this.database = graph.getDatabase();
+        this.cypherResource = new CypherResource(zerograph, this.getSocket(), this.database);
+        this.nodeResource = new NodeResource(zerograph, this.getSocket(), this.database);
+        this.nodeSetResource = new NodeSetResource(zerograph, this.getSocket(), this.database);
+        this.relResource = new RelResource(zerograph, this.getSocket(), this.database);
     }
 
     public GraphDatabaseService getDatabase() {

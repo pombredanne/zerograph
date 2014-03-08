@@ -15,8 +15,11 @@ log.addHandler(logging.NullHandler())
 
 
 def hydrate(string):
+    # TODO: expand attributes to kwargs for cleaner constructors
     data = Data.decode(string)
-    if data.class_name == "Graph":
+    if data.class_name == "Zerograph":
+        return Zerograph(data.value)
+    elif data.class_name == "Graph":
         return Graph(data.value)
     elif data.class_name == "Node":
         return Node(data.value)
@@ -263,13 +266,22 @@ class GraphBatch(_Batch):
 
 class _Client(object):
 
-    def __init__(self, host, port):
-        self.__host = host
-        self.__port = port
+    def __init__(self, attributes):
+        zerograph = attributes.get("zerograph")
+        if zerograph:
+            self.__zerograph = Zerograph(zerograph)
+        else:
+            self.__zerograph = None
+        self.__host = attributes["host"]
+        self.__port = attributes["port"]
         self.__address = "tcp://{0}:{1}".format(self.__host, self.__port)
         self.__context = zmq.Context()
         self.__socket = self.__context.socket(zmq.REQ)
         self.__socket.connect(self.__address)
+
+    @property
+    def zerograph(self):
+        return self.__zerograph
 
     @property
     def host(self):
@@ -286,8 +298,22 @@ class _Client(object):
 
 class Zerograph(_Client):
 
-    def __init__(self, host="localhost", port=47470):
-        _Client.__init__(self, host, port)
+    def __init__(self, attributes=None, host=None, port=None):
+        # TODO: maybe sniff types of arguments?
+        attributes = dict(attributes or {})
+        if host:
+            attributes["host"] = host
+        else:
+            attributes.setdefault("host", "localhost")
+        if port:
+            attributes["port"] = port
+        else:
+            attributes.setdefault("port", 47470)
+        _Client.__init__(self, attributes)
+
+    @property
+    def zerograph(self):
+        return self
 
     def get_graph(self, port):
         return ZerographBatch.single(self.socket, ZerographBatch.get_graph, self.host, port)
@@ -295,16 +321,17 @@ class Zerograph(_Client):
     def open_graph(self, port, create=False):
         return ZerographBatch.single(self.socket, ZerographBatch.open_graph, self.host, port)
 
+    def close_graph(self, port, delete=False):
+        return ZerographBatch.single(self.socket, ZerographBatch.close_graph, self.host, port)
+
 
 class Graph(_Client):
 
-    # TODO: add access to a Graph's Zerograph
-    # TODO: add close method
-
     def __init__(self, attributes):
-        host = attributes["host"]
-        port = attributes["port"]
-        _Client.__init__(self, host, port)
+        _Client.__init__(self, attributes)
+
+    def close(self, delete=False):
+        self.zerograph.close_graph(self.port, delete=delete)
 
     def create_batch(self):
         return GraphBatch(self.__socket)

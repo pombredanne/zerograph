@@ -15,8 +15,8 @@ public class NodeSetResource extends BaseGraphResource {
 
     final public static String NAME = "nodeset";
 
-    public NodeSetResource(ZMQ.Socket socket, GraphDatabaseService database) {
-        super(socket, database);
+    public NodeSetResource(Zerograph zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
+        super(zerograph, socket, database);
     }
 
     /**
