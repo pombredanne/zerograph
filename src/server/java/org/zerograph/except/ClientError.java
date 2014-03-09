@@ -6,9 +6,9 @@ public class ClientError extends Exception {
 
     final private Response response;
 
-    public ClientError(Response response) {
+    public ClientError(int status, Object... data) {
         super();
-        this.response = response;
+        this.response = new Response(status, data);
     }
 
     public Response getResponse() {

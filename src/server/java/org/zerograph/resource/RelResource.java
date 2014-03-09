@@ -1,11 +1,20 @@
 package org.zerograph.resource;
 
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Lock;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
 import org.zerograph.Request;
-import org.zerograph.Response;
 import org.zerograph.Zerograph;
+import org.zerograph.except.BadRequest;
 import org.zerograph.except.ClientError;
+import org.zerograph.except.NotFound;
 import org.zerograph.except.ServerError;
-import org.neo4j.graphdb.*;
 import org.zeromq.ZMQ;
 
 import java.util.HashMap;
@@ -35,7 +44,7 @@ public class RelResource extends BasePropertyContainerResource {
             sendOK(rel);
             return rel;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, "Relationship " + relID + " not found"));
+            throw new NotFound("Relationship " + relID + " not found");
         }
     }
 
@@ -61,7 +70,7 @@ public class RelResource extends BasePropertyContainerResource {
             sendOK(rel);
             return rel;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, "Relationship " + relID + " not found"));
+            throw new NotFound("Relationship " + relID + " not found");
         }
     }
 
@@ -87,7 +96,7 @@ public class RelResource extends BasePropertyContainerResource {
             sendOK(rel);
             return rel;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, "Relationship " + relID + " not found"));
+            throw new NotFound("Relationship " + relID + " not found");
         }
     }
 
@@ -128,7 +137,7 @@ public class RelResource extends BasePropertyContainerResource {
             sendNoContent();
             return null;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, "Relationship " + relID + " not found"));
+            throw new NotFound("Relationship " + relID + " not found");
         }
     }
 
@@ -139,10 +148,10 @@ public class RelResource extends BasePropertyContainerResource {
             try {
                 return database().getNodeById((Integer)value);
             } catch (NotFoundException ex) {
-                throw new ClientError(new Response(Response.NOT_FOUND, "Relationship " + value + " not found"));
+                throw new NotFound("Relationship " + value + " not found");
             }
         } else {
-            throw new ClientError(new Response(Response.BAD_REQUEST, value));
+            throw new BadRequest(value);
         }
     }
 

@@ -7,9 +7,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.zerograph.Request;
-import org.zerograph.Response;
 import org.zerograph.Zerograph;
 import org.zerograph.except.ClientError;
+import org.zerograph.except.MethodNotAllowed;
 import org.zerograph.except.ServerError;
 import org.zeromq.ZMQ;
 
@@ -59,28 +59,28 @@ public abstract class BaseGraphResource extends BaseResource {
             case "DELETE":
                 return delete(request, tx);
             default:
-                throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+                throw new MethodNotAllowed(request.getMethod());
         }
     }
 
     public PropertyContainer get(Request request, Transaction tx) throws ClientError, ServerError {
-        throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+        throw new MethodNotAllowed(request.getMethod());
     }
 
     public PropertyContainer put(Request request, Transaction tx) throws ClientError, ServerError {
-        throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+        throw new MethodNotAllowed(request.getMethod());
     }
 
     public PropertyContainer patch(Request request, Transaction tx) throws ClientError, ServerError {
-        throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+        throw new MethodNotAllowed(request.getMethod());
     }
 
     public PropertyContainer post(Request request, Transaction tx) throws ClientError, ServerError {
-        throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+        throw new MethodNotAllowed(request.getMethod());
     }
 
     public PropertyContainer delete(Request request, Transaction tx) throws ClientError, ServerError {
-        throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+        throw new MethodNotAllowed(request.getMethod());
     }
 
 }

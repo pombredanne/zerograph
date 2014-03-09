@@ -1,57 +1,63 @@
 package org.zerograph;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.zerograph.except.ClientError;
-import org.zerograph.except.ServiceAlreadyStartedException;
-import org.zerograph.except.ServiceNotStartedException;
+import org.zerograph.except.GraphAlreadyStartedException;
+import org.zerograph.except.GraphNotStartedException;
+import org.zerograph.except.NoSuchGraphException;
 import org.zerograph.worker.GraphWorker;
 
 import java.util.HashMap;
 
+/**
+ * A Graph service represents a database exposed over a server port.
+ *
+ */
 public class Graph extends Service {
 
     final static private HashMap<Integer, Graph> instances = new HashMap<>(1);
 
-    public static synchronized Graph getInstance(Zerograph zerograph, String host, int port) throws ClientError {
-        if (instances.containsKey(port)) {
-            return instances.get(port);
-        } else {
-            throw new ClientError(new Response(Response.NOT_FOUND, "No graph is listening on port " + port));
-        }
+    public static boolean isStarted(Zerograph zerograph, String host, int port) {
+        return instances.containsKey(port);
     }
 
-    public static synchronized Graph startInstance(Zerograph zerograph, String host, int port, boolean create) throws ServiceAlreadyStartedException {
-        // TODO: handle create flag
+    public static synchronized Graph startInstance(Zerograph zerograph, String host, int port, boolean create) throws GraphAlreadyStartedException, NoSuchGraphException {
         if (instances.containsKey(port)) {
-            throw new ServiceAlreadyStartedException(port);
+            throw new GraphAlreadyStartedException(host, port);
         } else {
-            Graph service = new Graph(zerograph, host, port);
+            Graph service = new Graph(zerograph, host, port, create);
             Thread thread = new Thread(service);
             try {
                 thread.start();
             } catch (Exception ex) {
-                throw new ServiceAlreadyStartedException(port);
+                throw new GraphAlreadyStartedException(host, port);
             }
             instances.put(port, service);
             return service;
         }
     }
 
-    public static synchronized void stopInstance(Zerograph zerograph, String host, int port, boolean delete) throws ServiceNotStartedException {
+    public static synchronized void stopInstance(Zerograph zerograph, String host, int port, boolean delete) throws GraphNotStartedException {
         // TODO: handle delete flag
         if (instances.containsKey(port)) {
             instances.get(port).stop();
         } else {
-            throw new ServiceNotStartedException(port);
+            throw new GraphNotStartedException(host, port);
         }
         instances.remove(port);
     }
 
     final private GraphDatabaseService database;
 
-    public Graph(Zerograph zerograph, String host, int port) {
+    public Graph(Zerograph zerograph, String host, int port, boolean create) throws NoSuchGraphException {
         super(zerograph, host, port);
-        this.database = getEnvironment().getDatabase(port);
+        if (create) {
+            this.database = getEnvironment().getOrCreateDatabase(host, port);
+        } else {
+            this.database = getEnvironment().getDatabase(host, port);
+        }
+        if (this.database == null) {
+            throw new NoSuchGraphException(host, port);
+        }
     }
 
     public GraphDatabaseService getDatabase() {

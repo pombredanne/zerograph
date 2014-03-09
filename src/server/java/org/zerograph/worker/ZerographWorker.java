@@ -5,8 +5,9 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.zerograph.Request;
 import org.zerograph.Response;
 import org.zerograph.Zerograph;
-import org.zerograph.resource.GraphResource;
 import org.zerograph.except.ClientError;
+import org.zerograph.except.NotFound;
+import org.zerograph.resource.GraphResource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +43,7 @@ public class ZerographWorker extends BaseWorker<Zerograph> {
                             outputValues.add(graphResource.handle(request));
                             break;
                         default:
-                            throw new ClientError(new Response(Response.NOT_FOUND, "This service does not provide a resource called " + request.getResource()));
+                            throw new NotFound("This service does not provide a resource called " + request.getResource());
                     }
                 }
                 send(new Response(Response.OK));

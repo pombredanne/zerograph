@@ -4,6 +4,7 @@ import org.zerograph.Request;
 import org.zerograph.Response;
 import org.zerograph.Zerograph;
 import org.zerograph.except.ClientError;
+import org.zerograph.except.NotFound;
 import org.zerograph.except.ServerError;
 import org.neo4j.graphdb.*;
 import org.zeromq.ZMQ;
@@ -36,7 +37,7 @@ public class NodeResource extends BasePropertyContainerResource {
             sendOK(node);
             return node;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, "Node " + nodeID + " not found"));
+            throw new NotFound("Node " + nodeID + " not found");
         }
     }
 
@@ -65,7 +66,7 @@ public class NodeResource extends BasePropertyContainerResource {
             sendOK(node);
             return node;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, "Node " + nodeID + " not found"));
+            throw new NotFound("Node " + nodeID + " not found");
         }
     }
 
@@ -93,7 +94,7 @@ public class NodeResource extends BasePropertyContainerResource {
             sendOK(node);
             return node;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, "Node " + nodeID + " not found"));
+            throw new NotFound("Node " + nodeID + " not found");
         }
     }
 
@@ -133,7 +134,7 @@ public class NodeResource extends BasePropertyContainerResource {
             sendNoContent();
             return null;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, "Node " + nodeID + " not found"));
+            throw new NotFound("Node " + nodeID + " not found");
         }
     }
 

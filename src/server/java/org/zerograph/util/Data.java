@@ -6,6 +6,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.zerograph.Graph;
+import org.zerograph.GraphDirectory;
 import org.zerograph.Zerograph;
 
 import java.io.IOException;
@@ -60,6 +61,14 @@ public class Data {
         return attributes;
     }
 
+    private static Map<String, Object> attributes(GraphDirectory directory) throws IOException {
+        HashMap<String, Object> attributes = new HashMap<>();
+        attributes.put("zerograph", attributes(directory.getZerograph()));
+        attributes.put("host", directory.getHost());
+        attributes.put("port", directory.getPort());
+        return attributes;
+    }
+
     private static Map<String, Object> attributes(Node node) throws IOException {
         HashMap<String, Object> attributes = new HashMap<>();
         attributes.put("id", node.getId());
@@ -83,6 +92,8 @@ public class Data {
             return ZEROGRAPH_HINT + mapper.writeValueAsString(attributes((Zerograph) value));
         } else if (value instanceof Graph) {
             return GRAPH_HINT + mapper.writeValueAsString(attributes((Graph) value));
+        } else if (value instanceof GraphDirectory) {
+            return GRAPH_HINT + mapper.writeValueAsString(attributes((GraphDirectory) value));
         } else if (value instanceof Node) {
             return NODE_HINT + mapper.writeValueAsString(attributes((Node) value));
         } else if(value instanceof Relationship) {

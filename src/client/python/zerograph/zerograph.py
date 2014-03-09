@@ -103,7 +103,11 @@ class Response(object):
     def receive(cls, socket):
         status = 0
         while status < 200:
-            frame = socket.recv().decode("utf-8")
+            try:
+                frame = socket.recv().decode("utf-8")
+            except zmq.error.ZMQError as err:
+                raise TimeoutError("Timeout occurred while trying to receive "
+                                   "data")
             for line in frame.splitlines(keepends=False):
                 if line:
                     parts = line.split("\t")
@@ -222,10 +226,10 @@ class ZerographBatch(_Batch):
         return self.prepare(Response.single, "GET", "graph", host, int(port))
 
     def open_graph(self, host, port, create=False):
-        return self.prepare(Response.single, "PUT", "graph", host, int(port))
+        return self.prepare(Response.single, "PUT", "graph", host, int(port), create)
 
     def close_graph(self, host, port, delete=False):
-        return self.prepare(Response.single, "DELETE", "graph", host, int(port))
+        return self.prepare(Response.single, "DELETE", "graph", host, int(port), delete)
 
 
 class GraphBatch(_Batch):
@@ -277,7 +281,13 @@ class _Client(object):
         self.__address = "tcp://{0}:{1}".format(self.__host, self.__port)
         self.__context = zmq.Context()
         self.__socket = self.__context.socket(zmq.REQ)
-        self.__socket.connect(self.__address)
+        self.__socket.setsockopt(zmq.RCVTIMEO, 30000)  # TODO: configurable timeout
+        try:
+            self.__socket.connect(self.__address)
+        except zmq.error.ZMQError as err:
+            raise TimeoutError("Timeout occurred while trying to connect to "
+                               "{0} on port {1}".format(self.__host,
+                                                        self.__port))
 
     @property
     def zerograph(self):
@@ -319,10 +329,10 @@ class Zerograph(_Client):
         return ZerographBatch.single(self.socket, ZerographBatch.get_graph, self.host, port)
 
     def open_graph(self, port, create=False):
-        return ZerographBatch.single(self.socket, ZerographBatch.open_graph, self.host, port)
+        return ZerographBatch.single(self.socket, ZerographBatch.open_graph, self.host, port, create)
 
     def close_graph(self, port, delete=False):
-        return ZerographBatch.single(self.socket, ZerographBatch.close_graph, self.host, port)
+        return ZerographBatch.single(self.socket, ZerographBatch.close_graph, self.host, port, delete)
 
 
 class Graph(_Client):

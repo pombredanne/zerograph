@@ -1,16 +1,17 @@
 package org.zerograph.resource;
 
-import org.zerograph.Request;
-import org.zerograph.Response;
-import org.zerograph.Zerograph;
-import org.zerograph.except.ClientError;
-import org.zerograph.except.ServerError;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.EntityNotFoundException;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
+import org.zerograph.Request;
+import org.zerograph.Zerograph;
+import org.zerograph.except.BadRequest;
+import org.zerograph.except.ClientError;
+import org.zerograph.except.NotFound;
+import org.zerograph.except.ServerError;
 import org.zeromq.ZMQ;
 
 import java.util.ArrayList;
@@ -56,10 +57,10 @@ public class CypherResource extends BaseGraphResource {
             sendOK();
             return firstEntity;
         } catch (EntityNotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, ex.getMessage()));
+            throw new NotFound(ex.getMessage());
         } catch (CypherException ex) {
             //ex.printStackTrace(System.err);
-            throw new ClientError(new Response(Response.BAD_REQUEST, ex.getMessage()));
+            throw new BadRequest(ex.getMessage());
         }
     }
 

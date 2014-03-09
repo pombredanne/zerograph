@@ -1,18 +1,19 @@
 package org.zerograph.worker;
 
-import org.zerograph.Graph;
-import org.zerograph.Request;
-import org.zerograph.Response;
-import org.zerograph.Zerograph;
-import org.zerograph.resource.CypherResource;
-import org.zerograph.resource.NodeResource;
-import org.zerograph.resource.NodeSetResource;
-import org.zerograph.resource.RelResource;
-import org.zerograph.except.ClientError;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.zerograph.Graph;
+import org.zerograph.Request;
+import org.zerograph.Response;
+import org.zerograph.Zerograph;
+import org.zerograph.except.ClientError;
+import org.zerograph.except.NotFound;
+import org.zerograph.resource.CypherResource;
+import org.zerograph.resource.NodeResource;
+import org.zerograph.resource.NodeSetResource;
+import org.zerograph.resource.RelResource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +72,7 @@ public class GraphWorker extends BaseWorker<Graph> {
                                 outputValues.add(relResource.handle(request, tx));
                                 break;
                             default:
-                                throw new ClientError(new Response(Response.NOT_FOUND, "This service does not provide a resource called " + request.getResource()));
+                                throw new NotFound("This service does not provide a resource called " + request.getResource());
                         }
                     }
                     tx.success();

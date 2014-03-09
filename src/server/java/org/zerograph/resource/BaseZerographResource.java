@@ -2,9 +2,9 @@ package org.zerograph.resource;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.zerograph.Request;
-import org.zerograph.Response;
 import org.zerograph.Zerograph;
 import org.zerograph.except.ClientError;
+import org.zerograph.except.MethodNotAllowed;
 import org.zerograph.except.ServerError;
 import org.zeromq.ZMQ;
 
@@ -31,28 +31,28 @@ public abstract class BaseZerographResource extends BaseResource {
             case "DELETE":
                 return delete(request);
             default:
-                throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+                throw new MethodNotAllowed(request.getMethod());
         }
     }
 
     public PropertyContainer get(Request request) throws ClientError, ServerError {
-        throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+        throw new MethodNotAllowed(request.getMethod());
     }
 
     public PropertyContainer put(Request request) throws ClientError, ServerError {
-        throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+        throw new MethodNotAllowed(request.getMethod());
     }
 
     public PropertyContainer patch(Request request) throws ClientError, ServerError {
-        throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+        throw new MethodNotAllowed(request.getMethod());
     }
 
     public PropertyContainer post(Request request) throws ClientError, ServerError {
-        throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+        throw new MethodNotAllowed(request.getMethod());
     }
 
     public PropertyContainer delete(Request request) throws ClientError, ServerError {
-        throw new ClientError(new Response(Response.METHOD_NOT_ALLOWED, request.getMethod()));
+        throw new MethodNotAllowed(request.getMethod());
     }
 
 }

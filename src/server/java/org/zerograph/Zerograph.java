@@ -2,10 +2,23 @@ package org.zerograph;
 
 import org.zerograph.worker.ZerographWorker;
 
+/**
+ * The Zerograph is the root control service for the entire server. It is
+ * not backed by a database itself but provides facilities to start, stop,
+ * create and delete Graph services on other ports.
+ *
+ */
 public class Zerograph extends Service {
 
-    public Zerograph(String host, int port) {
-        super(null, host, port);
+    final private Environment environment;
+
+    public Zerograph(Environment environment) {
+        super(null, environment.getHost(), environment.getPort());
+        this.environment = environment;
+    }
+
+    public Environment getEnvironment() {
+        return this.environment;
     }
 
     public Zerograph getZerograph() {
@@ -21,7 +34,8 @@ public class Zerograph extends Service {
 
     public static void main(String[] args) {
         // TODO: add shutdown hook
-        Zerograph zerograph = new Zerograph("localhost", 47470);
+        Environment env = new Environment();
+        Zerograph zerograph = new Zerograph(env);
         Thread thread = new Thread(zerograph);
         thread.start();
     }

@@ -1,10 +1,11 @@
 package org.zerograph;
 
+import org.codehaus.jackson.map.ObjectMapper;
+import org.neo4j.graphdb.PropertyContainer;
+import org.zerograph.except.BadRequest;
 import org.zerograph.except.ClientError;
 import org.zerograph.util.Data;
 import org.zerograph.util.Pointer;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.neo4j.graphdb.PropertyContainer;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,7 +31,7 @@ public class Request {
         this.string = string;
         String[] parts = string.split("\t");
         if (parts.length < 2) {
-            throw new ClientError(new Response(Response.BAD_REQUEST, string));
+            throw new BadRequest(string);
         }
         this.method = parts[0];
         this.resource = parts[1];
@@ -40,7 +41,7 @@ public class Request {
             try {
                 data.add(Data.decode(parts[i + 2]));
             } catch (IOException ex) {
-                throw new ClientError(new Response(Response.BAD_REQUEST, parts[i + 2]));
+                throw new BadRequest(parts[i + 2]);
             }
         }
         this.data = data.toArray(new Object[dataSize]);
@@ -66,8 +67,43 @@ public class Request {
         }
     }
 
-    public Integer getIntegerData(int index) {
+    public Object getData(int index, Object defaultValue) {
+        if (index >= 0 && index < this.data.length) {
+            return this.data[index];
+        } else {
+            return defaultValue;
+        }
+    }
+
+    public boolean getBooleanData(int index) {
         Object datum = getData(index);
+        if (datum instanceof Boolean) {
+            return (Boolean)datum;
+        } else {
+            throw new IllegalArgumentException("Boolean data expected");
+        }
+    }
+
+    public boolean getBooleanData(int index, boolean defaultValue) {
+        Object datum = getData(index, defaultValue);
+        if (datum instanceof Boolean) {
+            return (Boolean)datum;
+        } else {
+            throw new IllegalArgumentException("Boolean data expected");
+        }
+    }
+
+    public int getIntegerData(int index) {
+        Object datum = getData(index);
+        if (datum instanceof Integer) {
+            return (Integer)datum;
+        } else {
+            throw new IllegalArgumentException("Integer data expected");
+        }
+    }
+
+    public int getIntegerData(int index, int defaultValue) {
+        Object datum = getData(index, defaultValue);
         if (datum instanceof Integer) {
             return (Integer)datum;
         } else {
@@ -84,6 +120,15 @@ public class Request {
         }
     }
 
+    public String getStringData(int index, String defaultValue) {
+        Object datum = getData(index, defaultValue);
+        if (datum instanceof String) {
+            return (String)datum;
+        } else {
+            throw new IllegalArgumentException("String data expected");
+        }
+    }
+
     public List getListData(int index) {
         Object datum = getData(index);
         if (datum instanceof List) {
@@ -93,8 +138,26 @@ public class Request {
         }
     }
 
+    public List getListData(int index, List defaultValue) {
+        Object datum = getData(index, defaultValue);
+        if (datum instanceof List) {
+            return (List)datum;
+        } else {
+            throw new IllegalArgumentException("List data expected");
+        }
+    }
+
     public Map getMapData(int index) {
         Object datum = getData(index);
+        if (datum instanceof Map) {
+            return (Map)datum;
+        } else {
+            throw new IllegalArgumentException("Map data expected");
+        }
+    }
+
+    public Map getMapData(int index, Map defaultValue) {
+        Object datum = getData(index, defaultValue);
         if (datum instanceof Map) {
             return (Map)datum;
         } else {
