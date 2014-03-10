@@ -35,6 +35,10 @@ public class GraphDirectory {
         return this.port;
     }
 
+    public String getPath() {
+        return this.file.getPath();
+    }
+
     public boolean exists() {
         return this.file.exists();
     }

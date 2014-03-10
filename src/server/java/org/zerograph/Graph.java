@@ -18,17 +18,17 @@ public class Graph extends Service {
 
     public static synchronized Graph startInstance(ZerographInterface zerograph, String host, int port, boolean create) throws GraphAlreadyStartedException, NoSuchGraphException {
         if (instances.containsKey(port)) {
-            throw new GraphAlreadyStartedException(host, port);
+            throw new GraphAlreadyStartedException(zerograph, host, port, instances.get(port));
         } else {
-            Graph service = new Graph(zerograph, host, port, create);
-            Thread thread = new Thread(service);
+            Graph graph = new Graph(zerograph, host, port, create);
+            Thread thread = new Thread(graph);
             try {
                 thread.start();
             } catch (Exception ex) {
-                throw new GraphAlreadyStartedException(host, port);
+                throw new GraphAlreadyStartedException(zerograph, host, port, graph);
             }
-            instances.put(port, service);
-            return service;
+            instances.put(port, graph);
+            return graph;
         }
     }
 
@@ -37,7 +37,7 @@ public class Graph extends Service {
         if (instances.containsKey(port)) {
             instances.get(port).stop();
         } else {
-            throw new GraphNotStartedException(host, port);
+            throw new GraphNotStartedException(zerograph, host, port);
         }
         instances.remove(port);
     }
@@ -47,12 +47,12 @@ public class Graph extends Service {
     public Graph(ZerographInterface zerograph, String host, int port, boolean create) throws NoSuchGraphException {
         super(zerograph, host, port);
         if (create) {
-            this.database = getEnvironment().getOrCreateDatabase(host, port);
+            this.database = getEnvironment().getOrCreateDatabase(zerograph, host, port);
         } else {
-            this.database = getEnvironment().getDatabase(host, port);
+            this.database = getEnvironment().getDatabase(zerograph, host, port);
         }
         if (this.database == null) {
-            throw new NoSuchGraphException(host, port);
+            throw new NoSuchGraphException(zerograph, host, port);
         }
     }
 

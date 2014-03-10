@@ -9,7 +9,6 @@ import org.zerograph.except.GraphAlreadyStartedException;
 import org.zerograph.except.GraphNotStartedException;
 import org.zerograph.except.NoSuchGraphException;
 import org.zerograph.response.status2xx.OK;
-import org.zerograph.response.status4xx.Conflict;
 import org.zerograph.response.status4xx.NotFound;
 import org.zerograph.response.status4xx.Status4xx;
 import org.zerograph.response.status5xx.Status5xx;
@@ -60,7 +59,7 @@ public class GraphResource extends AbstractResource implements ResourceInterface
                 Graph graph = Graph.startInstance(getZerograph(), host, port, create);
                 send(new OK(graph));
             } catch (GraphAlreadyStartedException ex) {
-                throw new Conflict("Unable to start graph on port " + port);
+                send(new OK(ex.getGraph()));
             } catch (NoSuchGraphException ex) {
                 throw new NotFound("No graph exists for port " + port);
             }

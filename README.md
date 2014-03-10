@@ -17,7 +17,8 @@ variable.
 
 ### Service
 
-The default database instance listens on port 47474.
+The central Zerograph service instance listens on port 47470. Databases can be
+started on any other ports as required.
 
 
 ## Client

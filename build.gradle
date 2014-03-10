@@ -7,8 +7,6 @@
  * user guide available at http://gradle.org/docs/1.8/userguide/tutorial_java_projects.html
  */
 
-
-// Apply the java plugin to add support for Java
 apply plugin: "java"
 apply plugin: "application"
 
@@ -20,10 +18,7 @@ sourceSets {
     }
 }
 
-// In this section you declare where to find the dependencies of your project
 repositories {
-    // Use 'maven central' for resolving your dependencies.
-    // You can declare any Maven/Ivy/file repository here.
     mavenCentral()
 }
 
@@ -37,14 +32,15 @@ dependencies {
 
 group = 'org.zerograph'
 version = '0'
+mainClassName = 'org.zerograph.Zerograph'
 jar {
     manifest {
-        attributes 'Implementation-Title': 'zerograph', 'Implementation-Version': version
+        attributes 'Implementation-Title': 'Zerograph',
+                   'Implementation-Version': version,
+                   'Main-Class': mainClassName
     }
 }
 
 task wrapper(type: Wrapper) {
     gradleVersion = '1.8'
 }
-
-mainClassName = "org.zerograph.Zerograph"

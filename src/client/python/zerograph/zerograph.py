@@ -108,7 +108,7 @@ class Response(object):
             except zmq.error.ZMQError as err:
                 raise TimeoutError("Timeout occurred while trying to receive "
                                    "data")
-            for line in frame.splitlines(keepends=False):
+            for line in frame.splitlines(False):
                 if line:
                     parts = line.split("\t")
                     status = int(parts[0])
