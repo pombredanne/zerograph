@@ -21,12 +21,47 @@ The central Zerograph service instance listens on port 47470. Databases can be
 started on any other ports as required.
 
 
-## Client
+## Shell
 
-To run the Python test shell:
+To run the test shell (Python 3 preferred):
 
 ```bash
-$ pip3 install pyzmq
-$ cd src/client/python
-$ python3 -m zerograph.repl
+$ bin/zerograph-shell
+
+Zerøgraph Shell v0
+(C) Copyright 2014, Nigel Small <nigel@nigelsmall.com>
+
+Execute Cypher statements or meta-commands (prefixed with "!"). Type !HELP for
+help or type !EOF or press Ctrl+D to exit the shell.
+
+zg:> !help
+!HELP           display this help
+!EOF            exit the shell
+
+!OPEN <port>    open graph on port <port>
+!OPEN++ <port>  open graph on port <port>, creating it if it doesn't exist
+!CLOSE          close current graph
+!CLOSE--        close current graph and delete it
+
+!GET <resource> <arg_list>
+!PUT <resource> <arg_list>
+!PATCH <resource> <arg_list>
+!POST <resource> <arg_list>
+!DELETE <resource> <arg_list>
+
+zg:> !open++ 47471
+
+zg:localhost:47472> !get node 0
+Node 0 not found
+
+zg:localhost:47472> create (a:Person {name:'Alice'}) return a
+ a
+------------------------------------------
+ <Node id=0 labels=set(['Person']) properties={'name': 'Alice'}>
+
+zg:localhost:47472> !get node 0
+<Node id=0 labels=set(['Person']) properties={'name': 'Alice'}>
+
+zg:localhost:47472> !eof
+⌁
 ```
