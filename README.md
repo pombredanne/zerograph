@@ -25,7 +25,7 @@ started on any other ports as required.
 
 To run the test shell (Python 3 preferred):
 
-```bash
+```
 $ bin/zerograph-shell
 
 Zerøgraph Shell v0
@@ -51,17 +51,17 @@ zg:> !help
 
 zg:> !open++ 47471
 
-zg:localhost:47472> !get node 0
+zg:localhost:47471> !get node 0
 Node 0 not found
 
-zg:localhost:47472> create (a:Person {name:'Alice'}) return a
+zg:localhost:47471> create (a:Person {name:'Alice'}) return a
  a
 ------------------------------------------
  <Node id=0 labels=set(['Person']) properties={'name': 'Alice'}>
 
-zg:localhost:47472> !get node 0
+zg:localhost:47471> !get node 0
 <Node id=0 labels=set(['Person']) properties={'name': 'Alice'}>
 
-zg:localhost:47472> !eof
+zg:localhost:47471> !eof
 ⌁
 ```
