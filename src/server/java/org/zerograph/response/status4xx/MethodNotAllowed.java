@@ -1,6 +1,6 @@
 package org.zerograph.response.status4xx;
 
-public class MethodNotAllowed extends Abstract4xx {
+public class MethodNotAllowed extends Status4xx {
 
     public MethodNotAllowed(Object... data) {
         super(data);

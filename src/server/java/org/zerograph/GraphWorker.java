@@ -11,7 +11,7 @@ import org.zerograph.resource.NodeResource;
 import org.zerograph.resource.NodeSetResource;
 import org.zerograph.resource.RelResource;
 import org.zerograph.response.status2xx.OK;
-import org.zerograph.response.status4xx.Abstract4xx;
+import org.zerograph.response.status4xx.Status4xx;
 import org.zerograph.response.status4xx.BadRequest;
 import org.zerograph.response.status4xx.Conflict;
 import org.zerograph.response.status4xx.MethodNotAllowed;
@@ -21,7 +21,7 @@ import org.zerograph.response.status5xx.ServerError;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TransactionalWorker extends Worker<Graph> {
+public class GraphWorker extends Worker<Graph> {
 
     final private GraphDatabaseService database;
 
@@ -30,7 +30,7 @@ public class TransactionalWorker extends Worker<Graph> {
     final private NodeSetResource nodeSetResource;
     final private RelResource relResource;
 
-    public TransactionalWorker(ZerographInterface zerograph, Graph graph) {
+    public GraphWorker(ZerographInterface zerograph, Graph graph) {
         super(zerograph, graph);
         this.database = graph.getDatabase();
         this.cypherResource = new CypherResource(zerograph, this.getSocket(), this.database);
@@ -50,7 +50,7 @@ public class TransactionalWorker extends Worker<Graph> {
             // parse requests
             try {
                 requests = receiveRequestBatch();
-            } catch (Abstract4xx ex) {
+            } catch (Status4xx ex) {
                 send(ex);
                 continue;
             }
@@ -62,21 +62,17 @@ public class TransactionalWorker extends Worker<Graph> {
                     for (Request request : requests) {
                         request.resolvePointers(outputValues);
                         TransactionalResourceInterface resource;
-                        switch (request.getResource()) {
-                            case CypherResource.NAME:
-                                resource = this.cypherResource;
-                                break;
-                            case NodeResource.NAME:
-                                resource = this.nodeResource;
-                                break;
-                            case NodeSetResource.NAME:
-                                resource = this.nodeSetResource;
-                                break;
-                            case RelResource.NAME:
-                                resource = this.relResource;
-                                break;
-                            default:
-                                throw new NotFound("This service does not provide a resource called " + request.getResource());
+                        String requestedResource = request.getResource();
+                        if (cypherResource.getName().equals(requestedResource)) {
+                            resource = cypherResource;
+                        } else if (nodeResource.getName().equals(requestedResource)) {
+                            resource = nodeResource;
+                        } else if (relResource.getName().equals(requestedResource)) {
+                            resource = relResource;
+                        } else if (nodeSetResource.getName().equals(requestedResource)) {
+                            resource = nodeSetResource;
+                        } else {
+                            throw new NotFound("This service does not provide a resource called " + request.getResource());
                         }
                         PropertyContainer outputValue;
                         switch (request.getMethod()) {
@@ -108,7 +104,7 @@ public class TransactionalWorker extends Worker<Graph> {
                 send(new BadRequest(ex.getMessage()));
             } catch (TransactionFailureException ex) {
                 send(new Conflict(ex.getMessage()));  // TODO - derive cause from nested Exceptions
-            } catch (Abstract4xx ex) {
+            } catch (Status4xx ex) {
                 send(ex);
             } catch (Exception ex) {
                 send(new ServerError(ex.getMessage()));

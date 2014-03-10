@@ -1,10 +1,10 @@
 package org.zerograph;
 
 import org.neo4j.graphdb.TransactionFailureException;
-import org.zerograph.api.GlobalResourceInterface;
+import org.zerograph.api.ResourceInterface;
 import org.zerograph.resource.GraphResource;
 import org.zerograph.response.status2xx.OK;
-import org.zerograph.response.status4xx.Abstract4xx;
+import org.zerograph.response.status4xx.Status4xx;
 import org.zerograph.response.status4xx.BadRequest;
 import org.zerograph.response.status4xx.Conflict;
 import org.zerograph.response.status4xx.MethodNotAllowed;
@@ -13,11 +13,11 @@ import org.zerograph.response.status5xx.ServerError;
 
 import java.util.List;
 
-public class GlobalWorker extends Worker<Zerograph> {
+public class ZerographWorker extends Worker<Zerograph> {
 
     final private GraphResource graphResource;
 
-    public GlobalWorker(Zerograph zerograph) {
+    public ZerographWorker(Zerograph zerograph) {
         super(zerograph, zerograph);
         this.graphResource = new GraphResource(zerograph, this.getSocket());
     }
@@ -29,7 +29,7 @@ public class GlobalWorker extends Worker<Zerograph> {
             // parse requests
             try {
                 requests = receiveRequestBatch();
-            } catch (Abstract4xx ex) {
+            } catch (Status4xx ex) {
                 send(ex);
                 continue;
             }
@@ -37,13 +37,12 @@ public class GlobalWorker extends Worker<Zerograph> {
             try {
                 System.out.println("--- Beginning batch in control worker " + this.getUUID().toString() + " ---");
                 for (Request request : requests) {
-                    GlobalResourceInterface resource;
-                    switch (request.getResource()) {
-                        case GraphResource.NAME:
-                            resource = this.graphResource;
-                            break;
-                        default:
-                            throw new NotFound("This service does not provide a resource called " + request.getResource());
+                    ResourceInterface resource;
+                    String requestedResource = request.getResource();
+                    if (graphResource.getName().equals(requestedResource)) {
+                        resource = graphResource;
+                    } else {
+                        throw new NotFound("This service does not provide a resource called " + request.getResource());
                     }
                     switch (request.getMethod()) {
                         case "GET":
@@ -71,7 +70,7 @@ public class GlobalWorker extends Worker<Zerograph> {
                 send(new BadRequest(ex.getMessage()));
             } catch (TransactionFailureException ex) {
                 send(new Conflict(ex.getMessage()));  // TODO - derive cause from nested Exceptions
-            } catch (Abstract4xx ex) {
+            } catch (Status4xx ex) {
                 send(ex);
             } catch (Exception ex) {
                 send(new ServerError(ex.getMessage()));

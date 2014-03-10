@@ -2,7 +2,7 @@ package org.zerograph.response.status2xx;
 
 import org.zerograph.api.ResponseInterface;
 
-public abstract class Abstract2xx implements ResponseInterface {
+public abstract class Status2xx implements ResponseInterface {
 
     final public static int OK = 200;
     final public static int CREATED = 201;
@@ -10,7 +10,7 @@ public abstract class Abstract2xx implements ResponseInterface {
 
     final private Object[] data;
 
-    public Abstract2xx(Object... data) {
+    public Status2xx(Object... data) {
         this.data = data;
     }
 

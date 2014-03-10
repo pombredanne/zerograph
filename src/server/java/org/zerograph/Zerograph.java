@@ -28,7 +28,7 @@ public class Zerograph extends Service implements ZerographInterface {
 
     public void startWorkers(int count) {
         for(int i = 0; i < count; i++) {
-            new Thread(new GlobalWorker(this)).start();
+            new Thread(new ZerographWorker(this)).start();
         }
     }
 

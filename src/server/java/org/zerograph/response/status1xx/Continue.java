@@ -1,6 +1,6 @@
 package org.zerograph.response.status1xx;
 
-public class Continue extends Abstract1xx {
+public class Continue extends Status1xx {
 
     public Continue(Object... data) {
         super(data);

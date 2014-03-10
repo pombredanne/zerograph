@@ -9,16 +9,16 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.zerograph.Request;
+import org.zerograph.api.RequestInterface;
 import org.zerograph.api.TransactionalResourceInterface;
 import org.zerograph.api.ZerographInterface;
 import org.zerograph.response.status2xx.Created;
 import org.zerograph.response.status2xx.NoContent;
 import org.zerograph.response.status2xx.OK;
-import org.zerograph.response.status4xx.Abstract4xx;
 import org.zerograph.response.status4xx.BadRequest;
 import org.zerograph.response.status4xx.NotFound;
-import org.zerograph.response.status5xx.Abstract5xx;
+import org.zerograph.response.status4xx.Status4xx;
+import org.zerograph.response.status5xx.Status5xx;
 import org.zeromq.ZMQ;
 
 import java.util.HashMap;
@@ -26,7 +26,7 @@ import java.util.Map;
 
 public class RelResource extends PropertyContainerResource implements TransactionalResourceInterface {
 
-    final public static String NAME = "rel";
+    final private static String NAME = "rel";
 
     final private HashMap<String, RelationshipType> relationshipTypes;
 
@@ -35,13 +35,17 @@ public class RelResource extends PropertyContainerResource implements Transactio
         this.relationshipTypes = new HashMap<>();
     }
 
+    public String getName() {
+        return NAME;
+    }
+
     /**
      * GET rel {rel_id}
      *
      * Fetch a single relationship by ID.
      */
     @Override
-    public PropertyContainer get(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
+    public PropertyContainer get(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
         long relID = request.getIntegerData(0);
         try {
             Relationship rel = database().getRelationshipById(relID);
@@ -60,7 +64,7 @@ public class RelResource extends PropertyContainerResource implements Transactio
      * already exist.
      */
     @Override
-    public PropertyContainer put(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
+    public PropertyContainer put(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
         long relID = request.getIntegerData(0);
         Map properties = request.getMapData(1);
         try {
@@ -87,7 +91,7 @@ public class RelResource extends PropertyContainerResource implements Transactio
      * maintained.
      */
     @Override
-    public PropertyContainer patch(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
+    public PropertyContainer patch(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
         long relID = request.getIntegerData(0);
         Map properties = request.getMapData(1);
         try {
@@ -110,7 +114,7 @@ public class RelResource extends PropertyContainerResource implements Transactio
      * Create a new relationship.
      */
     @Override
-    public PropertyContainer post(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
+    public PropertyContainer post(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
         Node startNode = resolveNode(request.getData(0));
         Node endNode = resolveNode(request.getData(1));
         String typeName = request.getStringData(2);
@@ -131,7 +135,7 @@ public class RelResource extends PropertyContainerResource implements Transactio
      * Delete a relationship identified by ID.
      */
     @Override
-    public PropertyContainer delete(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
+    public PropertyContainer delete(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
         long relID = request.getIntegerData(0);
         try {
             Relationship rel = database().getRelationshipById(relID);
@@ -145,7 +149,7 @@ public class RelResource extends PropertyContainerResource implements Transactio
         }
     }
 
-    private Node resolveNode(Object value) throws Abstract4xx {
+    private Node resolveNode(Object value) throws Status4xx {
         if (value instanceof Node) {
             return (Node)value;
         } else if (value instanceof Integer) {

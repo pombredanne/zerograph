@@ -3,7 +3,7 @@ package org.zerograph;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.neo4j.graphdb.PropertyContainer;
 import org.zerograph.api.RequestInterface;
-import org.zerograph.response.status4xx.Abstract4xx;
+import org.zerograph.response.status4xx.Status4xx;
 import org.zerograph.response.status4xx.BadRequest;
 import org.zerograph.util.Data;
 import org.zerograph.util.Pointer;
@@ -28,7 +28,7 @@ public class Request implements RequestInterface {
     final private String resource;
     final private Object[] data;
 
-    public Request(String string) throws Abstract4xx {
+    public Request(String string) throws Status4xx {
         this.string = string;
         String[] parts = string.split("\t");
         if (parts.length < 2) {

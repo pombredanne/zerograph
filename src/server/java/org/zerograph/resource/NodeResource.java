@@ -1,16 +1,22 @@
 package org.zerograph.resource;
 
-import org.zerograph.Request;
-import org.zerograph.Zerograph;
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Lock;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Transaction;
+import org.zerograph.api.RequestInterface;
 import org.zerograph.api.TransactionalResourceInterface;
 import org.zerograph.api.ZerographInterface;
 import org.zerograph.response.status2xx.Created;
 import org.zerograph.response.status2xx.NoContent;
 import org.zerograph.response.status2xx.OK;
-import org.zerograph.response.status4xx.Abstract4xx;
 import org.zerograph.response.status4xx.NotFound;
-import org.zerograph.response.status5xx.Abstract5xx;
-import org.neo4j.graphdb.*;
+import org.zerograph.response.status4xx.Status4xx;
+import org.zerograph.response.status5xx.Status5xx;
 import org.zeromq.ZMQ;
 
 import java.util.HashMap;
@@ -19,7 +25,7 @@ import java.util.Map;
 
 public class NodeResource extends PropertyContainerResource implements TransactionalResourceInterface {
 
-    final public static String NAME = "node";
+    final private static String NAME = "node";
 
     final private HashMap<String, Label> labelCache;
 
@@ -28,13 +34,17 @@ public class NodeResource extends PropertyContainerResource implements Transacti
         this.labelCache = new HashMap<>();
     }
 
+    public String getName() {
+        return NAME;
+    }
+
     /**
      * GET node {node_id}
      *
      * Fetch a single node by ID.
      */
     @Override
-    public PropertyContainer get(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
+    public PropertyContainer get(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
         long nodeID = request.getIntegerData(0);
         try {
             Node node = database().getNodeById(nodeID);
@@ -53,7 +63,7 @@ public class NodeResource extends PropertyContainerResource implements Transacti
      * already exist.
      */
     @Override
-    public PropertyContainer put(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
+    public PropertyContainer put(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
         long nodeID = request.getIntegerData(0);
         List labelNames = request.getListData(1);
         Map properties = request.getMapData(2);
@@ -83,7 +93,7 @@ public class NodeResource extends PropertyContainerResource implements Transacti
      * maintained.
      */
     @Override
-    public PropertyContainer patch(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
+    public PropertyContainer patch(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
         long nodeID = request.getIntegerData(0);
         List labelNames = request.getListData(1);
         Map properties = request.getMapData(2);
@@ -108,7 +118,7 @@ public class NodeResource extends PropertyContainerResource implements Transacti
      * Create a new node with the given labels and properties.
      */
     @Override
-    public PropertyContainer post(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
+    public PropertyContainer post(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
         List labelNames = request.getListData(0);
         Map properties = request.getMapData(1);
         Node node = database().createNode();
@@ -128,7 +138,7 @@ public class NodeResource extends PropertyContainerResource implements Transacti
      * Delete a node identified by ID.
      */
     @Override
-    public PropertyContainer delete(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
+    public PropertyContainer delete(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
         long nodeID = request.getIntegerData(0);
         try {
             Node node = database().getNodeById(nodeID);

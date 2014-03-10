@@ -1,10 +1,8 @@
 package org.zerograph;
 
-import org.zerograph.Service;
-import org.zerograph.Request;
 import org.zerograph.api.ResponseInterface;
 import org.zerograph.api.ZerographInterface;
-import org.zerograph.response.status4xx.Abstract4xx;
+import org.zerograph.response.status4xx.Status4xx;
 import org.zerograph.util.Data;
 import org.zeromq.ZMQ;
 
@@ -44,7 +42,7 @@ public abstract class Worker<T extends Service> implements Runnable {
         return this.socket;
     }
 
-    public List<Request> receiveRequestBatch() throws Abstract4xx {
+    public List<Request> receiveRequestBatch() throws Status4xx {
         ArrayList<Request> requests = new ArrayList<>();
         boolean more = true;
         while (more) {

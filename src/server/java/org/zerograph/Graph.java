@@ -62,7 +62,7 @@ public class Graph extends Service {
 
     public void startWorkers(int count) {
         for(int i = 0; i < count; i++) {
-            new Thread(new TransactionalWorker(getZerograph(), this)).start();
+            new Thread(new GraphWorker(getZerograph(), this)).start();
         }
     }
 

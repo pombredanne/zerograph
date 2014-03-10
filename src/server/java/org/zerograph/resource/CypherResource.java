@@ -6,16 +6,15 @@ import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
-import org.zerograph.Request;
-import org.zerograph.Zerograph;
+import org.zerograph.api.RequestInterface;
 import org.zerograph.api.TransactionalResourceInterface;
 import org.zerograph.api.ZerographInterface;
 import org.zerograph.response.status1xx.Continue;
 import org.zerograph.response.status2xx.OK;
-import org.zerograph.response.status4xx.Abstract4xx;
 import org.zerograph.response.status4xx.BadRequest;
 import org.zerograph.response.status4xx.NotFound;
-import org.zerograph.response.status5xx.Abstract5xx;
+import org.zerograph.response.status4xx.Status4xx;
+import org.zerograph.response.status5xx.Status5xx;
 import org.zeromq.ZMQ;
 
 import java.util.ArrayList;
@@ -24,10 +23,14 @@ import java.util.Map;
 
 public class CypherResource extends AbstractTransactionalResource implements TransactionalResourceInterface {
 
-    final public static String NAME = "cypher";
+    final private static String NAME = "cypher";
 
     public CypherResource(ZerographInterface zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
         super(zerograph, socket, database);
+    }
+
+    public String getName() {
+        return NAME;
     }
 
     /**
@@ -36,7 +39,7 @@ public class CypherResource extends AbstractTransactionalResource implements Tra
      * @param request
      */
     @Override
-    public PropertyContainer post(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
+    public PropertyContainer post(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
         String query = request.getStringData(0);
         try {
             ExecutionResult result = execute(query);

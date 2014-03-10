@@ -2,20 +2,21 @@ package org.zerograph.api;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
-import org.zerograph.Request;
-import org.zerograph.response.status4xx.Abstract4xx;
-import org.zerograph.response.status5xx.Abstract5xx;
+import org.zerograph.response.status4xx.Status4xx;
+import org.zerograph.response.status5xx.Status5xx;
 
-public interface TransactionalResourceInterface extends ResourceInterface {
+public interface TransactionalResourceInterface {
 
-    public PropertyContainer get(Request request, Transaction tx) throws Abstract4xx, Abstract5xx;
+    public String getName();
 
-    public PropertyContainer put(Request request, Transaction tx) throws Abstract4xx, Abstract5xx;
+    public PropertyContainer get(RequestInterface request, Transaction tx) throws Status4xx, Status5xx;
 
-    public PropertyContainer patch(Request request, Transaction tx) throws Abstract4xx, Abstract5xx;
+    public PropertyContainer put(RequestInterface request, Transaction tx) throws Status4xx, Status5xx;
 
-    public PropertyContainer post(Request request, Transaction tx) throws Abstract4xx, Abstract5xx;
+    public PropertyContainer patch(RequestInterface request, Transaction tx) throws Status4xx, Status5xx;
 
-    public PropertyContainer delete(Request request, Transaction tx) throws Abstract4xx, Abstract5xx;
+    public PropertyContainer post(RequestInterface request, Transaction tx) throws Status4xx, Status5xx;
+
+    public PropertyContainer delete(RequestInterface request, Transaction tx) throws Status4xx, Status5xx;
 
 }

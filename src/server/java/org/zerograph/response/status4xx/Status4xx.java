@@ -3,7 +3,7 @@ package org.zerograph.response.status4xx;
 import org.zerograph.api.ResponseInterface;
 import org.zerograph.except.ZerographException;
 
-public abstract class Abstract4xx extends ZerographException implements ResponseInterface {
+public abstract class Status4xx extends ZerographException implements ResponseInterface {
 
     final public static int BAD_REQUEST = 400;
     final public static int NOT_FOUND = 404;
@@ -12,7 +12,7 @@ public abstract class Abstract4xx extends ZerographException implements Response
 
     final private Object[] data;
 
-    public Abstract4xx(Object... data) {
+    public Status4xx(Object... data) {
         this.data = data;
     }
 

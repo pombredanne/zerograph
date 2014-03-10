@@ -8,15 +8,15 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
-import org.zerograph.Request;
+import org.zerograph.api.RequestInterface;
 import org.zerograph.api.TransactionalResourceInterface;
 import org.zerograph.api.ZerographInterface;
 import org.zerograph.response.status1xx.Continue;
 import org.zerograph.response.status2xx.Created;
 import org.zerograph.response.status2xx.OK;
-import org.zerograph.response.status4xx.Abstract4xx;
-import org.zerograph.response.status5xx.Abstract5xx;
+import org.zerograph.response.status4xx.Status4xx;
 import org.zerograph.response.status5xx.ServerError;
+import org.zerograph.response.status5xx.Status5xx;
 import org.zeromq.ZMQ;
 
 import java.util.HashMap;
@@ -24,10 +24,14 @@ import java.util.Map;
 
 public class NodeSetResource extends AbstractTransactionalResource implements TransactionalResourceInterface {
 
-    final public static String NAME = "nodeset";
+    final private static String NAME = "nodeset";
 
     public NodeSetResource(ZerographInterface zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
         super(zerograph, socket, database);
+    }
+
+    public String getName() {
+        return NAME;
     }
 
     /**
@@ -41,7 +45,7 @@ public class NodeSetResource extends AbstractTransactionalResource implements Tr
      * @param request
      */
     @Override
-    public PropertyContainer get(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
+    public PropertyContainer get(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
         Label label = DynamicLabel.label(request.getStringData(0));
         String key = request.getStringData(1);
         Object value = request.getData(2);
@@ -70,7 +74,7 @@ public class NodeSetResource extends AbstractTransactionalResource implements Tr
      * @param request
      */
     @Override
-    public PropertyContainer put(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
+    public PropertyContainer put(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
         String labelName = request.getStringData(0);
         String key = request.getStringData(1);
         Object value = request.getData(2);
@@ -112,7 +116,7 @@ public class NodeSetResource extends AbstractTransactionalResource implements Tr
      * @param request
      */
     @Override
-    public PropertyContainer delete(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
+    public PropertyContainer delete(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
         Label label = DynamicLabel.label(request.getStringData(0));
         String key = request.getStringData(1);
         Object value = request.getData(2);
