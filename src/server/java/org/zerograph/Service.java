@@ -1,12 +1,14 @@
 package org.zerograph;
 
+import org.zerograph.api.ServiceInterface;
+import org.zerograph.api.ZerographInterface;
 import org.zeromq.ZMQ;
 
-public abstract class Service implements Runnable {
+public abstract class Service implements Runnable, ServiceInterface {
 
     final public static int WORKER_COUNT = 40;
 
-    final private Zerograph zerograph;
+    final private ZerographInterface zerograph;
     final private String host;
     final private int port;
 
@@ -16,7 +18,7 @@ public abstract class Service implements Runnable {
     private ZMQ.Socket external;  // incoming requests from clients
     private ZMQ.Socket internal;  // request forwarding to workers
 
-    public Service(Zerograph zerograph, String host, int port) {
+    public Service(ZerographInterface zerograph, String host, int port) {
         this.zerograph = zerograph;
         this.host = host;
         this.port = port;
@@ -24,7 +26,7 @@ public abstract class Service implements Runnable {
         this.context = ZMQ.context(1);
     }
 
-    public Zerograph getZerograph() {
+    public ZerographInterface getZerograph() {
         return this.zerograph;
     }
 
@@ -55,6 +57,11 @@ public abstract class Service implements Runnable {
     public abstract void startWorkers(int count);
 
     public void run() {
+        start();
+        stop();
+    }
+
+    public void start() {
         System.out.println("Starting service on " + this.port);
         this.internal = context.socket(ZMQ.DEALER);
         this.internal.bind(getInternalAddress());
@@ -62,18 +69,14 @@ public abstract class Service implements Runnable {
         this.external.bind(getExternalAddress());
         startWorkers(WORKER_COUNT);
         ZMQ.proxy(external, internal, null);
-        shutdown();
-    }
-
-    public void shutdown() {
-        System.out.println("Stopping service on " + this.port);
-        external.close();
-        internal.close();
-        context.term();
     }
 
     public void stop() {
+        System.out.println("Stopping service on " + this.port);
         // TODO: interrupt this thread and shut down gracefully
+        external.close();
+        internal.close();
+        context.term();
     }
 
 }

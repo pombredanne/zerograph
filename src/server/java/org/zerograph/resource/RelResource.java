@@ -10,23 +10,27 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.zerograph.Request;
-import org.zerograph.Zerograph;
-import org.zerograph.except.BadRequest;
-import org.zerograph.except.ClientError;
-import org.zerograph.except.NotFound;
-import org.zerograph.except.ServerError;
+import org.zerograph.api.TransactionalResourceInterface;
+import org.zerograph.api.ZerographInterface;
+import org.zerograph.response.status2xx.Created;
+import org.zerograph.response.status2xx.NoContent;
+import org.zerograph.response.status2xx.OK;
+import org.zerograph.response.status4xx.Abstract4xx;
+import org.zerograph.response.status4xx.BadRequest;
+import org.zerograph.response.status4xx.NotFound;
+import org.zerograph.response.status5xx.Abstract5xx;
 import org.zeromq.ZMQ;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class RelResource extends BasePropertyContainerResource {
+public class RelResource extends PropertyContainerResource implements TransactionalResourceInterface {
 
     final public static String NAME = "rel";
 
     final private HashMap<String, RelationshipType> relationshipTypes;
 
-    public RelResource(Zerograph zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
+    public RelResource(ZerographInterface zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
         super(zerograph, socket, database);
         this.relationshipTypes = new HashMap<>();
     }
@@ -37,11 +41,11 @@ public class RelResource extends BasePropertyContainerResource {
      * Fetch a single relationship by ID.
      */
     @Override
-    public PropertyContainer get(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer get(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         long relID = request.getIntegerData(0);
         try {
             Relationship rel = database().getRelationshipById(relID);
-            sendOK(rel);
+            send(new OK(rel));
             return rel;
         } catch (NotFoundException ex) {
             throw new NotFound("Relationship " + relID + " not found");
@@ -56,7 +60,7 @@ public class RelResource extends BasePropertyContainerResource {
      * already exist.
      */
     @Override
-    public PropertyContainer put(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer put(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         long relID = request.getIntegerData(0);
         Map properties = request.getMapData(1);
         try {
@@ -67,7 +71,7 @@ public class RelResource extends BasePropertyContainerResource {
             addProperties(rel, properties);
             readLock.release();
             writeLock.release();
-            sendOK(rel);
+            send(new OK(rel));
             return rel;
         } catch (NotFoundException ex) {
             throw new NotFound("Relationship " + relID + " not found");
@@ -83,7 +87,7 @@ public class RelResource extends BasePropertyContainerResource {
      * maintained.
      */
     @Override
-    public PropertyContainer patch(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer patch(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         long relID = request.getIntegerData(0);
         Map properties = request.getMapData(1);
         try {
@@ -93,7 +97,7 @@ public class RelResource extends BasePropertyContainerResource {
             addProperties(rel, properties);
             readLock.release();
             writeLock.release();
-            sendOK(rel);
+            send(new OK(rel));
             return rel;
         } catch (NotFoundException ex) {
             throw new NotFound("Relationship " + relID + " not found");
@@ -106,7 +110,7 @@ public class RelResource extends BasePropertyContainerResource {
      * Create a new relationship.
      */
     @Override
-    public PropertyContainer post(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer post(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         Node startNode = resolveNode(request.getData(0));
         Node endNode = resolveNode(request.getData(1));
         String typeName = request.getStringData(2);
@@ -117,7 +121,7 @@ public class RelResource extends BasePropertyContainerResource {
         addProperties(rel, properties);
         readLock.release();
         writeLock.release();
-        sendCreated(rel);
+        send(new Created(rel));
         return rel;
     }
 
@@ -127,21 +131,21 @@ public class RelResource extends BasePropertyContainerResource {
      * Delete a relationship identified by ID.
      */
     @Override
-    public PropertyContainer delete(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer delete(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         long relID = request.getIntegerData(0);
         try {
             Relationship rel = database().getRelationshipById(relID);
             Lock writeLock = tx.acquireWriteLock(rel);
             rel.delete();
             writeLock.release();
-            sendNoContent();
+            send(new NoContent());
             return null;
         } catch (NotFoundException ex) {
             throw new NotFound("Relationship " + relID + " not found");
         }
     }
 
-    private Node resolveNode(Object value) throws ClientError {
+    private Node resolveNode(Object value) throws Abstract4xx {
         if (value instanceof Node) {
             return (Node)value;
         } else if (value instanceof Integer) {

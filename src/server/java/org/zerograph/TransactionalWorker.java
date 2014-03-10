@@ -1,24 +1,27 @@
-package org.zerograph.worker;
+package org.zerograph;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.zerograph.Graph;
-import org.zerograph.Request;
-import org.zerograph.Response;
-import org.zerograph.Zerograph;
-import org.zerograph.except.ClientError;
-import org.zerograph.except.NotFound;
+import org.zerograph.api.TransactionalResourceInterface;
+import org.zerograph.api.ZerographInterface;
 import org.zerograph.resource.CypherResource;
 import org.zerograph.resource.NodeResource;
 import org.zerograph.resource.NodeSetResource;
 import org.zerograph.resource.RelResource;
+import org.zerograph.response.status2xx.OK;
+import org.zerograph.response.status4xx.Abstract4xx;
+import org.zerograph.response.status4xx.BadRequest;
+import org.zerograph.response.status4xx.Conflict;
+import org.zerograph.response.status4xx.MethodNotAllowed;
+import org.zerograph.response.status4xx.NotFound;
+import org.zerograph.response.status5xx.ServerError;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class GraphWorker extends BaseWorker<Graph> {
+public class TransactionalWorker extends Worker<Graph> {
 
     final private GraphDatabaseService database;
 
@@ -27,7 +30,7 @@ public class GraphWorker extends BaseWorker<Graph> {
     final private NodeSetResource nodeSetResource;
     final private RelResource relResource;
 
-    public GraphWorker(Zerograph zerograph, Graph graph) {
+    public TransactionalWorker(ZerographInterface zerograph, Graph graph) {
         super(zerograph, graph);
         this.database = graph.getDatabase();
         this.cypherResource = new CypherResource(zerograph, this.getSocket(), this.database);
@@ -47,8 +50,8 @@ public class GraphWorker extends BaseWorker<Graph> {
             // parse requests
             try {
                 requests = receiveRequestBatch();
-            } catch (ClientError ex) {
-                send(ex.getResponse());
+            } catch (Abstract4xx ex) {
+                send(ex);
                 continue;
             }
             // handle requests
@@ -58,35 +61,57 @@ public class GraphWorker extends BaseWorker<Graph> {
                 try (Transaction tx = database.beginTx()) {
                     for (Request request : requests) {
                         request.resolvePointers(outputValues);
+                        TransactionalResourceInterface resource;
                         switch (request.getResource()) {
                             case CypherResource.NAME:
-                                outputValues.add(cypherResource.handle(request, tx));
+                                resource = this.cypherResource;
                                 break;
                             case NodeResource.NAME:
-                                outputValues.add(nodeResource.handle(request, tx));
+                                resource = this.nodeResource;
                                 break;
                             case NodeSetResource.NAME:
-                                outputValues.add(nodeSetResource.handle(request, tx));
+                                resource = this.nodeSetResource;
                                 break;
                             case RelResource.NAME:
-                                outputValues.add(relResource.handle(request, tx));
+                                resource = this.relResource;
                                 break;
                             default:
                                 throw new NotFound("This service does not provide a resource called " + request.getResource());
                         }
+                        PropertyContainer outputValue;
+                        switch (request.getMethod()) {
+                            case "GET":
+                                outputValue = resource.get(request, tx);
+                                break;
+                            case "PUT":
+                                outputValue = resource.put(request, tx);
+                                break;
+                            case "PATCH":
+                                outputValue = resource.patch(request, tx);
+                                break;
+                            case "POST":
+                                outputValue = resource.post(request, tx);
+                                break;
+                            case "DELETE":
+                                outputValue = resource.delete(request, tx);
+                                break;
+                            default:
+                                throw new MethodNotAllowed(request.getMethod() + " " + request.getResource());
+                        }
+                        outputValues.add(outputValue);
                     }
                     tx.success();
                 }
-                send(new Response(Response.OK));
+                send(new OK());
                 System.out.println("--- Successfully completed transaction in worker " + this.getUUID().toString() + " ---");
             } catch (IllegalArgumentException ex) {
-                send(new Response(Response.BAD_REQUEST, ex.getMessage()));
+                send(new BadRequest(ex.getMessage()));
             } catch (TransactionFailureException ex) {
-                send(new Response(Response.CONFLICT, ex.getMessage()));  // TODO - derive cause from nested Exceptions
-            } catch (ClientError ex) {
-                send(ex.getResponse());
+                send(new Conflict(ex.getMessage()));  // TODO - derive cause from nested Exceptions
+            } catch (Abstract4xx ex) {
+                send(ex);
             } catch (Exception ex) {
-                send(new Response(Response.SERVER_ERROR, ex.getMessage()));
+                send(new ServerError(ex.getMessage()));
             } finally {
                 System.out.println();
             }

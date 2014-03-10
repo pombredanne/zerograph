@@ -1,21 +1,32 @@
 package org.zerograph.resource;
 
-import org.zerograph.*;
-import org.zerograph.except.ClientError;
-import org.zerograph.except.ServerError;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Transaction;
+import org.zerograph.Request;
+import org.zerograph.api.TransactionalResourceInterface;
+import org.zerograph.api.ZerographInterface;
+import org.zerograph.response.status1xx.Continue;
+import org.zerograph.response.status2xx.Created;
+import org.zerograph.response.status2xx.OK;
+import org.zerograph.response.status4xx.Abstract4xx;
+import org.zerograph.response.status5xx.Abstract5xx;
+import org.zerograph.response.status5xx.ServerError;
 import org.zeromq.ZMQ;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class NodeSetResource extends BaseGraphResource {
+public class NodeSetResource extends AbstractTransactionalResource implements TransactionalResourceInterface {
 
     final public static String NAME = "nodeset";
 
-    public NodeSetResource(Zerograph zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
+    public NodeSetResource(ZerographInterface zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
         super(zerograph, socket, database);
     }
 
@@ -30,7 +41,7 @@ public class NodeSetResource extends BaseGraphResource {
      * @param request
      */
     @Override
-    public PropertyContainer get(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer get(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         Label label = DynamicLabel.label(request.getStringData(0));
         String key = request.getStringData(1);
         Object value = request.getData(2);
@@ -38,13 +49,13 @@ public class NodeSetResource extends BaseGraphResource {
         stats.put("nodes_matched", 0);
         Node firstNode = null;
         for (Node node : database().findNodesByLabelAndProperty(label, key, value)) {
-            sendContinue(node);
+            send(new Continue(node));
             if (firstNode == null) {
                 firstNode = node;
             }
             stats.put("nodes_matched", stats.get("nodes_matched") + 1);
         }
-        sendOK(stats);
+        send(new OK(stats));
         return firstNode;
     }
 
@@ -59,7 +70,7 @@ public class NodeSetResource extends BaseGraphResource {
      * @param request
      */
     @Override
-    public PropertyContainer put(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer put(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         String labelName = request.getStringData(0);
         String key = request.getStringData(1);
         Object value = request.getData(2);
@@ -73,7 +84,7 @@ public class NodeSetResource extends BaseGraphResource {
             Node firstNode = null;
             for (Map<String, Object> row : result) {
                 Node node = (Node)row.get("a");
-                sendContinue(node);
+                send(new Continue(node));
                 if (firstNode == null) {
                     firstNode = node;
                 }
@@ -81,13 +92,13 @@ public class NodeSetResource extends BaseGraphResource {
             int nodesCreated = result.getQueryStatistics().getNodesCreated();
             stats.put("nodes_created", nodesCreated);
             if (nodesCreated == 0) {
-                sendOK(stats);
+                send(new OK(stats));
             } else {
-                sendCreated(stats);
+                send(new Created(stats));
             }
             return firstNode;
         } catch (CypherException ex) {
-            throw new ServerError(new Response(Response.SERVER_ERROR, ex.getMessage()));
+            throw new ServerError(ex.getMessage());
         }
     }
 
@@ -101,7 +112,7 @@ public class NodeSetResource extends BaseGraphResource {
      * @param request
      */
     @Override
-    public PropertyContainer delete(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer delete(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         Label label = DynamicLabel.label(request.getStringData(0));
         String key = request.getStringData(1);
         Object value = request.getData(2);
@@ -111,7 +122,7 @@ public class NodeSetResource extends BaseGraphResource {
             node.delete();
             stats.put("nodes_deleted", stats.get("nodes_deleted") + 1);
         }
-        sendOK(stats);
+        send(new OK(stats));
         return null;
     }
 

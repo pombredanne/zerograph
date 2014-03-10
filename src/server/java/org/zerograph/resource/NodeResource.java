@@ -1,11 +1,15 @@
 package org.zerograph.resource;
 
 import org.zerograph.Request;
-import org.zerograph.Response;
 import org.zerograph.Zerograph;
-import org.zerograph.except.ClientError;
-import org.zerograph.except.NotFound;
-import org.zerograph.except.ServerError;
+import org.zerograph.api.TransactionalResourceInterface;
+import org.zerograph.api.ZerographInterface;
+import org.zerograph.response.status2xx.Created;
+import org.zerograph.response.status2xx.NoContent;
+import org.zerograph.response.status2xx.OK;
+import org.zerograph.response.status4xx.Abstract4xx;
+import org.zerograph.response.status4xx.NotFound;
+import org.zerograph.response.status5xx.Abstract5xx;
 import org.neo4j.graphdb.*;
 import org.zeromq.ZMQ;
 
@@ -13,13 +17,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class NodeResource extends BasePropertyContainerResource {
+public class NodeResource extends PropertyContainerResource implements TransactionalResourceInterface {
 
     final public static String NAME = "node";
 
     final private HashMap<String, Label> labelCache;
 
-    public NodeResource(Zerograph zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
+    public NodeResource(ZerographInterface zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
         super(zerograph, socket, database);
         this.labelCache = new HashMap<>();
     }
@@ -30,11 +34,11 @@ public class NodeResource extends BasePropertyContainerResource {
      * Fetch a single node by ID.
      */
     @Override
-    public PropertyContainer get(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer get(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         long nodeID = request.getIntegerData(0);
         try {
             Node node = database().getNodeById(nodeID);
-            sendOK(node);
+            send(new OK(node));
             return node;
         } catch (NotFoundException ex) {
             throw new NotFound("Node " + nodeID + " not found");
@@ -49,7 +53,7 @@ public class NodeResource extends BasePropertyContainerResource {
      * already exist.
      */
     @Override
-    public PropertyContainer put(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer put(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         long nodeID = request.getIntegerData(0);
         List labelNames = request.getListData(1);
         Map properties = request.getMapData(2);
@@ -63,7 +67,7 @@ public class NodeResource extends BasePropertyContainerResource {
             addProperties(node, properties);
             readLock.release();
             writeLock.release();
-            sendOK(node);
+            send(new OK(node));
             return node;
         } catch (NotFoundException ex) {
             throw new NotFound("Node " + nodeID + " not found");
@@ -79,7 +83,7 @@ public class NodeResource extends BasePropertyContainerResource {
      * maintained.
      */
     @Override
-    public PropertyContainer patch(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer patch(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         long nodeID = request.getIntegerData(0);
         List labelNames = request.getListData(1);
         Map properties = request.getMapData(2);
@@ -91,7 +95,7 @@ public class NodeResource extends BasePropertyContainerResource {
             addProperties(node, properties);
             readLock.release();
             writeLock.release();
-            sendOK(node);
+            send(new OK(node));
             return node;
         } catch (NotFoundException ex) {
             throw new NotFound("Node " + nodeID + " not found");
@@ -104,7 +108,7 @@ public class NodeResource extends BasePropertyContainerResource {
      * Create a new node with the given labels and properties.
      */
     @Override
-    public PropertyContainer post(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer post(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         List labelNames = request.getListData(0);
         Map properties = request.getMapData(1);
         Node node = database().createNode();
@@ -114,7 +118,7 @@ public class NodeResource extends BasePropertyContainerResource {
         addProperties(node, properties);
         readLock.release();
         writeLock.release();
-        sendCreated(node);
+        send(new Created(node));
         return node;
     }
 
@@ -124,14 +128,14 @@ public class NodeResource extends BasePropertyContainerResource {
      * Delete a node identified by ID.
      */
     @Override
-    public PropertyContainer delete(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer delete(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         long nodeID = request.getIntegerData(0);
         try {
             Node node = database().getNodeById(nodeID);
             Lock writeLock = tx.acquireWriteLock(node);
             node.delete();
             writeLock.release();
-            sendNoContent();
+            send(new NoContent());
             return null;
         } catch (NotFoundException ex) {
             throw new NotFound("Node " + nodeID + " not found");

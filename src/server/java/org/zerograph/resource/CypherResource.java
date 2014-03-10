@@ -8,21 +8,25 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.zerograph.Request;
 import org.zerograph.Zerograph;
-import org.zerograph.except.BadRequest;
-import org.zerograph.except.ClientError;
-import org.zerograph.except.NotFound;
-import org.zerograph.except.ServerError;
+import org.zerograph.api.TransactionalResourceInterface;
+import org.zerograph.api.ZerographInterface;
+import org.zerograph.response.status1xx.Continue;
+import org.zerograph.response.status2xx.OK;
+import org.zerograph.response.status4xx.Abstract4xx;
+import org.zerograph.response.status4xx.BadRequest;
+import org.zerograph.response.status4xx.NotFound;
+import org.zerograph.response.status5xx.Abstract5xx;
 import org.zeromq.ZMQ;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class CypherResource extends BaseGraphResource {
+public class CypherResource extends AbstractTransactionalResource implements TransactionalResourceInterface {
 
     final public static String NAME = "cypher";
 
-    public CypherResource(Zerograph zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
+    public CypherResource(ZerographInterface zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
         super(zerograph, socket, database);
     }
 
@@ -32,12 +36,12 @@ public class CypherResource extends BaseGraphResource {
      * @param request
      */
     @Override
-    public PropertyContainer post(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer post(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         String query = request.getStringData(0);
         try {
             ExecutionResult result = execute(query);
             List<String> columns = result.columns();
-            sendContinue(columns.toArray(new Object[columns.size()]));
+            send(new Continue(columns.toArray(new Object[columns.size()])));
             PropertyContainer firstEntity = null;
             int rowNumber = 0;
             for (Map<String, Object> row : result) {
@@ -45,7 +49,7 @@ public class CypherResource extends BaseGraphResource {
                 for (String column : columns) {
                     values.add(row.get(column));
                 }
-                sendContinue(values.toArray(new Object[values.size()]));
+                send(new Continue(values.toArray(new Object[values.size()])));
                 if (rowNumber == 0) {
                     Object firstValue = values.get(0);
                     if (firstValue instanceof PropertyContainer) {
@@ -54,7 +58,7 @@ public class CypherResource extends BaseGraphResource {
                 }
                 rowNumber += 1;
             }
-            sendOK();
+            send(new OK());
             return firstEntity;
         } catch (EntityNotFoundException ex) {
             throw new NotFound(ex.getMessage());

@@ -1,10 +1,10 @@
 package org.zerograph;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.zerograph.api.ZerographInterface;
 import org.zerograph.except.GraphAlreadyStartedException;
 import org.zerograph.except.GraphNotStartedException;
 import org.zerograph.except.NoSuchGraphException;
-import org.zerograph.worker.GraphWorker;
 
 import java.util.HashMap;
 
@@ -16,11 +16,7 @@ public class Graph extends Service {
 
     final static private HashMap<Integer, Graph> instances = new HashMap<>(1);
 
-    public static boolean isStarted(Zerograph zerograph, String host, int port) {
-        return instances.containsKey(port);
-    }
-
-    public static synchronized Graph startInstance(Zerograph zerograph, String host, int port, boolean create) throws GraphAlreadyStartedException, NoSuchGraphException {
+    public static synchronized Graph startInstance(ZerographInterface zerograph, String host, int port, boolean create) throws GraphAlreadyStartedException, NoSuchGraphException {
         if (instances.containsKey(port)) {
             throw new GraphAlreadyStartedException(host, port);
         } else {
@@ -36,7 +32,7 @@ public class Graph extends Service {
         }
     }
 
-    public static synchronized void stopInstance(Zerograph zerograph, String host, int port, boolean delete) throws GraphNotStartedException {
+    public static synchronized void stopInstance(ZerographInterface zerograph, String host, int port, boolean delete) throws GraphNotStartedException {
         // TODO: handle delete flag
         if (instances.containsKey(port)) {
             instances.get(port).stop();
@@ -48,7 +44,7 @@ public class Graph extends Service {
 
     final private GraphDatabaseService database;
 
-    public Graph(Zerograph zerograph, String host, int port, boolean create) throws NoSuchGraphException {
+    public Graph(ZerographInterface zerograph, String host, int port, boolean create) throws NoSuchGraphException {
         super(zerograph, host, port);
         if (create) {
             this.database = getEnvironment().getOrCreateDatabase(host, port);
@@ -66,7 +62,7 @@ public class Graph extends Service {
 
     public void startWorkers(int count) {
         for(int i = 0; i < count; i++) {
-            new Thread(new GraphWorker(getZerograph(), this)).start();
+            new Thread(new TransactionalWorker(getZerograph(), this)).start();
         }
     }
 

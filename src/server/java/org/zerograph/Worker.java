@@ -1,24 +1,26 @@
-package org.zerograph.worker;
+package org.zerograph;
 
 import org.zerograph.Service;
 import org.zerograph.Request;
-import org.zerograph.Response;
-import org.zerograph.Zerograph;
-import org.zerograph.except.ClientError;
+import org.zerograph.api.ResponseInterface;
+import org.zerograph.api.ZerographInterface;
+import org.zerograph.response.status4xx.Abstract4xx;
+import org.zerograph.util.Data;
 import org.zeromq.ZMQ;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public abstract class BaseWorker<T extends Service> implements Runnable {
+public abstract class Worker<T extends Service> implements Runnable {
 
-    final private Zerograph zerograph;
+    final private ZerographInterface zerograph;
     final private UUID uuid;
     final private T service;
     final private ZMQ.Socket socket;
 
-    public BaseWorker(Zerograph zerograph, T service) {
+    public Worker(ZerographInterface zerograph, T service) {
         this.zerograph = zerograph;
         this.uuid = UUID.randomUUID();
         this.service = service;
@@ -26,7 +28,7 @@ public abstract class BaseWorker<T extends Service> implements Runnable {
         this.socket.connect(this.service.getInternalAddress());
     }
 
-    public Zerograph getZerograph() {
+    public ZerographInterface getZerograph() {
         return this.zerograph;
     }
 
@@ -42,7 +44,7 @@ public abstract class BaseWorker<T extends Service> implements Runnable {
         return this.socket;
     }
 
-    public List<Request> receiveRequestBatch() throws ClientError {
+    public List<Request> receiveRequestBatch() throws Abstract4xx {
         ArrayList<Request> requests = new ArrayList<>();
         boolean more = true;
         while (more) {
@@ -58,8 +60,17 @@ public abstract class BaseWorker<T extends Service> implements Runnable {
         return requests;
     }
 
-    public boolean send(Response response) {
-        String string = response.toString();
+    public boolean send(ResponseInterface response) {
+        StringBuilder builder = new StringBuilder(Integer.toString(response.getStatus()));
+        for (Object datum : response.getData()) {
+            builder.append('\t');
+            try {
+                builder.append(Data.encode(datum));
+            } catch (IOException ex) {
+                builder.append('?');  // TODO
+            }
+        }
+        String string = builder.toString();
         System.out.println(">>> " + string);
         return socket.send(string);
     }

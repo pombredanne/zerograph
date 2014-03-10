@@ -8,6 +8,7 @@ import org.neo4j.graphdb.Relationship;
 import org.zerograph.Graph;
 import org.zerograph.GraphDirectory;
 import org.zerograph.Zerograph;
+import org.zerograph.api.ZerographInterface;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,7 +47,7 @@ public class Data {
         return propertyMap;
     }
 
-    private static Map<String, Object> attributes(Zerograph zerograph) throws IOException {
+    private static Map<String, Object> attributes(ZerographInterface zerograph) throws IOException {
         HashMap<String, Object> attributes = new HashMap<>();
         attributes.put("host", zerograph.getHost());
         attributes.put("port", zerograph.getPort());

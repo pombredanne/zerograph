@@ -4,8 +4,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.*;
 import org.zerograph.Request;
-import org.zerograph.except.ClientError;
-import org.zerograph.except.ServerError;
+import org.zerograph.response.status4xx.Abstract4xx;
+import org.zerograph.response.status5xx.Abstract5xx;
 import org.zerograph.resource.NodeResource;
 
 import java.util.Arrays;
@@ -36,7 +36,7 @@ public class NodeResourceTest extends ResourceTest {
     }
 
     @Test
-    public void testCanGetExistingNode() throws ClientError, ServerError {
+    public void testCanGetExistingNode() throws Abstract4xx, Abstract5xx {
         String rq = "GET\tnode\t0";
         String rs = "200\t/*Node*/{\"id\":0,\"labels\":[\"Person\"],\"properties\":{\"name\":\"Alice\"}}";
         try (Transaction tx = database.beginTx()) {
@@ -51,14 +51,14 @@ public class NodeResourceTest extends ResourceTest {
     }
 
     @Test
-    public void testCannotGetNonExistentNode() throws ClientError, ServerError {
+    public void testCannotGetNonExistentNode() throws Abstract4xx, Abstract5xx {
         String rq = "GET\tnode\t0";
         String rs = "";
         try (Transaction tx = database.beginTx()) {
             try {
                 resource.get(new Request(rq), tx);
                 assert false;
-            } catch (ClientError err) {
+            } catch (Abstract4xx err) {
                 assert true;
             }
         }
@@ -67,7 +67,7 @@ public class NodeResourceTest extends ResourceTest {
     }
 
     @Test
-    public void testCanPutExistingNode() throws ClientError, ServerError {
+    public void testCanPutExistingNode() throws Abstract4xx, Abstract5xx {
         String rq = "PUT\tnode\t0\t[\"Person\"]\t{\"name\":\"Alice\"}";
         String rs = "200\t/*Node*/{\"id\":0,\"labels\":[\"Person\"],\"properties\":{\"name\":\"Alice\"}}";
         try (Transaction tx = database.beginTx()) {
@@ -82,14 +82,14 @@ public class NodeResourceTest extends ResourceTest {
     }
 
     @Test
-    public void testCannotPutNonExistentNode() throws ClientError, ServerError {
+    public void testCannotPutNonExistentNode() throws Abstract4xx, Abstract5xx {
         String rq = "PUT\tnode\t0\t[\"Person\"]\t{\"name\":\"Alice\"}";
         String rs = "";
         try (Transaction tx = database.beginTx()) {
             try {
                 resource.put(new Request(rq), tx);
                 assert false;
-            } catch (ClientError err) {
+            } catch (Abstract4xx err) {
                 assert true;
             }
         }
@@ -98,7 +98,7 @@ public class NodeResourceTest extends ResourceTest {
     }
 
     @Test
-    public void testCanPatchExistingNode() throws ClientError, ServerError {
+    public void testCanPatchExistingNode() throws Abstract4xx, Abstract5xx {
         String rq = "PATCH\tnode\t0\t[\"Female\"]\t{\"age\":33}";
         String rs = "200\t/*Node*/{\"id\":0,\"labels\":[\"Person\",\"Female\"],\"properties\":{\"name\":\"Alice\",\"age\":33}}";
         try (Transaction tx = database.beginTx()) {
@@ -117,14 +117,14 @@ public class NodeResourceTest extends ResourceTest {
     }
 
     @Test
-    public void testCannotPatchNonExistentNode() throws ClientError, ServerError {
+    public void testCannotPatchNonExistentNode() throws Abstract4xx, Abstract5xx {
         String rq = "PATCH\tnode\t0\t[\"Female\"]\t{\"age\":33}";
         String rs = "";
         try (Transaction tx = database.beginTx()) {
             try {
                 resource.put(new Request(rq), tx);
                 assert false;
-            } catch (ClientError err) {
+            } catch (Abstract4xx err) {
                 assert true;
             }
         }
@@ -133,7 +133,7 @@ public class NodeResourceTest extends ResourceTest {
     }
 
     @Test
-    public void testCanCreateNode() throws ClientError, ServerError {
+    public void testCanCreateNode() throws Abstract4xx, Abstract5xx {
         String rq = "POST\tnode\t[\"Person\"]\t{\"name\":\"Alice\"}";
         String rs = "201\t/*Node*/{\"id\":0,\"labels\":[\"Person\"],\"properties\":{\"name\":\"Alice\"}}";
         try (Transaction tx = database.beginTx()) {
@@ -149,7 +149,7 @@ public class NodeResourceTest extends ResourceTest {
     }
 
     @Test
-    public void testCanDeleteNode() throws ClientError, ServerError {
+    public void testCanDeleteNode() throws Abstract4xx, Abstract5xx {
         String rq = "DELETE\tnode\t0";
         String rs = "204";
         try (Transaction tx = database.beginTx()) {

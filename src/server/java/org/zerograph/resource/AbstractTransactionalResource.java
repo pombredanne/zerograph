@@ -7,10 +7,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.zerograph.Request;
-import org.zerograph.Zerograph;
-import org.zerograph.except.ClientError;
-import org.zerograph.except.MethodNotAllowed;
-import org.zerograph.except.ServerError;
+import org.zerograph.api.ZerographInterface;
+import org.zerograph.response.status4xx.Abstract4xx;
+import org.zerograph.response.status4xx.MethodNotAllowed;
+import org.zerograph.response.status5xx.Abstract5xx;
 import org.zeromq.ZMQ;
 
 import java.util.Map;
@@ -19,12 +19,12 @@ import java.util.Map;
  * Base class for all resources used by a Graph.
  *
  */
-public abstract class BaseGraphResource extends BaseResource {
+public abstract class AbstractTransactionalResource extends AbstractResource {
 
     final private GraphDatabaseService database;
     final private ExecutionEngine engine;
 
-    public BaseGraphResource(Zerograph zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
+    public AbstractTransactionalResource(ZerographInterface zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
         super(zerograph, socket);
         this.database = database;
         this.engine = new ExecutionEngine(database);
@@ -46,7 +46,7 @@ public abstract class BaseGraphResource extends BaseResource {
         return this.engine.profile(query, params);
     }
 
-    public PropertyContainer handle(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer handle(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         switch (request.getMethod()) {
             case "GET":
                 return get(request, tx);
@@ -63,23 +63,23 @@ public abstract class BaseGraphResource extends BaseResource {
         }
     }
 
-    public PropertyContainer get(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer get(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         throw new MethodNotAllowed(request.getMethod());
     }
 
-    public PropertyContainer put(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer put(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         throw new MethodNotAllowed(request.getMethod());
     }
 
-    public PropertyContainer patch(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer patch(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         throw new MethodNotAllowed(request.getMethod());
     }
 
-    public PropertyContainer post(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer post(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         throw new MethodNotAllowed(request.getMethod());
     }
 
-    public PropertyContainer delete(Request request, Transaction tx) throws ClientError, ServerError {
+    public PropertyContainer delete(Request request, Transaction tx) throws Abstract4xx, Abstract5xx {
         throw new MethodNotAllowed(request.getMethod());
     }
 

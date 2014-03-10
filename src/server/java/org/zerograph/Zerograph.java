@@ -1,6 +1,6 @@
 package org.zerograph;
 
-import org.zerograph.worker.ZerographWorker;
+import org.zerograph.api.ZerographInterface;
 
 /**
  * The Zerograph is the root control service for the entire server. It is
@@ -8,7 +8,7 @@ import org.zerograph.worker.ZerographWorker;
  * create and delete Graph services on other ports.
  *
  */
-public class Zerograph extends Service {
+public class Zerograph extends Service implements ZerographInterface {
 
     final private Environment environment;
 
@@ -28,7 +28,7 @@ public class Zerograph extends Service {
 
     public void startWorkers(int count) {
         for(int i = 0; i < count; i++) {
-            new Thread(new ZerographWorker(this)).start();
+            new Thread(new GlobalWorker(this)).start();
         }
     }
 
