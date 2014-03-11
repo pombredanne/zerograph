@@ -10,6 +10,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.zerograph.api.RequestInterface;
+import org.zerograph.api.ResponderInterface;
 import org.zerograph.api.TransactionalResourceInterface;
 import org.zerograph.api.ZerographInterface;
 import org.zerograph.response.status2xx.Created;
@@ -19,7 +20,6 @@ import org.zerograph.response.status4xx.BadRequest;
 import org.zerograph.response.status4xx.NotFound;
 import org.zerograph.response.status4xx.Status4xx;
 import org.zerograph.response.status5xx.Status5xx;
-import org.zeromq.ZMQ;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,8 +30,8 @@ public class RelResource extends PropertyContainerResource implements Transactio
 
     final private HashMap<String, RelationshipType> relationshipTypes;
 
-    public RelResource(ZerographInterface zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
-        super(zerograph, socket, database);
+    public RelResource(ZerographInterface zerograph, ResponderInterface responder, GraphDatabaseService database) {
+        super(zerograph, responder, database);
         this.relationshipTypes = new HashMap<>();
     }
 
@@ -49,7 +49,7 @@ public class RelResource extends PropertyContainerResource implements Transactio
         long relID = request.getIntegerData(0);
         try {
             Relationship rel = database().getRelationshipById(relID);
-            send(new OK(rel));
+            respond(new OK(rel));
             return rel;
         } catch (NotFoundException ex) {
             throw new NotFound("Relationship " + relID + " not found");
@@ -75,7 +75,7 @@ public class RelResource extends PropertyContainerResource implements Transactio
             addProperties(rel, properties);
             readLock.release();
             writeLock.release();
-            send(new OK(rel));
+            respond(new OK(rel));
             return rel;
         } catch (NotFoundException ex) {
             throw new NotFound("Relationship " + relID + " not found");
@@ -101,7 +101,7 @@ public class RelResource extends PropertyContainerResource implements Transactio
             addProperties(rel, properties);
             readLock.release();
             writeLock.release();
-            send(new OK(rel));
+            respond(new OK(rel));
             return rel;
         } catch (NotFoundException ex) {
             throw new NotFound("Relationship " + relID + " not found");
@@ -125,7 +125,7 @@ public class RelResource extends PropertyContainerResource implements Transactio
         addProperties(rel, properties);
         readLock.release();
         writeLock.release();
-        send(new Created(rel));
+        respond(new Created(rel));
         return rel;
     }
 
@@ -142,7 +142,7 @@ public class RelResource extends PropertyContainerResource implements Transactio
             Lock writeLock = tx.acquireWriteLock(rel);
             rel.delete();
             writeLock.release();
-            send(new NoContent());
+            respond(new NoContent());
             return null;
         } catch (NotFoundException ex) {
             throw new NotFound("Relationship " + relID + " not found");

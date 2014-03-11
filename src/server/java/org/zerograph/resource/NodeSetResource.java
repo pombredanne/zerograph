@@ -9,6 +9,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.zerograph.api.RequestInterface;
+import org.zerograph.api.ResponderInterface;
 import org.zerograph.api.TransactionalResourceInterface;
 import org.zerograph.api.ZerographInterface;
 import org.zerograph.response.status1xx.Continue;
@@ -17,7 +18,6 @@ import org.zerograph.response.status2xx.OK;
 import org.zerograph.response.status4xx.Status4xx;
 import org.zerograph.response.status5xx.ServerError;
 import org.zerograph.response.status5xx.Status5xx;
-import org.zeromq.ZMQ;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,8 +26,8 @@ public class NodeSetResource extends AbstractTransactionalResource implements Tr
 
     final private static String NAME = "nodeset";
 
-    public NodeSetResource(ZerographInterface zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
-        super(zerograph, socket, database);
+    public NodeSetResource(ZerographInterface zerograph, ResponderInterface responder, GraphDatabaseService database) {
+        super(zerograph, responder, database);
     }
 
     public String getName() {
@@ -53,13 +53,13 @@ public class NodeSetResource extends AbstractTransactionalResource implements Tr
         stats.put("nodes_matched", 0);
         Node firstNode = null;
         for (Node node : database().findNodesByLabelAndProperty(label, key, value)) {
-            send(new Continue(node));
+            respond(new Continue(node));
             if (firstNode == null) {
                 firstNode = node;
             }
             stats.put("nodes_matched", stats.get("nodes_matched") + 1);
         }
-        send(new OK(stats));
+        respond(new OK(stats));
         return firstNode;
     }
 
@@ -88,7 +88,7 @@ public class NodeSetResource extends AbstractTransactionalResource implements Tr
             Node firstNode = null;
             for (Map<String, Object> row : result) {
                 Node node = (Node)row.get("a");
-                send(new Continue(node));
+                respond(new Continue(node));
                 if (firstNode == null) {
                     firstNode = node;
                 }
@@ -96,9 +96,9 @@ public class NodeSetResource extends AbstractTransactionalResource implements Tr
             int nodesCreated = result.getQueryStatistics().getNodesCreated();
             stats.put("nodes_created", nodesCreated);
             if (nodesCreated == 0) {
-                send(new OK(stats));
+                respond(new OK(stats));
             } else {
-                send(new Created(stats));
+                respond(new Created(stats));
             }
             return firstNode;
         } catch (CypherException ex) {
@@ -126,7 +126,7 @@ public class NodeSetResource extends AbstractTransactionalResource implements Tr
             node.delete();
             stats.put("nodes_deleted", stats.get("nodes_deleted") + 1);
         }
-        send(new OK(stats));
+        respond(new OK(stats));
         return null;
     }
 

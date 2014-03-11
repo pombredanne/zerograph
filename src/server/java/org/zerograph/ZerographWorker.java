@@ -16,10 +16,12 @@ import java.util.List;
 public class ZerographWorker extends Worker<Zerograph> {
 
     final private GraphResource graphResource;
+    final private Responder responder;
 
     public ZerographWorker(Zerograph zerograph) {
         super(zerograph, zerograph);
-        this.graphResource = new GraphResource(zerograph, this.getSocket());
+        this.responder = new Responder(this.getSocket());
+        this.graphResource = new GraphResource(zerograph, this.responder);
     }
 
     @Override

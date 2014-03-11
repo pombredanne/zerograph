@@ -9,6 +9,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.zerograph.api.RequestInterface;
+import org.zerograph.api.ResponderInterface;
 import org.zerograph.api.TransactionalResourceInterface;
 import org.zerograph.api.ZerographInterface;
 import org.zerograph.response.status2xx.Created;
@@ -17,7 +18,6 @@ import org.zerograph.response.status2xx.OK;
 import org.zerograph.response.status4xx.NotFound;
 import org.zerograph.response.status4xx.Status4xx;
 import org.zerograph.response.status5xx.Status5xx;
-import org.zeromq.ZMQ;
 
 import java.util.HashMap;
 import java.util.List;
@@ -29,8 +29,8 @@ public class NodeResource extends PropertyContainerResource implements Transacti
 
     final private HashMap<String, Label> labelCache;
 
-    public NodeResource(ZerographInterface zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
-        super(zerograph, socket, database);
+    public NodeResource(ZerographInterface zerograph, ResponderInterface responder, GraphDatabaseService database) {
+        super(zerograph, responder, database);
         this.labelCache = new HashMap<>();
     }
 
@@ -48,7 +48,7 @@ public class NodeResource extends PropertyContainerResource implements Transacti
         long nodeID = request.getIntegerData(0);
         try {
             Node node = database().getNodeById(nodeID);
-            send(new OK(node));
+            respond(new OK(node));
             return node;
         } catch (NotFoundException ex) {
             throw new NotFound("Node " + nodeID + " not found");
@@ -77,7 +77,7 @@ public class NodeResource extends PropertyContainerResource implements Transacti
             addProperties(node, properties);
             readLock.release();
             writeLock.release();
-            send(new OK(node));
+            respond(new OK(node));
             return node;
         } catch (NotFoundException ex) {
             throw new NotFound("Node " + nodeID + " not found");
@@ -105,7 +105,7 @@ public class NodeResource extends PropertyContainerResource implements Transacti
             addProperties(node, properties);
             readLock.release();
             writeLock.release();
-            send(new OK(node));
+            respond(new OK(node));
             return node;
         } catch (NotFoundException ex) {
             throw new NotFound("Node " + nodeID + " not found");
@@ -128,7 +128,7 @@ public class NodeResource extends PropertyContainerResource implements Transacti
         addProperties(node, properties);
         readLock.release();
         writeLock.release();
-        send(new Created(node));
+        respond(new Created(node));
         return node;
     }
 
@@ -145,7 +145,7 @@ public class NodeResource extends PropertyContainerResource implements Transacti
             Lock writeLock = tx.acquireWriteLock(node);
             node.delete();
             writeLock.release();
-            send(new NoContent());
+            respond(new NoContent());
             return null;
         } catch (NotFoundException ex) {
             throw new NotFound("Node " + nodeID + " not found");

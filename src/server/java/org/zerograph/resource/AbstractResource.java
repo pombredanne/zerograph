@@ -1,6 +1,7 @@
 package org.zerograph.resource;
 
 import org.zerograph.api.RequestInterface;
+import org.zerograph.api.ResponderInterface;
 import org.zerograph.api.ResponseInterface;
 import org.zerograph.api.ZerographInterface;
 import org.zerograph.response.status4xx.MethodNotAllowed;
@@ -14,14 +15,12 @@ import java.io.IOException;
 
 public abstract class AbstractResource {
 
-    final public static String NAME = null;
-
     final private ZerographInterface zerograph;
-    final private ZMQ.Socket socket;
+    final private ResponderInterface responder;
 
-    public AbstractResource(ZerographInterface zerograph, ZMQ.Socket socket) {
+    public AbstractResource(ZerographInterface zerograph, ResponderInterface responder) {
         this.zerograph = zerograph;
-        this.socket = socket;
+        this.responder = responder;
     }
 
     public ZerographInterface getZerograph() {
@@ -48,19 +47,8 @@ public abstract class AbstractResource {
         throw new MethodNotAllowed(request.getMethod());
     }
 
-    public void send(ResponseInterface response) {
-        StringBuilder builder = new StringBuilder(Integer.toString(response.getStatus()));
-        for (Object datum : response.getData()) {
-            builder.append('\t');
-            try {
-                builder.append(Data.encode(datum));
-            } catch (IOException ex) {
-                builder.append('?');  // TODO
-            }
-        }
-        String string = builder.toString();
-        System.out.println(">>> " + string);
-        socket.sendMore(string);
+    public void respond(ResponseInterface response) {
+        responder.respond(response);
     }
 
 }

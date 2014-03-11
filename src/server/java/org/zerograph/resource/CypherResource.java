@@ -7,6 +7,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.zerograph.api.RequestInterface;
+import org.zerograph.api.ResponderInterface;
 import org.zerograph.api.TransactionalResourceInterface;
 import org.zerograph.api.ZerographInterface;
 import org.zerograph.response.status1xx.Continue;
@@ -15,7 +16,6 @@ import org.zerograph.response.status4xx.BadRequest;
 import org.zerograph.response.status4xx.NotFound;
 import org.zerograph.response.status4xx.Status4xx;
 import org.zerograph.response.status5xx.Status5xx;
-import org.zeromq.ZMQ;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,8 +25,8 @@ public class CypherResource extends AbstractTransactionalResource implements Tra
 
     final private static String NAME = "cypher";
 
-    public CypherResource(ZerographInterface zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
-        super(zerograph, socket, database);
+    public CypherResource(ZerographInterface zerograph, ResponderInterface responder, GraphDatabaseService database) {
+        super(zerograph, responder, database);
     }
 
     public String getName() {
@@ -44,7 +44,7 @@ public class CypherResource extends AbstractTransactionalResource implements Tra
         try {
             ExecutionResult result = execute(query);
             List<String> columns = result.columns();
-            send(new Continue(columns.toArray(new Object[columns.size()])));
+            respond(new Continue(columns.toArray(new Object[columns.size()])));
             PropertyContainer firstEntity = null;
             int rowNumber = 0;
             for (Map<String, Object> row : result) {
@@ -52,7 +52,7 @@ public class CypherResource extends AbstractTransactionalResource implements Tra
                 for (String column : columns) {
                     values.add(row.get(column));
                 }
-                send(new Continue(values.toArray(new Object[values.size()])));
+                respond(new Continue(values.toArray(new Object[values.size()])));
                 if (rowNumber == 0) {
                     Object firstValue = values.get(0);
                     if (firstValue instanceof PropertyContainer) {
@@ -61,7 +61,7 @@ public class CypherResource extends AbstractTransactionalResource implements Tra
                 }
                 rowNumber += 1;
             }
-            send(new OK());
+            respond(new OK());
             return firstEntity;
         } catch (EntityNotFoundException ex) {
             throw new NotFound(ex.getMessage());

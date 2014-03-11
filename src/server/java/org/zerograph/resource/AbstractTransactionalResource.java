@@ -7,6 +7,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.zerograph.api.RequestInterface;
+import org.zerograph.api.ResponderInterface;
 import org.zerograph.api.ZerographInterface;
 import org.zerograph.response.status4xx.MethodNotAllowed;
 import org.zerograph.response.status4xx.Status4xx;
@@ -24,8 +25,8 @@ public abstract class AbstractTransactionalResource extends AbstractResource {
     final private GraphDatabaseService database;
     final private ExecutionEngine engine;
 
-    public AbstractTransactionalResource(ZerographInterface zerograph, ZMQ.Socket socket, GraphDatabaseService database) {
-        super(zerograph, socket);
+    public AbstractTransactionalResource(ZerographInterface zerograph, ResponderInterface responder, GraphDatabaseService database) {
+        super(zerograph, responder);
         this.database = database;
         this.engine = new ExecutionEngine(database);
     }

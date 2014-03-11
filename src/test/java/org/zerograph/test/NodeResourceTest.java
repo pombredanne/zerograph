@@ -2,171 +2,155 @@ package org.zerograph.test;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.graphdb.*;
-import org.zerograph.Request;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Transaction;
+import org.zerograph.resource.NodeResource;
 import org.zerograph.response.status4xx.Status4xx;
 import org.zerograph.response.status5xx.Status5xx;
-import org.zerograph.resource.NodeResource;
-
-import java.util.Arrays;
-import java.util.HashMap;
 
 public class NodeResourceTest extends ResourceTest {
+
+    final public static NodeSpec ALICE = NodeSpec.getAlice();
+    final public static NodeSpec EMPLOYEE = NodeSpec.getEmployee();
+    final public static NodeSpec EMPLOYEE_ALICE = NodeSpec.getEmployeeAlice();
 
     protected NodeResource resource;
 
     @Before
     public void createResource() {
-        resource = new NodeResource(fakeZerograph, fakeServer, fakeDatabase);
+        resource = new NodeResource(fakeZerograph, responseCollector, database);
     }
 
-    protected Node createAlice() {
-        Node created = fakeDatabase.createNode();
-        resource.addLabels(created, Arrays.asList("Person"));
-        HashMap<String, Object> properties = new HashMap<>();
-        properties.put("name", "Alice");
-        resource.addProperties(created, properties);
+    protected Node createNode() {
+        return database.createNode();
+    }
+
+    protected Node createNode(NodeSpec spec) {
+        Node created = database.createNode();
+        resource.addLabels(created, spec.getLabels());
+        resource.addProperties(created, spec.getProperties());
         return created;
-    }
-
-    protected void assertAlice(Node node) {
-        assert node.hasLabel(DynamicLabel.label("Person"));
-        assert node.hasProperty("name");
-        assert node.getProperty("name").equals("Alice");
     }
 
     @Test
     public void testCanGetExistingNode() throws Status4xx, Status5xx {
         FakeRequest request = new FakeRequest("GET", "node", 0);
-        String rs = "200\t/*Node*/{\"id\":0,\"labels\":[\"Person\"],\"properties\":{\"name\":\"Alice\"}}";
-        try (Transaction tx = fakeDatabase.beginTx()) {
-            Node created = createAlice();
+        try (Transaction tx = database.beginTx()) {
+            Node created = createNode(ALICE);
             assert created.getId() == 0;
             PropertyContainer got = resource.get(request, tx);
             assert got instanceof Node;
-            assertAlice((Node)got);
+            assert ALICE.matches((Node) got);
+            assert responseCollector.getResponseCount() == 1;
+            assert responseCollector.matchResponse(0, 200, created);
         }
-        sendClose();
-        assert fakeClient.recvStr().equals(rs);
     }
 
     @Test
     public void testCannotGetNonExistentNode() throws Status4xx, Status5xx {
         FakeRequest request = new FakeRequest("GET", "node", 0);
-        String rs = "";
-        try (Transaction tx = fakeDatabase.beginTx()) {
+        try (Transaction tx = database.beginTx()) {
             try {
                 resource.get(request, tx);
                 assert false;
             } catch (Status4xx err) {
                 assert true;
             }
+            assert responseCollector.getResponseCount() == 0;
         }
-        sendClose();
-        assert fakeClient.recvStr().equals(rs);
     }
 
     @Test
     public void testCanPutExistingNode() throws Status4xx, Status5xx {
-        String rq = "PUT\tnode\t0\t[\"Person\"]\t{\"name\":\"Alice\"}";
-        String rs = "200\t/*Node*/{\"id\":0,\"labels\":[\"Person\"],\"properties\":{\"name\":\"Alice\"}}";
-        try (Transaction tx = fakeDatabase.beginTx()) {
-            Node created = fakeDatabase.createNode();
+        FakeRequest request = new FakeRequest("PUT", "node", 0, ALICE.getLabels(), ALICE.getProperties());
+        try (Transaction tx = database.beginTx()) {
+            Node created = createNode();
             assert created.getId() == 0;
-            PropertyContainer got = resource.put(new Request(rq), tx);
+            PropertyContainer got = resource.put(request, tx);
             assert got instanceof Node;
-            assertAlice((Node)got);
+            Node gotNode = (Node)got;
+            assert ALICE.matches(gotNode);
+            assert responseCollector.getResponseCount() == 1;
+            assert responseCollector.matchResponse(0, 200, gotNode);
         }
-        sendClose();
-        assert fakeClient.recvStr().equals(rs);
     }
 
     @Test
     public void testCannotPutNonExistentNode() throws Status4xx, Status5xx {
-        String rq = "PUT\tnode\t0\t[\"Person\"]\t{\"name\":\"Alice\"}";
-        String rs = "";
-        try (Transaction tx = fakeDatabase.beginTx()) {
+        FakeRequest request = new FakeRequest("PUT", "node", 0, ALICE.getLabels(), ALICE.getProperties());
+        try (Transaction tx = database.beginTx()) {
             try {
-                resource.put(new Request(rq), tx);
+                resource.put(request, tx);
                 assert false;
             } catch (Status4xx err) {
                 assert true;
             }
+            assert responseCollector.getResponseCount() == 0;
         }
-        sendClose();
-        assert fakeClient.recvStr().equals(rs);
     }
 
     @Test
     public void testCanPatchExistingNode() throws Status4xx, Status5xx {
-        String rq = "PATCH\tnode\t0\t[\"Female\"]\t{\"age\":33}";
-        String rs = "200\t/*Node*/{\"id\":0,\"labels\":[\"Person\",\"Female\"],\"properties\":{\"name\":\"Alice\",\"age\":33}}";
-        try (Transaction tx = fakeDatabase.beginTx()) {
-            Node created = createAlice();
+        FakeRequest request = new FakeRequest("PATCH", "node", 0, EMPLOYEE.getLabels(), EMPLOYEE.getProperties());
+        try (Transaction tx = database.beginTx()) {
+            Node created = createNode(ALICE);
             assert created.getId() == 0;
-            PropertyContainer got = resource.patch(new Request(rq), tx);
+            PropertyContainer got = resource.patch(request, tx);
             assert got instanceof Node;
             Node gotNode = (Node)got;
-            assertAlice(gotNode);
-            assert gotNode.hasLabel(DynamicLabel.label("Female"));
-            assert gotNode.hasProperty("age");
-            assert gotNode.getProperty("age").equals(33);
+            assert EMPLOYEE_ALICE.matches(gotNode);
+            assert responseCollector.getResponseCount() == 1;
+            assert responseCollector.matchResponse(0, 200, gotNode);
         }
-        sendClose();
-        assert fakeClient.recvStr().startsWith("200");
     }
 
     @Test
     public void testCannotPatchNonExistentNode() throws Status4xx, Status5xx {
-        String rq = "PATCH\tnode\t0\t[\"Female\"]\t{\"age\":33}";
-        String rs = "";
-        try (Transaction tx = fakeDatabase.beginTx()) {
+        FakeRequest request = new FakeRequest("PATCH", "node", 0, EMPLOYEE.getLabels(), EMPLOYEE.getProperties());
+        try (Transaction tx = database.beginTx()) {
             try {
-                resource.put(new Request(rq), tx);
+                resource.put(request, tx);
                 assert false;
             } catch (Status4xx err) {
                 assert true;
             }
+            assert responseCollector.getResponseCount() == 0;
         }
-        sendClose();
-        assert fakeClient.recvStr().equals(rs);
     }
 
     @Test
     public void testCanCreateNode() throws Status4xx, Status5xx {
-        String rq = "POST\tnode\t[\"Person\"]\t{\"name\":\"Alice\"}";
-        String rs = "201\t/*Node*/{\"id\":0,\"labels\":[\"Person\"],\"properties\":{\"name\":\"Alice\"}}";
-        try (Transaction tx = fakeDatabase.beginTx()) {
-            PropertyContainer created = resource.post(new Request(rq), tx);
+        FakeRequest request = new FakeRequest("POST", "node", ALICE.getLabels(), ALICE.getProperties());
+        try (Transaction tx = database.beginTx()) {
+            PropertyContainer created = resource.post(request, tx);
             assert created instanceof Node;
-            Node node = (Node)created;
-            assert node.hasLabel(DynamicLabel.label("Person"));
-            assert node.hasProperty("name");
-            assert node.getProperty("name").equals("Alice");
+            Node createdNode = (Node)created;
+            assert ALICE.matches(createdNode);
+            assert responseCollector.getResponseCount() == 1;
+            assert responseCollector.matchResponse(0, 201, createdNode);
         }
-        sendClose();
-        assert fakeClient.recvStr().equals(rs);
     }
 
     @Test
     public void testCanDeleteNode() throws Status4xx, Status5xx {
-        String rq = "DELETE\tnode\t0";
-        String rs = "204";
-        try (Transaction tx = fakeDatabase.beginTx()) {
-            Node created = fakeDatabase.createNode();
+        FakeRequest request = new FakeRequest("DELETE", "node", 0);
+        try (Transaction tx = database.beginTx()) {
+            Node created = database.createNode();
             assert created.getId() == 0;
-            resource.delete(new Request(rq), tx);
+            resource.delete(request, tx);
         }
-        try (Transaction tx = fakeDatabase.beginTx()) {
+        try (Transaction tx = database.beginTx()) {
             try {
-                fakeDatabase.getNodeById(0);
+                database.getNodeById(0);
                 assert false;
             } catch (NotFoundException ex) {
                 assert true;
             }
+            assert responseCollector.getResponseCount() == 1;
+            assert responseCollector.matchResponse(0, 204);
         }
-        sendClose();
-        assert fakeClient.recvStr().equals(rs);
     }
 
 }

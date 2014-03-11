@@ -24,6 +24,7 @@ import java.util.List;
 public class GraphWorker extends Worker<Graph> {
 
     final private GraphDatabaseService database;
+    final private Responder responder;
 
     final private CypherResource cypherResource;
     final private NodeResource nodeResource;
@@ -33,10 +34,11 @@ public class GraphWorker extends Worker<Graph> {
     public GraphWorker(ZerographInterface zerograph, Graph graph) {
         super(zerograph, graph);
         this.database = graph.getDatabase();
-        this.cypherResource = new CypherResource(zerograph, this.getSocket(), this.database);
-        this.nodeResource = new NodeResource(zerograph, this.getSocket(), this.database);
-        this.nodeSetResource = new NodeSetResource(zerograph, this.getSocket(), this.database);
-        this.relResource = new RelResource(zerograph, this.getSocket(), this.database);
+        this.responder = new Responder(this.getSocket());
+        this.cypherResource = new CypherResource(zerograph, this.responder, this.database);
+        this.nodeResource = new NodeResource(zerograph, this.responder, this.database);
+        this.nodeSetResource = new NodeSetResource(zerograph, this.responder, this.database);
+        this.relResource = new RelResource(zerograph, this.responder, this.database);
     }
 
     public GraphDatabaseService getDatabase() {
