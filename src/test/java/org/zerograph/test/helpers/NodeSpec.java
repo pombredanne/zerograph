@@ -1,4 +1,4 @@
-package org.zerograph.test;
+package org.zerograph.test.helpers;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -17,13 +17,19 @@ public class NodeSpec {
         return new NodeSpec(Arrays.asList("Person"), properties);
     }
 
+    public static NodeSpec getBob() {
+        HashMap<String, Object> properties = new HashMap<>();
+        properties.put("name", "Bob");
+        return new NodeSpec(Arrays.asList("Person"), properties);
+    }
+
     public static NodeSpec getEmployee() {
         HashMap<String, Object> properties = new HashMap<>();
         properties.put("employee_number", 123456);
         return new NodeSpec(Arrays.asList("Manager"), properties);
     }
 
-    public static NodeSpec getEmployeeAlice() {
+    public static NodeSpec getAliceTheEmployee() {
         NodeSpec alice = getAlice();
         NodeSpec employee = getEmployee();
         ArrayList<String> labels = new ArrayList<>();

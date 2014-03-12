@@ -1,4 +1,4 @@
-package org.zerograph.test;
+package org.zerograph.test.helpers;
 
 import org.zerograph.Environment;
 import org.zerograph.api.ZerographInterface;

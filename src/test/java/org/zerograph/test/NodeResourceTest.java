@@ -3,18 +3,14 @@ package org.zerograph.test;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Transaction;
 import org.zerograph.resource.NodeResource;
+import org.zerograph.response.status2xx.Status2xx;
+import org.zerograph.response.status4xx.NotFound;
 import org.zerograph.response.status4xx.Status4xx;
 import org.zerograph.response.status5xx.Status5xx;
+import org.zerograph.test.helpers.FakeRequest;
 
 public class NodeResourceTest extends ResourceTest {
-
-    final public static NodeSpec ALICE = NodeSpec.getAlice();
-    final public static NodeSpec EMPLOYEE = NodeSpec.getEmployee();
-    final public static NodeSpec EMPLOYEE_ALICE = NodeSpec.getEmployeeAlice();
 
     protected NodeResource resource;
 
@@ -23,134 +19,71 @@ public class NodeResourceTest extends ResourceTest {
         resource = new NodeResource(fakeZerograph, responseCollector, database);
     }
 
-    protected Node createNode() {
-        return database.createNode();
-    }
-
-    protected Node createNode(NodeSpec spec) {
-        Node created = database.createNode();
-        resource.addLabels(created, spec.getLabels());
-        resource.addProperties(created, spec.getProperties());
-        return created;
-    }
-
     @Test
     public void testCanGetExistingNode() throws Status4xx, Status5xx {
-        FakeRequest request = new FakeRequest("GET", "node", 0);
-        try (Transaction tx = database.beginTx()) {
-            Node created = createNode(ALICE);
-            assert created.getId() == 0;
-            PropertyContainer got = resource.get(request, tx);
-            assert got instanceof Node;
-            assert ALICE.matches((Node) got);
-            assert responseCollector.getResponseCount() == 1;
-            assert responseCollector.matchResponse(0, 200, created);
-        }
+        Node created = createNode(ALICE);
+        FakeRequest request = new FakeRequest("GET", "node", created.getId());
+        Node got = (Node)resource.get(request, tx);
+        assert ALICE.matches(got);
+        assert responseCollector.matchSingleResponse(Status2xx.OK, created);
     }
 
-    @Test
+    @Test(expected=NotFound.class)
     public void testCannotGetNonExistentNode() throws Status4xx, Status5xx {
         FakeRequest request = new FakeRequest("GET", "node", 0);
-        try (Transaction tx = database.beginTx()) {
-            try {
-                resource.get(request, tx);
-                assert false;
-            } catch (Status4xx err) {
-                assert true;
-            }
-            assert responseCollector.getResponseCount() == 0;
-        }
+        resource.get(request, tx);
     }
 
     @Test
     public void testCanPutExistingNode() throws Status4xx, Status5xx {
-        FakeRequest request = new FakeRequest("PUT", "node", 0, ALICE.getLabels(), ALICE.getProperties());
-        try (Transaction tx = database.beginTx()) {
-            Node created = createNode();
-            assert created.getId() == 0;
-            PropertyContainer got = resource.put(request, tx);
-            assert got instanceof Node;
-            Node gotNode = (Node)got;
-            assert ALICE.matches(gotNode);
-            assert responseCollector.getResponseCount() == 1;
-            assert responseCollector.matchResponse(0, 200, gotNode);
-        }
+        Node created = createNode();
+        FakeRequest request = new FakeRequest("PUT", "node", created.getId(), ALICE.getLabels(), ALICE.getProperties());
+        Node put = (Node)resource.put(request, tx);
+        assert ALICE.matches(put);
+        assert responseCollector.matchSingleResponse(Status2xx.OK, put);
     }
 
-    @Test
+    @Test(expected=NotFound.class)
     public void testCannotPutNonExistentNode() throws Status4xx, Status5xx {
         FakeRequest request = new FakeRequest("PUT", "node", 0, ALICE.getLabels(), ALICE.getProperties());
-        try (Transaction tx = database.beginTx()) {
-            try {
-                resource.put(request, tx);
-                assert false;
-            } catch (Status4xx err) {
-                assert true;
-            }
-            assert responseCollector.getResponseCount() == 0;
-        }
+        resource.put(request, tx);
     }
 
     @Test
     public void testCanPatchExistingNode() throws Status4xx, Status5xx {
-        FakeRequest request = new FakeRequest("PATCH", "node", 0, EMPLOYEE.getLabels(), EMPLOYEE.getProperties());
-        try (Transaction tx = database.beginTx()) {
-            Node created = createNode(ALICE);
-            assert created.getId() == 0;
-            PropertyContainer got = resource.patch(request, tx);
-            assert got instanceof Node;
-            Node gotNode = (Node)got;
-            assert EMPLOYEE_ALICE.matches(gotNode);
-            assert responseCollector.getResponseCount() == 1;
-            assert responseCollector.matchResponse(0, 200, gotNode);
-        }
+        Node created = createNode(ALICE);
+        FakeRequest request = new FakeRequest("PATCH", "node", created.getId(), EMPLOYEE.getLabels(), EMPLOYEE.getProperties());
+        Node patched = (Node)resource.patch(request, tx);
+        assert ALICE_THE_EMPLOYEE.matches(patched);
+        assert responseCollector.matchSingleResponse(Status2xx.OK, patched);
     }
 
-    @Test
+    @Test(expected=NotFound.class)
     public void testCannotPatchNonExistentNode() throws Status4xx, Status5xx {
         FakeRequest request = new FakeRequest("PATCH", "node", 0, EMPLOYEE.getLabels(), EMPLOYEE.getProperties());
-        try (Transaction tx = database.beginTx()) {
-            try {
-                resource.put(request, tx);
-                assert false;
-            } catch (Status4xx err) {
-                assert true;
-            }
-            assert responseCollector.getResponseCount() == 0;
-        }
+        resource.put(request, tx);
     }
 
     @Test
     public void testCanCreateNode() throws Status4xx, Status5xx {
         FakeRequest request = new FakeRequest("POST", "node", ALICE.getLabels(), ALICE.getProperties());
-        try (Transaction tx = database.beginTx()) {
-            PropertyContainer created = resource.post(request, tx);
-            assert created instanceof Node;
-            Node createdNode = (Node)created;
-            assert ALICE.matches(createdNode);
-            assert responseCollector.getResponseCount() == 1;
-            assert responseCollector.matchResponse(0, 201, createdNode);
-        }
+        Node created = (Node)resource.post(request, tx);
+        assert ALICE.matches(created);
+        assert responseCollector.matchSingleResponse(Status2xx.CREATED, created);
     }
 
     @Test
-    public void testCanDeleteNode() throws Status4xx, Status5xx {
+    public void testCanDeleteExistingNode() throws Status4xx, Status5xx {
+        Node created = database.createNode();
+        FakeRequest request = new FakeRequest("DELETE", "node", created.getId());
+        resource.delete(request, tx);
+        assert responseCollector.matchSingleResponse(Status2xx.NO_CONTENT);
+    }
+
+    @Test(expected=NotFound.class)
+    public void testCannotDeleteNonExistentNode() throws Status4xx, Status5xx {
         FakeRequest request = new FakeRequest("DELETE", "node", 0);
-        try (Transaction tx = database.beginTx()) {
-            Node created = database.createNode();
-            assert created.getId() == 0;
-            resource.delete(request, tx);
-        }
-        try (Transaction tx = database.beginTx()) {
-            try {
-                database.getNodeById(0);
-                assert false;
-            } catch (NotFoundException ex) {
-                assert true;
-            }
-            assert responseCollector.getResponseCount() == 1;
-            assert responseCollector.matchResponse(0, 204);
-        }
+        resource.delete(request, tx);
     }
 
 }

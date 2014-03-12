@@ -45,7 +45,7 @@ public class NodeResource extends PropertyContainerResource implements Transacti
      */
     @Override
     public PropertyContainer get(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
-        long nodeID = request.getIntegerData(0);
+        long nodeID = request.getLongData(0);
         try {
             Node node = database().getNodeById(nodeID);
             respond(new OK(node));
@@ -64,7 +64,7 @@ public class NodeResource extends PropertyContainerResource implements Transacti
      */
     @Override
     public PropertyContainer put(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
-        long nodeID = request.getIntegerData(0);
+        long nodeID = request.getLongData(0);
         List labelNames = request.getListData(1);
         Map properties = request.getMapData(2);
         try {
@@ -94,7 +94,7 @@ public class NodeResource extends PropertyContainerResource implements Transacti
      */
     @Override
     public PropertyContainer patch(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
-        long nodeID = request.getIntegerData(0);
+        long nodeID = request.getLongData(0);
         List labelNames = request.getListData(1);
         Map properties = request.getMapData(2);
         try {
@@ -139,7 +139,7 @@ public class NodeResource extends PropertyContainerResource implements Transacti
      */
     @Override
     public PropertyContainer delete(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
-        long nodeID = request.getIntegerData(0);
+        long nodeID = request.getLongData(0);
         try {
             Node node = database().getNodeById(nodeID);
             Lock writeLock = tx.acquireWriteLock(node);

@@ -94,21 +94,25 @@ public class Request implements RequestInterface {
         }
     }
 
-    public int getIntegerData(int index) {
+    public long getLongData(int index) {
         Object datum = getData(index);
         if (datum instanceof Integer) {
-            return (Integer)datum;
+            return ((Integer) datum).longValue();
+        } else if (datum instanceof Long) {
+            return (Long) datum;
         } else {
-            throw new IllegalArgumentException("Integer data expected");
+            throw new IllegalArgumentException("Integer or Long data expected");
         }
     }
 
-    public int getIntegerData(int index, int defaultValue) {
+    public long getLongData(int index, long defaultValue) {
         Object datum = getData(index, defaultValue);
         if (datum instanceof Integer) {
-            return (Integer)datum;
+            return ((Integer) datum).longValue();
+        } else if (datum instanceof Long) {
+            return (Long) datum;
         } else {
-            throw new IllegalArgumentException("Integer data expected");
+            throw new IllegalArgumentException("Integer or Long data expected");
         }
     }
 

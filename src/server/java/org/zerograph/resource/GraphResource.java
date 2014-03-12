@@ -34,7 +34,7 @@ public class GraphResource extends AbstractResource implements ResourceInterface
     @Override
     public void get(RequestInterface request) throws Status4xx, Status5xx {
         String host = request.getStringData(0);
-        int port = request.getIntegerData(1);
+        int port = new Long(request.getLongData(1)).intValue();
         GraphDirectory directory = new GraphDirectory(getZerograph(), host, port);
         if (directory.exists()) {
             respond(new OK(directory));  // check if started
@@ -51,7 +51,7 @@ public class GraphResource extends AbstractResource implements ResourceInterface
     @Override
     public void put(RequestInterface request) throws Status4xx, Status5xx {
         String host = request.getStringData(0);
-        int port = request.getIntegerData(1);
+        int port = new Long(request.getLongData(1)).intValue();
         boolean create = request.getBooleanData(2, false);
         GraphDirectory directory = new GraphDirectory(getZerograph(), host, port);
         if (directory.exists() || create) {
@@ -76,7 +76,7 @@ public class GraphResource extends AbstractResource implements ResourceInterface
     @Override
     public void delete(RequestInterface request) throws Status4xx, Status5xx {
         String host = request.getStringData(0);
-        int port = request.getIntegerData(1);
+        int port = new Long(request.getLongData(1)).intValue();
         boolean delete = request.getBooleanData(2, false);
         // TODO: get deleted flag
         try {

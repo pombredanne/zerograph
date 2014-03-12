@@ -1,4 +1,4 @@
-package org.zerograph.test;
+package org.zerograph.test.helpers;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.zerograph.api.RequestInterface;
@@ -55,16 +55,31 @@ public class FakeRequest implements RequestInterface {
     }
 
     @Override
-    public int getIntegerData(int index) {
-        return (int)data[index];
+    public long getLongData(int index) {
+        Object datum = data[index];
+        if (datum instanceof Integer) {
+            return ((Integer) datum).longValue();
+        } else if (datum instanceof Long) {
+            return (Long) datum;
+        } else {
+            throw new IllegalArgumentException("Integer or Long data expected");
+        }
     }
 
     @Override
-    public int getIntegerData(int index, int defaultValue) {
-        if (index < data.length)
-            return (int)data[index];
-        else
+    public long getLongData(int index, long defaultValue) {
+        if (index < data.length) {
+            Object datum = data[index];
+            if (datum instanceof Integer) {
+                return ((Integer) datum).longValue();
+            } else if (datum instanceof Long) {
+                return (Long) datum;
+            } else {
+                throw new IllegalArgumentException("Integer or Long data expected");
+            }
+        } else {
             return defaultValue;
+        }
     }
 
     @Override

@@ -19,9 +19,9 @@ public interface RequestInterface {
 
     public boolean getBooleanData(int index, boolean defaultValue);
 
-    public int getIntegerData(int index);
+    public long getLongData(int index);
 
-    public int getIntegerData(int index, int defaultValue);
+    public long getLongData(int index, long defaultValue);
 
     public String getStringData(int index);
 

@@ -46,7 +46,7 @@ public class RelResource extends PropertyContainerResource implements Transactio
      */
     @Override
     public PropertyContainer get(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
-        long relID = request.getIntegerData(0);
+        long relID = request.getLongData(0);
         try {
             Relationship rel = database().getRelationshipById(relID);
             respond(new OK(rel));
@@ -65,7 +65,7 @@ public class RelResource extends PropertyContainerResource implements Transactio
      */
     @Override
     public PropertyContainer put(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
-        long relID = request.getIntegerData(0);
+        long relID = request.getLongData(0);
         Map properties = request.getMapData(1);
         try {
             Relationship rel = database().getRelationshipById(relID);
@@ -92,7 +92,7 @@ public class RelResource extends PropertyContainerResource implements Transactio
      */
     @Override
     public PropertyContainer patch(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
-        long relID = request.getIntegerData(0);
+        long relID = request.getLongData(0);
         Map properties = request.getMapData(1);
         try {
             Relationship rel = database().getRelationshipById(relID);
@@ -136,7 +136,7 @@ public class RelResource extends PropertyContainerResource implements Transactio
      */
     @Override
     public PropertyContainer delete(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
-        long relID = request.getIntegerData(0);
+        long relID = request.getLongData(0);
         try {
             Relationship rel = database().getRelationshipById(relID);
             Lock writeLock = tx.acquireWriteLock(rel);
@@ -154,7 +154,13 @@ public class RelResource extends PropertyContainerResource implements Transactio
             return (Node)value;
         } else if (value instanceof Integer) {
             try {
-                return database().getNodeById((Integer)value);
+                return database().getNodeById((Integer) value);
+            } catch (NotFoundException ex) {
+                throw new NotFound("Relationship " + value + " not found");
+            }
+        } else if (value instanceof Long) {
+            try {
+                return database().getNodeById((Long) value);
             } catch (NotFoundException ex) {
                 throw new NotFound("Relationship " + value + " not found");
             }

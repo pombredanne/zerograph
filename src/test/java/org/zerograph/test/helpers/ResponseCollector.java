@@ -1,4 +1,4 @@
-package org.zerograph.test;
+package org.zerograph.test.helpers;
 
 import org.zerograph.api.ResponderInterface;
 import org.zerograph.api.ResponseInterface;
@@ -28,7 +28,7 @@ public class ResponseCollector implements ResponderInterface {
     }
 
     public boolean matchResponse(int index, int status, Object... data) {
-        ResponseInterface response = this.responses.get(index);
+        ResponseInterface response = responses.get(index);
         if (response.getStatus() != status)
             return false;
         int i = 0;
@@ -38,6 +38,10 @@ public class ResponseCollector implements ResponderInterface {
             i += 1;
         }
         return true;
+    }
+
+    public boolean matchSingleResponse(int status, Object... data) {
+        return responses.size() == 1 && matchResponse(0, status, data);
     }
 
 }
