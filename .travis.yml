@@ -1,1 +1,8 @@
 language: java
+install:
+  - sudo apt-get install python2.7 python3.3 python-virtualenv
+  - ./travis/install.sh
+script:
+  - ./gradlew assemble
+  - ./gradlew check
+
