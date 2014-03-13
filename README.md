@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/zerograph/zerograph.png)](https://travis-ci.org/zerograph/zerograph)
+
 # Zerograph
 
 ## Server
