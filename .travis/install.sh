@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+sudo apt-get install -y python2.7 python3.3 python-virtualenv
 
 function python_install {
     VENV=$1

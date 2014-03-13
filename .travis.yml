@@ -1,6 +1,7 @@
 language: java
+before_install:
+  - ./travis/before_install.sh
 install:
-  - sudo apt-get install python2.7 python3.3 python-virtualenv
   - ./travis/install.sh
 script:
   - ./gradlew assemble
