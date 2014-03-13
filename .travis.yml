@@ -1,8 +1,8 @@
 language: java
 before_install:
-  - ./travis/before_install.sh
+  - ./.travis/before_install.sh
 install:
-  - ./travis/install.sh
+  - ./.travis/install.sh
 script:
   - ./gradlew assemble
   - ./gradlew check
