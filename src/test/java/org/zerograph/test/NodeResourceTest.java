@@ -10,6 +10,8 @@ import org.zerograph.response.status4xx.Status4xx;
 import org.zerograph.response.status5xx.Status5xx;
 import org.zerograph.test.helpers.FakeRequest;
 
+import java.util.ArrayList;
+
 public class NodeResourceTest extends ResourceTest {
 
     protected NodeResource resource;
@@ -24,7 +26,7 @@ public class NodeResourceTest extends ResourceTest {
         Node created = createNode(ALICE);
         FakeRequest request = new FakeRequest("GET", "node", created.getId());
         Node got = (Node)resource.get(request, tx);
-        assert ALICE.matches(got);
+        assert ALICE.equals(got);
         assert responseCollector.matchSingleResponse(Status2xx.OK, created);
     }
 
@@ -37,38 +39,38 @@ public class NodeResourceTest extends ResourceTest {
     @Test
     public void testCanPutExistingNode() throws Status4xx, Status5xx {
         Node created = createNode();
-        FakeRequest request = new FakeRequest("PUT", "node", created.getId(), ALICE.getLabels(), ALICE.getProperties());
+        FakeRequest request = new FakeRequest("PUT", "node", created.getId(), new ArrayList<>(ALICE.getLabels()), ALICE.getProperties());
         Node put = (Node)resource.put(request, tx);
-        assert ALICE.matches(put);
+        assert ALICE.equals(put);
         assert responseCollector.matchSingleResponse(Status2xx.OK, put);
     }
 
     @Test(expected=NotFound.class)
     public void testCannotPutNonExistentNode() throws Status4xx, Status5xx {
-        FakeRequest request = new FakeRequest("PUT", "node", 0, ALICE.getLabels(), ALICE.getProperties());
+        FakeRequest request = new FakeRequest("PUT", "node", 0, new ArrayList<>(ALICE.getLabels()), ALICE.getProperties());
         resource.put(request, tx);
     }
 
     @Test
     public void testCanPatchExistingNode() throws Status4xx, Status5xx {
         Node created = createNode(ALICE);
-        FakeRequest request = new FakeRequest("PATCH", "node", created.getId(), EMPLOYEE.getLabels(), EMPLOYEE.getProperties());
+        FakeRequest request = new FakeRequest("PATCH", "node", created.getId(), new ArrayList<>(EMPLOYEE.getLabels()), EMPLOYEE.getProperties());
         Node patched = (Node)resource.patch(request, tx);
-        assert ALICE_THE_EMPLOYEE.matches(patched);
+        assert ALICE_THE_EMPLOYEE.equals(patched);
         assert responseCollector.matchSingleResponse(Status2xx.OK, patched);
     }
 
     @Test(expected=NotFound.class)
     public void testCannotPatchNonExistentNode() throws Status4xx, Status5xx {
-        FakeRequest request = new FakeRequest("PATCH", "node", 0, EMPLOYEE.getLabels(), EMPLOYEE.getProperties());
+        FakeRequest request = new FakeRequest("PATCH", "node", 0, new ArrayList<>(EMPLOYEE.getLabels()), EMPLOYEE.getProperties());
         resource.put(request, tx);
     }
 
     @Test
     public void testCanCreateNode() throws Status4xx, Status5xx {
-        FakeRequest request = new FakeRequest("POST", "node", ALICE.getLabels(), ALICE.getProperties());
+        FakeRequest request = new FakeRequest("POST", "node", new ArrayList<>(ALICE.getLabels()), ALICE.getProperties());
         Node created = (Node)resource.post(request, tx);
-        assert ALICE.matches(created);
+        assert ALICE.equals(created);
         assert responseCollector.matchSingleResponse(Status2xx.CREATED, created);
     }
 

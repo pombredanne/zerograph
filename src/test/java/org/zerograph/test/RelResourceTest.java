@@ -30,7 +30,7 @@ public class RelResourceTest extends ResourceTest {
         Relationship created = createRel(ALICE, KNOWS_SINCE_1999, BOB);
         FakeRequest request = new FakeRequest("GET", "rel", created.getId());
         Relationship got = (Relationship)resource.get(request, tx);
-        assert KNOWS_SINCE_1999.matches(got);
+        assert KNOWS_SINCE_1999.equals(got);
         assert responseCollector.matchSingleResponse(200, created);
     }
 
@@ -45,7 +45,7 @@ public class RelResourceTest extends ResourceTest {
         Relationship created = createRel(ALICE, KNOWS_SINCE_1999, BOB);
         FakeRequest request = new FakeRequest("PUT", "rel", created.getId(), KNOWS_FROM_WORK.getProperties());
         Relationship put = (Relationship)resource.put(request, tx);
-        assert KNOWS_FROM_WORK.matches(put);
+        assert KNOWS_FROM_WORK.equals(put);
         assert responseCollector.matchSingleResponse(Status2xx.OK, put);
     }
 
@@ -60,7 +60,7 @@ public class RelResourceTest extends ResourceTest {
         Relationship created = createRel(ALICE, KNOWS_SINCE_1999, BOB);
         FakeRequest request = new FakeRequest("PATCH", "rel", created.getId(), KNOWS_FROM_WORK.getProperties());
         Relationship patched = (Relationship)resource.patch(request, tx);
-        assert KNOWS_SINCE_1999_FROM_WORK.matches(patched);
+        assert KNOWS_SINCE_1999_FROM_WORK.equals(patched);
         assert responseCollector.matchSingleResponse(Status2xx.OK, patched);
     }
 
@@ -76,9 +76,9 @@ public class RelResourceTest extends ResourceTest {
         Node bob = createNode(BOB);
         FakeRequest request = new FakeRequest("POST", "rel", alice.getId(), bob.getId(), KNOWS_SINCE_1999.getType(), KNOWS_SINCE_1999.getProperties());
         Relationship created = (Relationship)resource.post(request, tx);
-        assert ALICE.matches(created.getStartNode());
-        assert BOB.matches(created.getEndNode());
-        assert KNOWS_SINCE_1999.matches(created);
+        assert ALICE.equals(created.getStartNode());
+        assert BOB.equals(created.getEndNode());
+        assert KNOWS_SINCE_1999.equals(created);
         assert responseCollector.matchSingleResponse(Status2xx.CREATED, created);
     }
 

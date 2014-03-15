@@ -1,6 +1,7 @@
 package org.zerograph;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.zerograph.api.GraphInterface;
 import org.zerograph.api.ZerographInterface;
 import org.zerograph.except.GraphAlreadyStartedException;
 import org.zerograph.except.GraphNotStartedException;
@@ -12,7 +13,7 @@ import java.util.HashMap;
  * A Graph service represents a database exposed over a server port.
  *
  */
-public class Graph extends Service {
+public class Graph extends Service implements GraphInterface {
 
     final static private HashMap<Integer, Graph> instances = new HashMap<>(1);
 

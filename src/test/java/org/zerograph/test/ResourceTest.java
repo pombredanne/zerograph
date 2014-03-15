@@ -10,24 +10,26 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.zerograph.api.NodeTemplateInterface;
+import org.zerograph.api.RelTemplateInterface;
 import org.zerograph.test.helpers.FakeZerograph;
-import org.zerograph.test.helpers.NodeSpec;
-import org.zerograph.test.helpers.RelSpec;
 import org.zerograph.test.helpers.ResponseCollector;
+import org.zerograph.test.helpers.TestNodeTemplate;
+import org.zerograph.test.helpers.TestRelTemplate;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 
 public abstract class ResourceTest {
 
-    final public static NodeSpec ALICE = NodeSpec.getAlice();
-    final public static NodeSpec BOB = NodeSpec.getBob();
-    final public static NodeSpec EMPLOYEE = NodeSpec.getEmployee();
-    final public static NodeSpec ALICE_THE_EMPLOYEE = NodeSpec.getAliceTheEmployee();
+    final public static NodeTemplateInterface ALICE = TestNodeTemplate.getAlice();
+    final public static NodeTemplateInterface BOB = TestNodeTemplate.getBob();
+    final public static NodeTemplateInterface EMPLOYEE = TestNodeTemplate.getEmployee();
+    final public static NodeTemplateInterface ALICE_THE_EMPLOYEE = TestNodeTemplate.getAliceTheEmployee();
 
-    final public static RelSpec KNOWS_SINCE_1999 = RelSpec.getKnowsSince1999();
-    final public static RelSpec KNOWS_FROM_WORK = RelSpec.getKnowsFromWork();
-    final public static RelSpec KNOWS_SINCE_1999_FROM_WORK = RelSpec.getKnowsSince1999FromWork();
+    final public static RelTemplateInterface KNOWS_SINCE_1999 = TestRelTemplate.getKnowsSince1999();
+    final public static RelTemplateInterface KNOWS_FROM_WORK = TestRelTemplate.getKnowsFromWork();
+    final public static RelTemplateInterface KNOWS_SINCE_1999_FROM_WORK = TestRelTemplate.getKnowsSince1999FromWork();
 
     protected FakeZerograph fakeZerograph;
     protected GraphDatabaseService database;
@@ -53,14 +55,14 @@ public abstract class ResourceTest {
         return database.createNode();
     }
 
-    protected Node createNode(NodeSpec spec) {
+    protected Node createNode(NodeTemplateInterface spec) {
         Node created = database.createNode();
         addLabels(created, spec.getLabels());
         addProperties(created, spec.getProperties());
         return created;
     }
 
-    protected Relationship createRel(NodeSpec start, RelSpec rel, NodeSpec end) {
+    protected Relationship createRel(NodeTemplateInterface start, RelTemplateInterface rel, NodeTemplateInterface end) {
         Node startNode = createNode(start);
         Node endNode = createNode(end);
         Relationship created = startNode.createRelationshipTo(endNode, DynamicRelationshipType.withName(rel.getType()));
@@ -68,7 +70,7 @@ public abstract class ResourceTest {
         return created;
     }
 
-    public void addLabels(Node node, List<String> labelNames) {
+    public void addLabels(Node node, Collection<String> labelNames) {
         for (String labelName : labelNames) {
             node.addLabel(DynamicLabel.label(labelName));
         }
