@@ -3,12 +3,11 @@ package org.zerograph.resource;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.EntityNotFoundException;
 import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Transaction;
+import org.zerograph.api.Neo4jContextInterface;
 import org.zerograph.api.RequestInterface;
+import org.zerograph.api.ResourceInterface;
 import org.zerograph.api.ResponderInterface;
-import org.zerograph.api.TransactionalResourceInterface;
 import org.zerograph.api.ZerographInterface;
 import org.zerograph.response.status1xx.Continue;
 import org.zerograph.response.status2xx.OK;
@@ -21,12 +20,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class CypherResource extends AbstractTransactionalResource implements TransactionalResourceInterface {
+public class CypherResource extends AbstractResource implements ResourceInterface {
 
     final private static String NAME = "cypher";
 
-    public CypherResource(ZerographInterface zerograph, ResponderInterface responder, GraphDatabaseService database) {
-        super(zerograph, responder, database);
+    public CypherResource(ZerographInterface zerograph, ResponderInterface responder) {
+        super(zerograph, responder);
     }
 
     public String getName() {
@@ -39,10 +38,10 @@ public class CypherResource extends AbstractTransactionalResource implements Tra
      * @param request
      */
     @Override
-    public PropertyContainer post(RequestInterface request, Transaction tx) throws Status4xx, Status5xx {
+    public PropertyContainer post(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
         String query = request.getStringData(0);
         try {
-            ExecutionResult result = execute(query);
+            ExecutionResult result = context.execute(query);
             List<String> columns = result.columns();
             respond(new Continue(columns.toArray(new Object[columns.size()])));
             PropertyContainer firstEntity = null;

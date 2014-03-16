@@ -10,6 +10,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.zerograph.Neo4jContext;
 import org.zerograph.api.NodeTemplateInterface;
 import org.zerograph.api.RelTemplateInterface;
 import org.zerograph.test.helpers.FakeZerograph;
@@ -36,6 +37,7 @@ public abstract class ResourceTest {
     protected ResponseCollector responseCollector;
 
     protected Transaction tx;
+    protected Neo4jContext context;
 
     @Before
     public void setUp() {
@@ -43,6 +45,7 @@ public abstract class ResourceTest {
         database = new TestGraphDatabaseFactory().newImpermanentDatabase();
         responseCollector = new ResponseCollector();
         tx = database.beginTx();
+        context = new Neo4jContext(database, tx);
     }
 
     @After

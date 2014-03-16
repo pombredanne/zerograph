@@ -1,6 +1,7 @@
 package org.zerograph.api;
 
 import org.zerograph.Environment;
+import org.zerograph.ResourceSet;
 import org.zeromq.ZMQ;
 
 public interface ServiceInterface {
@@ -22,4 +23,7 @@ public interface ServiceInterface {
     public void start();
 
     public void stop();
+
+    public ResourceSet createResourceSet(ResponderInterface responder);
+
 }

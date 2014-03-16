@@ -9,7 +9,7 @@ public interface RequestInterface {
 
     public String getMethod();
 
-    public String getResource();
+    public String getResourceName();
 
     public Object getData(int index);
 

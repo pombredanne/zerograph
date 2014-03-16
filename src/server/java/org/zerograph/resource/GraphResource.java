@@ -1,11 +1,13 @@
 package org.zerograph.resource;
 
-import org.zerograph.Graph;
+import org.neo4j.graphdb.PropertyContainer;
 import org.zerograph.GraphDirectory;
-import org.zerograph.Zerograph;
+import org.zerograph.api.Neo4jContextInterface;
+import org.zerograph.api.GraphInterface;
 import org.zerograph.api.RequestInterface;
 import org.zerograph.api.ResourceInterface;
 import org.zerograph.api.ResponderInterface;
+import org.zerograph.api.ZerographInterface;
 import org.zerograph.except.GraphAlreadyStartedException;
 import org.zerograph.except.GraphNotStartedException;
 import org.zerograph.except.NoSuchGraphException;
@@ -18,7 +20,7 @@ public class GraphResource extends AbstractResource implements ResourceInterface
 
     final private static String NAME = "graph";
 
-    public GraphResource(Zerograph zerograph, ResponderInterface responder) {
+    public GraphResource(ZerographInterface zerograph, ResponderInterface responder) {
         super(zerograph, responder);
     }
 
@@ -32,15 +34,16 @@ public class GraphResource extends AbstractResource implements ResourceInterface
      * @param request
      */
     @Override
-    public void get(RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer get(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
         String host = request.getStringData(0);
         int port = new Long(request.getLongData(1)).intValue();
-        GraphDirectory directory = new GraphDirectory(getZerograph(), host, port);
+        GraphDirectory directory = new GraphDirectory(zerograph, host, port);
         if (directory.exists()) {
             respond(new OK(directory));  // check if started
         } else {
             throw new NotFound("No graph directory exists for " + host + ":" + port);
         }
+        return null;
     }
 
     /**
@@ -49,14 +52,14 @@ public class GraphResource extends AbstractResource implements ResourceInterface
      * @param request
      */
     @Override
-    public void put(RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer put(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
         String host = request.getStringData(0);
         int port = new Long(request.getLongData(1)).intValue();
         boolean create = request.getBooleanData(2, false);
-        GraphDirectory directory = new GraphDirectory(getZerograph(), host, port);
+        GraphDirectory directory = new GraphDirectory(zerograph, host, port);
         if (directory.exists() || create) {
             try {
-                Graph graph = Graph.startInstance(getZerograph(), host, port, create);
+                GraphInterface graph = zerograph.startGraph(host, port, create);
                 respond(new OK(graph));
             } catch (GraphAlreadyStartedException ex) {
                 respond(new OK(ex.getGraph()));
@@ -66,6 +69,7 @@ public class GraphResource extends AbstractResource implements ResourceInterface
         } else {
             throw new NotFound("No graph directory exists for " + host + ":" + port);
         }
+        return null;
     }
 
     /**
@@ -74,17 +78,18 @@ public class GraphResource extends AbstractResource implements ResourceInterface
      * @param request
      */
     @Override
-    public void delete(RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer delete(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
         String host = request.getStringData(0);
         int port = new Long(request.getLongData(1)).intValue();
         boolean delete = request.getBooleanData(2, false);
         // TODO: get deleted flag
         try {
-            Graph.stopInstance(getZerograph(), host, port, false);
+            zerograph.stopGraph(host, port, false);
             respond(new OK());
         } catch (GraphNotStartedException ex) {
             throw new NotFound("No graph on port " + port);
         }
+        return null;
     }
 
 }

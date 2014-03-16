@@ -1,7 +1,13 @@
 package org.zerograph.test.helpers;
 
 import org.zerograph.Environment;
+import org.zerograph.Graph;
+import org.zerograph.ResourceSet;
+import org.zerograph.api.ResponderInterface;
 import org.zerograph.api.ZerographInterface;
+import org.zerograph.except.GraphAlreadyStartedException;
+import org.zerograph.except.GraphNotStartedException;
+import org.zerograph.except.NoSuchGraphException;
 import org.zeromq.ZMQ;
 
 public class FakeZerograph implements ZerographInterface {
@@ -49,5 +55,25 @@ public class FakeZerograph implements ZerographInterface {
     @Override
     public void stop() {
 
+    }
+
+    @Override
+    public Graph getGraph(String host, int port) throws NoSuchGraphException {
+        return null;
+    }
+
+    @Override
+    public Graph startGraph(String host, int port, boolean create) throws NoSuchGraphException, GraphAlreadyStartedException {
+        return null;
+    }
+
+    @Override
+    public void stopGraph(String host, int port, boolean delete) throws GraphNotStartedException {
+
+    }
+
+    @Override
+    public ResourceSet createResourceSet(ResponderInterface responder) {
+        return null;
     }
 }

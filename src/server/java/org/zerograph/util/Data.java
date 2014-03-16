@@ -8,6 +8,7 @@ import org.neo4j.graphdb.Relationship;
 import org.zerograph.Graph;
 import org.zerograph.GraphDirectory;
 import org.zerograph.Zerograph;
+import org.zerograph.api.GraphInterface;
 import org.zerograph.api.ZerographInterface;
 
 import java.io.IOException;
@@ -89,9 +90,9 @@ public class Data {
     }
 
     public static String encode(Object value) throws IOException {
-        if (value instanceof Zerograph) {
+        if (value instanceof ZerographInterface) {
             return ZEROGRAPH_HINT + mapper.writeValueAsString(attributes((Zerograph) value));
-        } else if (value instanceof Graph) {
+        } else if (value instanceof GraphInterface) {
             return GRAPH_HINT + mapper.writeValueAsString(attributes((Graph) value));
         } else if (value instanceof GraphDirectory) {
             return GRAPH_HINT + mapper.writeValueAsString(attributes((GraphDirectory) value));

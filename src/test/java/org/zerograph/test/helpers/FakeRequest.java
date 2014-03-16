@@ -25,7 +25,7 @@ public class FakeRequest implements RequestInterface {
     }
 
     @Override
-    public String getResource() {
+    public String getResourceName() {
         return this.resource;
     }
 

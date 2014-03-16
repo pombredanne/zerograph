@@ -6,9 +6,14 @@ import org.zeromq.ZMQ;
 
 public abstract class Service implements Runnable, ServiceInterface {
 
+    public static String key(String host, int port) {
+        return host + ":" + port;
+    }
+
     final public static int WORKER_COUNT = 40;
 
-    final private ZerographInterface zerograph;
+    final protected ZerographInterface zerograph;
+
     final private String host;
     final private int port;
 

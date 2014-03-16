@@ -56,7 +56,7 @@ public class Request implements RequestInterface {
         return this.method;
     }
 
-    public String getResource() {
+    public String getResourceName() {
         return this.resource;
     }
 
