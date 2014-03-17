@@ -37,7 +37,7 @@ public class RelResource extends AbstractResource implements ResourceInterface {
      * Fetch a single relationship by ID.
      */
     @Override
-    public PropertyContainer get(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer get(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx {
         long relID = request.getLongData(0);
         try {
             Relationship rel = context.getRelationship(relID);
@@ -56,7 +56,7 @@ public class RelResource extends AbstractResource implements ResourceInterface {
      * already exist.
      */
     @Override
-    public PropertyContainer put(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer put(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx {
         long relID = request.getLongData(0);
         Map properties = request.getMapData(1);
         try {
@@ -77,7 +77,7 @@ public class RelResource extends AbstractResource implements ResourceInterface {
      * maintained.
      */
     @Override
-    public PropertyContainer patch(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer patch(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx {
         long relID = request.getLongData(0);
         Map properties = request.getMapData(1);
         try {
@@ -95,7 +95,7 @@ public class RelResource extends AbstractResource implements ResourceInterface {
      * Create a new relationship.
      */
     @Override
-    public PropertyContainer post(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer post(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx {
         Node startNode = resolveNode(context, request.getData(0));
         Node endNode = resolveNode(context, request.getData(1));
         String typeName = request.getStringData(2);
@@ -111,7 +111,7 @@ public class RelResource extends AbstractResource implements ResourceInterface {
      * Delete a relationship identified by ID.
      */
     @Override
-    public PropertyContainer delete(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer delete(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx {
         long relID = request.getLongData(0);
         try {
             context.deleteRelationship(relID);

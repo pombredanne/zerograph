@@ -8,14 +8,14 @@ public interface ResourceInterface {
 
     public String getName();
 
-    public PropertyContainer get(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx;
+    public PropertyContainer get(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx;
 
-    public PropertyContainer put(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx;
+    public PropertyContainer put(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx;
 
-    public PropertyContainer patch(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx;
+    public PropertyContainer patch(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx;
 
-    public PropertyContainer post(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx;
+    public PropertyContainer post(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx;
 
-    public PropertyContainer delete(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx;
+    public PropertyContainer delete(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx;
 
 }

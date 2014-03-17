@@ -34,7 +34,7 @@ public class GraphResource extends AbstractResource implements ResourceInterface
      * @param request
      */
     @Override
-    public PropertyContainer get(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer get(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx {
         String host = request.getStringData(0);
         int port = new Long(request.getLongData(1)).intValue();
         GraphDirectory directory = new GraphDirectory(zerograph, host, port);
@@ -52,7 +52,7 @@ public class GraphResource extends AbstractResource implements ResourceInterface
      * @param request
      */
     @Override
-    public PropertyContainer put(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer put(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx {
         String host = request.getStringData(0);
         int port = new Long(request.getLongData(1)).intValue();
         boolean create = request.getBooleanData(2, false);
@@ -78,7 +78,7 @@ public class GraphResource extends AbstractResource implements ResourceInterface
      * @param request
      */
     @Override
-    public PropertyContainer delete(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer delete(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx {
         String host = request.getStringData(0);
         int port = new Long(request.getLongData(1)).intValue();
         boolean delete = request.getBooleanData(2, false);

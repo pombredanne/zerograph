@@ -55,7 +55,7 @@ public class Zerograph extends Service implements ZerographInterface {
     @Override
     public ResourceSet createResourceSet(ResponderInterface responder) {
         ResourceSet resourceSet = new ResourceSet();
-        resourceSet.add(new GraphResource(zerograph, responder));
+        resourceSet.add(new GraphResource(this, responder));
         return resourceSet;
     }
 

@@ -42,7 +42,7 @@ public class NodeSetResource extends AbstractResource implements ResourceInterfa
      * @param request
      */
     @Override
-    public PropertyContainer get(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer get(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx {
         String label = request.getStringData(0);
         String key = request.getStringData(1);
         Object value = request.getData(2);
@@ -68,7 +68,7 @@ public class NodeSetResource extends AbstractResource implements ResourceInterfa
      * @param request
      */
     @Override
-    public PropertyContainer put(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer put(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx {
         String labelName = request.getStringData(0);
         String key = request.getStringData(1);
         Object value = request.getData(2);
@@ -99,7 +99,7 @@ public class NodeSetResource extends AbstractResource implements ResourceInterfa
      * @param request
      */
     @Override
-    public PropertyContainer delete(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer delete(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx {
         String label = request.getStringData(0);
         String key = request.getStringData(1);
         Object value = request.getData(2);

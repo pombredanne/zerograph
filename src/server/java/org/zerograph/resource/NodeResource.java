@@ -36,7 +36,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
      * Fetch a single node by ID.
      */
     @Override
-    public PropertyContainer get(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer get(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx {
         long nodeID = request.getLongData(0);
         try {
             Node node = context.getNode(nodeID);
@@ -55,7 +55,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
      * already exist.
      */
     @Override
-    public PropertyContainer put(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer put(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx {
         long nodeID = request.getLongData(0);
         List labelNames = request.getListData(1);
         Map properties = request.getMapData(2);
@@ -77,7 +77,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
      * maintained.
      */
     @Override
-    public PropertyContainer patch(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer patch(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx {
         long nodeID = request.getLongData(0);
         List labelNames = request.getListData(1);
         Map properties = request.getMapData(2);
@@ -96,7 +96,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
      * Create a new node with the given labels and properties.
      */
     @Override
-    public PropertyContainer post(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer post(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx {
         List labelNames = request.getListData(0);
         Map properties = request.getMapData(1);
         Node node = context.createNode(labelNames, properties);
@@ -110,7 +110,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
      * Delete a node identified by ID.
      */
     @Override
-    public PropertyContainer delete(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer delete(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx {
         long nodeID = request.getLongData(0);
         try {
             context.deleteNode(nodeID);

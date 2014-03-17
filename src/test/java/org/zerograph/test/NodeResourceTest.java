@@ -25,7 +25,7 @@ public class NodeResourceTest extends ResourceTest {
     public void testCanGetExistingNode() throws Status4xx, Status5xx {
         Node created = createNode(ALICE);
         FakeRequest request = new FakeRequest("GET", "node", created.getId());
-        Node got = (Node)resource.get(context, request);
+        Node got = (Node)resource.get(request, context);
         assert ALICE.equals(got);
         assert responseCollector.matchSingleResponse(Status2xx.OK, created);
     }
@@ -33,14 +33,14 @@ public class NodeResourceTest extends ResourceTest {
     @Test(expected=NotFound.class)
     public void testCannotGetNonExistentNode() throws Status4xx, Status5xx {
         FakeRequest request = new FakeRequest("GET", "node", 0);
-        resource.get(context, request);
+        resource.get(request, context);
     }
 
     @Test
     public void testCanPutExistingNode() throws Status4xx, Status5xx {
         Node created = createNode();
         FakeRequest request = new FakeRequest("PUT", "node", created.getId(), new ArrayList<>(ALICE.getLabels()), ALICE.getProperties());
-        Node put = (Node)resource.put(context, request);
+        Node put = (Node)resource.put(request, context);
         assert ALICE.equals(put);
         assert responseCollector.matchSingleResponse(Status2xx.OK, put);
     }
@@ -48,14 +48,14 @@ public class NodeResourceTest extends ResourceTest {
     @Test(expected=NotFound.class)
     public void testCannotPutNonExistentNode() throws Status4xx, Status5xx {
         FakeRequest request = new FakeRequest("PUT", "node", 0, new ArrayList<>(ALICE.getLabels()), ALICE.getProperties());
-        resource.put(context, request);
+        resource.put(request, context);
     }
 
     @Test
     public void testCanPatchExistingNode() throws Status4xx, Status5xx {
         Node created = createNode(ALICE);
         FakeRequest request = new FakeRequest("PATCH", "node", created.getId(), new ArrayList<>(EMPLOYEE.getLabels()), EMPLOYEE.getProperties());
-        Node patched = (Node)resource.patch(context, request);
+        Node patched = (Node)resource.patch(request, context);
         assert ALICE_THE_EMPLOYEE.equals(patched);
         assert responseCollector.matchSingleResponse(Status2xx.OK, patched);
     }
@@ -63,13 +63,13 @@ public class NodeResourceTest extends ResourceTest {
     @Test(expected=NotFound.class)
     public void testCannotPatchNonExistentNode() throws Status4xx, Status5xx {
         FakeRequest request = new FakeRequest("PATCH", "node", 0, new ArrayList<>(EMPLOYEE.getLabels()), EMPLOYEE.getProperties());
-        resource.put(context, request);
+        resource.put(request, context);
     }
 
     @Test
     public void testCanCreateNode() throws Status4xx, Status5xx {
         FakeRequest request = new FakeRequest("POST", "node", new ArrayList<>(ALICE.getLabels()), ALICE.getProperties());
-        Node created = (Node)resource.post(context, request);
+        Node created = (Node)resource.post(request, context);
         assert ALICE.equals(created);
         assert responseCollector.matchSingleResponse(Status2xx.CREATED, created);
     }
@@ -78,14 +78,14 @@ public class NodeResourceTest extends ResourceTest {
     public void testCanDeleteExistingNode() throws Status4xx, Status5xx {
         Node created = database.createNode();
         FakeRequest request = new FakeRequest("DELETE", "node", created.getId());
-        resource.delete(context, request);
+        resource.delete(request, context);
         assert responseCollector.matchSingleResponse(Status2xx.NO_CONTENT);
     }
 
     @Test(expected=NotFound.class)
     public void testCannotDeleteNonExistentNode() throws Status4xx, Status5xx {
         FakeRequest request = new FakeRequest("DELETE", "node", 0);
-        resource.delete(context, request);
+        resource.delete(request, context);
     }
 
 }

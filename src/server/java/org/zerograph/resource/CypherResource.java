@@ -38,7 +38,7 @@ public class CypherResource extends AbstractResource implements ResourceInterfac
      * @param request
      */
     @Override
-    public PropertyContainer post(Neo4jContextInterface context, RequestInterface request) throws Status4xx, Status5xx {
+    public PropertyContainer post(RequestInterface request, Neo4jContextInterface context) throws Status4xx, Status5xx {
         String query = request.getStringData(0);
         try {
             ExecutionResult result = context.execute(query);
