@@ -1,7 +1,7 @@
 package org.zerograph.util;
 
 import org.neo4j.graphdb.Relationship;
-import org.zerograph.api.RelTemplateInterface;
+import org.zerograph.api.RelationshipTemplateInterface;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -9,12 +9,12 @@ import java.util.Map;
 import static org.zerograph.util.Toolbox.equalMaps;
 import static org.zerograph.util.Toolbox.propertyMap;
 
-public class RelTemplate implements RelTemplateInterface {
+public class RelationshipTemplate implements RelationshipTemplateInterface {
 
     final private String type;
     final private HashMap<String, Object> properties;
 
-    public RelTemplate(String type, Map<String, Object> properties) {
+    public RelationshipTemplate(String type, Map<String, Object> properties) {
         this.type = type;
         this.properties = new HashMap<>(properties);
     }
@@ -35,7 +35,7 @@ public class RelTemplate implements RelTemplateInterface {
     }
 
     @Override
-    public boolean equals(RelTemplateInterface rel) {
+    public boolean equals(RelationshipTemplateInterface rel) {
         return type.equals(rel.getType()) && equalMaps(properties, rel.getProperties());
     }
 

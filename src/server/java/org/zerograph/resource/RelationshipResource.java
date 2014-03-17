@@ -19,11 +19,11 @@ import org.zerograph.response.status5xx.Status5xx;
 
 import java.util.Map;
 
-public class RelResource extends AbstractResource implements ResourceInterface {
+public class RelationshipResource extends AbstractResource implements ResourceInterface {
 
     final private static String NAME = "rel";
 
-    public RelResource(ZerographInterface zerograph, ResponderInterface responder) {
+    public RelationshipResource(ZerographInterface zerograph, ResponderInterface responder) {
         super(zerograph, responder);
     }
 

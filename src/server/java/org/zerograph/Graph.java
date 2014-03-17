@@ -10,7 +10,7 @@ import org.zerograph.except.NoSuchGraphException;
 import org.zerograph.resource.CypherResource;
 import org.zerograph.resource.NodeResource;
 import org.zerograph.resource.NodeSetResource;
-import org.zerograph.resource.RelResource;
+import org.zerograph.resource.RelationshipResource;
 
 import java.util.HashMap;
 
@@ -85,7 +85,7 @@ public class Graph extends Service implements GraphInterface {
         resourceSet.add(new CypherResource(zerograph, responder));
         resourceSet.add(new NodeResource(zerograph, responder));
         resourceSet.add(new NodeSetResource(zerograph, responder));
-        resourceSet.add(new RelResource(zerograph, responder));
+        resourceSet.add(new RelationshipResource(zerograph, responder));
         return resourceSet;
     }
 

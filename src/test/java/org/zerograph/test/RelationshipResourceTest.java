@@ -4,23 +4,23 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.zerograph.resource.RelResource;
+import org.zerograph.resource.RelationshipResource;
 import org.zerograph.response.status2xx.Status2xx;
 import org.zerograph.response.status4xx.NotFound;
 import org.zerograph.response.status4xx.Status4xx;
 import org.zerograph.response.status5xx.Status5xx;
 import org.zerograph.test.helpers.FakeRequest;
 
-public class RelResourceTest extends ResourceTest {
+public class RelationshipResourceTest extends ResourceTest {
 
-    protected RelResource resource;
+    protected RelationshipResource resource;
 
     protected Node alice;
     protected Node bob;
 
     @Before
     public void createResource() {
-        resource = new RelResource(fakeZerograph, responseCollector);
+        resource = new RelationshipResource(fakeZerograph, responseCollector);
         alice = createNode(ALICE);
         bob = createNode(BOB);
     }
