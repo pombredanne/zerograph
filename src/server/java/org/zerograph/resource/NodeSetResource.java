@@ -21,7 +21,7 @@ import java.util.HashMap;
 
 public class NodeSetResource extends AbstractResource implements ResourceInterface {
 
-    final private static String NAME = "nodeset";
+    final private static String NAME = "node_set";
 
     public NodeSetResource(ZerographInterface zerograph, ResponderInterface responder) {
         super(zerograph, responder);
@@ -79,9 +79,9 @@ public class NodeSetResource extends AbstractResource implements ResourceInterfa
             }
             Statistics stats = result.getStatistics();
             if (stats.get("nodes_created") == 0) {
-                respond(new OK(stats));
+                respond(new OK(stats.toMap()));
             } else {
-                respond(new Created(stats));
+                respond(new Created(stats.toMap()));
             }
             return result.getFirst();
         } catch (CypherException ex) {

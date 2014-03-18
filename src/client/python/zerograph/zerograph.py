@@ -118,7 +118,7 @@ class Response(object):
                     yield cls(status, *data)
 
     @classmethod
-    def single(cls, socket):
+    def atom(cls, socket):
         rs = list(cls.receive(socket))
         if len(rs) != 1:
             raise TypeError("Expected single line response")
@@ -132,7 +132,14 @@ class Response(object):
             raise TypeError("Expected single value response")
 
     @classmethod
-    def tabular(cls, socket):
+    def chain(cls, socket):
+        lines = [rs.data[0] for rs in cls.receive(socket)]
+        lines, stats = lines[:-1], lines[-1]
+        # TODO: something with stats (put all this into an object like Table)
+        return lines
+
+    @classmethod
+    def table(cls, socket):
         return Table(cls.receive(socket))
 
     def __init__(self, status, *data):
@@ -223,49 +230,58 @@ class _Batch(object):
 class ZerographBatch(_Batch):
 
     def get_graph(self, host, port):
-        return self.prepare(Response.single, "GET", "graph", host, int(port))
+        return self.prepare(Response.atom, "GET", "graph", host, int(port))
 
     def open_graph(self, host, port, create=False):
-        return self.prepare(Response.single, "PUT", "graph", host, int(port), create)
+        return self.prepare(Response.atom, "PUT", "graph", host, int(port), create)
 
     def close_graph(self, host, port, delete=False):
-        return self.prepare(Response.single, "DELETE", "graph", host, int(port), delete)
+        return self.prepare(Response.atom, "DELETE", "graph", host, int(port), delete)
 
 
 class GraphBatch(_Batch):
 
     def execute(self, query):
-        return self.prepare(Response.tabular, "POST", "cypher", query)
+        return self.prepare(Response.table, "POST", "cypher", query)
 
     def get_node(self, node_id):
-        return self.prepare(Response.single, "GET", "node", int(node_id))
+        return self.prepare(Response.atom, "GET", "node", int(node_id))
 
     def put_node(self, node_id, labels, properties):
-        return self.prepare(Response.single, "PUT", "node", int(node_id), labels, properties)
+        return self.prepare(Response.atom, "PUT", "node", int(node_id), labels, properties)
 
     def patch_node(self, node_id, labels, properties):
-        return self.prepare(Response.single, "PATCH", "node", int(node_id), labels, properties)
+        return self.prepare(Response.atom, "PATCH", "node", int(node_id), labels, properties)
 
     def create_node(self, labels, properties):
-        return self.prepare(Response.single, "POST", "node", labels, properties)
+        return self.prepare(Response.atom, "POST", "node", labels, properties)
 
     def delete_node(self, node_id):
-        return self.prepare(Response.single, "DELETE", "node", int(node_id))
+        return self.prepare(Response.atom, "DELETE", "node", int(node_id))
 
     def get_rel(self, rel_id):
-        return self.prepare(Response.single, "GET", "rel", int(rel_id))
+        return self.prepare(Response.atom, "GET", "rel", int(rel_id))
 
     def put_rel(self, rel_id, properties):
-        return self.prepare(Response.single, "PUT", "rel", int(rel_id), properties)
+        return self.prepare(Response.atom, "PUT", "rel", int(rel_id), properties)
 
     def patch_rel(self, rel_id, properties):
-        return self.prepare(Response.single, "PATCH", "rel", int(rel_id), properties)
+        return self.prepare(Response.atom, "PATCH", "rel", int(rel_id), properties)
 
     def create_rel(self, start_node, end_node, type, properties):
-        return self.prepare(Response.single, "POST", "rel", start_node, end_node, type, properties)
+        return self.prepare(Response.atom, "POST", "rel", start_node, end_node, type, properties)
 
     def delete_rel(self, rel_id):
-        return self.prepare(Response.single, "DELETE", "rel", int(rel_id))
+        return self.prepare(Response.atom, "DELETE", "rel", int(rel_id))
+
+    def match_node_set(self, label, key, value):
+        return self.prepare(Response.chain, "GET", "node_set", label, key, value)
+
+    def merge_node_set(self, label, key, value):
+        return self.prepare(Response.chain, "PUT", "node_set", label, key, value)
+
+    def purge_node_set(self, label, key, value):
+        return self.prepare(Response.chain, "DELETE", "node_set", label, key, value)
 
 
 class _Client(object):
@@ -378,3 +394,12 @@ class Graph(_Client):
 
     def delete_rel(self, rel_id):
         return GraphBatch.single(self.socket, GraphBatch.delete_rel, rel_id)
+
+    def match_node_set(self, label, key, value):
+        return GraphBatch.single(self.socket, GraphBatch.match_node_set, label, key, value)
+
+    def merge_node_set(self, label, key, value):
+        return GraphBatch.single(self.socket, GraphBatch.merge_node_set, label, key, value)
+
+    def purge_node_set(self, label, key, value):
+        return GraphBatch.single(self.socket, GraphBatch.purge_node_set, label, key, value)
