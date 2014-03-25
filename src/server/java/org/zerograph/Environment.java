@@ -2,7 +2,8 @@ package org.zerograph;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.zerograph.api.ZerographInterface;
+import org.zerograph.service.GraphDirectory;
+import org.zerograph.service.api.ZerographInterface;
 
 import java.io.File;
 import java.util.HashMap;

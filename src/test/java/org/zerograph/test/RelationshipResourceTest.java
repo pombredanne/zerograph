@@ -4,12 +4,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.zerograph.resource.RelationshipResource;
-import org.zerograph.response.status2xx.Status2xx;
-import org.zerograph.response.status4xx.NotFound;
-import org.zerograph.response.status4xx.Status4xx;
-import org.zerograph.response.status5xx.Status5xx;
-import org.zerograph.test.helpers.FakeRequest;
+import org.zerograph.test.helpers.QuickMap;
+import org.zerograph.zap.RelationshipResource;
+import org.zerograph.zpp.Request;
+import org.zerograph.zpp.except.ClientError;
+import org.zerograph.zpp.except.ServerError;
 
 public class RelationshipResourceTest extends ResourceTest {
 
@@ -26,77 +25,86 @@ public class RelationshipResourceTest extends ResourceTest {
     }
 
     @Test
-    public void testCanGetExistingRel() throws Status4xx, Status5xx {
+    public void testCanGetExistingRel() throws ClientError, ServerError {
         Relationship created = createRel(ALICE, KNOWS_SINCE_1999, BOB);
-        FakeRequest request = new FakeRequest("GET", "rel", created.getId());
+        Request request = new Request("GET", "rel", QuickMap.from("id", created.getId()));
         Relationship got = (Relationship)resource.get(request, context);
         assert KNOWS_SINCE_1999.equals(got);
-        assert responseCollector.matchSingleResponse(200, created);
+        assert responseCollector.getBody().size() == 1;
+        assert responseCollector.getBody().get(0).equals(created);
     }
 
-    @Test(expected=NotFound.class)
-    public void testCannotGetNonExistentRel() throws Status4xx, Status5xx {
-        FakeRequest request = new FakeRequest("GET", "rel", 0);
+    @Test(expected=ClientError.class)
+    public void testCannotGetNonExistentRel() throws ClientError, ServerError {
+        Request request = new Request("GET", "rel", QuickMap.from("id", 0));
         resource.get(request, context);
     }
 
     @Test
-    public void testCanPutExistingRel() throws Status4xx, Status5xx {
+    public void testCanSetExistingRel() throws ClientError, ServerError {
         Relationship created = createRel(ALICE, KNOWS_SINCE_1999, BOB);
-        FakeRequest request = new FakeRequest("PUT", "rel", created.getId(), KNOWS_FROM_WORK.getProperties());
-        Relationship put = (Relationship)resource.put(request, context);
+        Request request = new Request("PUT", "rel",
+                QuickMap.from("id", created.getId(), "properties", KNOWS_FROM_WORK.getProperties()));
+        Relationship put = (Relationship)resource.set(request, context);
         assert KNOWS_FROM_WORK.equals(put);
-        assert responseCollector.matchSingleResponse(Status2xx.OK, put);
+        assert responseCollector.getBody().size() == 1;
+        assert responseCollector.getBody().get(0).equals(put);
     }
 
-    @Test(expected=NotFound.class)
-    public void testCannotPutNonExistentRel() throws Status4xx, Status5xx {
-        FakeRequest request = new FakeRequest("PUT", "rel", 0, KNOWS_FROM_WORK.getProperties());
-        resource.put(request, context);
+    @Test(expected=ClientError.class)
+    public void testCannotSetNonExistentRel() throws ClientError, ServerError {
+        Request request = new Request("PUT", "rel",
+                QuickMap.from("id", 0, "properties", KNOWS_FROM_WORK.getProperties()));
+        resource.set(request, context);
     }
 
     @Test
-    public void testCanPatchExistingRel() throws Status4xx, Status5xx {
+    public void testCanPatchExistingRel() throws ClientError, ServerError {
         Relationship created = createRel(ALICE, KNOWS_SINCE_1999, BOB);
-        FakeRequest request = new FakeRequest("PATCH", "rel", created.getId(), KNOWS_FROM_WORK.getProperties());
+        Request request = new Request("PATCH", "rel",
+                QuickMap.from("id", created.getId(), "properties", KNOWS_FROM_WORK.getProperties()));
         Relationship patched = (Relationship)resource.patch(request, context);
         assert KNOWS_SINCE_1999_FROM_WORK.equals(patched);
-        assert responseCollector.matchSingleResponse(Status2xx.OK, patched);
+        assert responseCollector.getBody().size() == 1;
+        assert responseCollector.getBody().get(0).equals(patched);
     }
 
-    @Test(expected=NotFound.class)
-    public void testCannotPatchNonExistentRel() throws Status4xx, Status5xx {
-        FakeRequest request = new FakeRequest("PATCH", "rel", 0, KNOWS_FROM_WORK.getProperties());
+    @Test(expected=ClientError.class)
+    public void testCannotPatchNonExistentRel() throws ClientError, ServerError {
+        Request request = new Request("PATCH", "rel",
+                QuickMap.from("id", 0, "properties", KNOWS_FROM_WORK.getProperties()));
         resource.patch(request, context);
     }
 
     @Test
-    public void testCanCreateRel() throws Status4xx, Status5xx {
+    public void testCanCreateRel() throws ClientError, ServerError {
         Node alice = createNode(ALICE);
         Node bob = createNode(BOB);
-        FakeRequest request = new FakeRequest("POST", "rel", alice.getId(), bob.getId(), KNOWS_SINCE_1999.getType(), KNOWS_SINCE_1999.getProperties());
-        Relationship created = (Relationship)resource.post(request, context);
+        Request request = new Request("POST", "rel",
+                QuickMap.from("start", alice.getId(), "end", bob.getId(), "type", KNOWS_SINCE_1999.getType(), "properties", KNOWS_SINCE_1999.getProperties()));
+        Relationship created = (Relationship)resource.create(request, context);
         assert ALICE.equals(created.getStartNode());
         assert BOB.equals(created.getEndNode());
         assert KNOWS_SINCE_1999.equals(created);
-        assert responseCollector.matchSingleResponse(Status2xx.CREATED, created);
+        assert responseCollector.getBody().size() == 1;
+        assert responseCollector.getBody().get(0).equals(created);
     }
 
     @Test
-    public void testCanDeleteExistingRel() throws Status4xx, Status5xx {
+    public void testCanDeleteExistingRel() throws ClientError, ServerError {
         Relationship created = createRel(ALICE, KNOWS_SINCE_1999, BOB);
         Node alice = created.getStartNode();
         Node bob = created.getEndNode();
-        FakeRequest request = new FakeRequest("DELETE", "rel", created.getId());
+        Request request = new Request("DELETE", "rel", QuickMap.from("id", created.getId()));
         resource.delete(request, context);
         assert !alice.hasRelationship();
         assert !bob.hasRelationship();
-        assert responseCollector.matchSingleResponse(Status2xx.NO_CONTENT);
+        assert responseCollector.getBody().size() == 0;
     }
 
-    @Test(expected=NotFound.class)
-    public void testCannotDeleteNonExistentRel() throws Status4xx, Status5xx {
-        FakeRequest request = new FakeRequest("DELETE", "rel", 0);
+    @Test(expected=ClientError.class)
+    public void testCannotDeleteNonExistentRel() throws ClientError, ServerError {
+        Request request = new Request("DELETE", "rel", QuickMap.from("id", 0));
         resource.delete(request, context);
     }
 

@@ -1,47 +1,70 @@
 package org.zerograph.test.helpers;
 
-import org.zerograph.api.ResponderInterface;
+import org.zerograph.zpp.api.ResponderInterface;
 import org.zerograph.api.ResponseInterface;
+import org.zerograph.zpp.except.MalformedResponse;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ResponseCollector implements ResponderInterface {
 
-    final private ArrayList<ResponseInterface> responses;
+    private HashMap<String, Object> head;
+    private ArrayList<Object> body;
+    private HashMap<String, Object> foot;
 
     public ResponseCollector() {
-        responses = new ArrayList<>();
+        head = new HashMap<>();
+        body = new ArrayList<>();
+        foot = new HashMap<>();
+    }
+
+    public Map<String, Object> getHead() {
+        return head;
+    }
+
+    public List<Object> getBody() {
+        return body;
+    }
+
+    public Map<String, Object> getFoot() {
+        return foot;
     }
 
     @Override
-    public void respond(ResponseInterface response) {
-        responses.add(response);
+    public void beginResponse() throws MalformedResponse {
+
     }
 
-    public int getResponseCount() {
-        return this.responses.size();
+    @Override
+    public void sendHead(Map<String, Object> data) throws MalformedResponse {
+        head.putAll(data);
     }
 
-    public List<ResponseInterface> getResponses() {
-        return this.responses;
+    @Override
+    public void sendBodyPart(Object data) throws MalformedResponse {
+        body.add(data);
     }
 
-    public boolean matchResponse(int index, int status, Object... data) {
-        ResponseInterface response = responses.get(index);
-        if (response.getStatus() != status)
-            return false;
-        int i = 0;
-        for (Object datum : response.getData()) {
-            if (!datum.equals(data[i]))
-                return false;
-            i += 1;
-        }
-        return true;
+    @Override
+    public void sendFoot(Map<String, Object> data) throws MalformedResponse {
+        foot.putAll(data);
     }
 
-    public boolean matchSingleResponse(int status, Object... data) {
-        return responses.size() == 1 && matchResponse(0, status, data);
+    @Override
+    public void sendError(Exception ex) {
+
     }
 
+    @Override
+    public void endResponse() throws MalformedResponse {
+
+    }
+
+    @Override
+    public void finish() {
+
+    }
 }

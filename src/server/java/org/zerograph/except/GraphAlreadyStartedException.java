@@ -1,7 +1,7 @@
 package org.zerograph.except;
 
-import org.zerograph.Graph;
-import org.zerograph.api.ZerographInterface;
+import org.zerograph.service.Graph;
+import org.zerograph.service.api.ZerographInterface;
 
 public class GraphAlreadyStartedException extends GraphException {
 

@@ -1,10 +1,10 @@
 package org.zerograph.test.helpers;
 
 import org.zerograph.Environment;
-import org.zerograph.Graph;
+import org.zerograph.service.Graph;
 import org.zerograph.ResourceSet;
-import org.zerograph.api.ResponderInterface;
-import org.zerograph.api.ZerographInterface;
+import org.zerograph.zpp.api.ResponderInterface;
+import org.zerograph.service.api.ZerographInterface;
 import org.zerograph.except.GraphAlreadyStartedException;
 import org.zerograph.except.GraphNotStartedException;
 import org.zerograph.except.NoSuchGraphException;

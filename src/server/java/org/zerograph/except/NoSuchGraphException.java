@@ -1,6 +1,6 @@
 package org.zerograph.except;
 
-import org.zerograph.api.ZerographInterface;
+import org.zerograph.service.api.ZerographInterface;
 
 public class NoSuchGraphException extends GraphException {
 

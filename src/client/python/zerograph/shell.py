@@ -105,10 +105,7 @@ class Shell(object):
                 self.__graph = None
             else:
                 self.print_error("Not attached to a graph - use !OPEN <port> to connect.")
-        elif command in ("GET", "PUT", "PATCH", "POST", "DELETE"):
-            if not self.graph:
-                self.print_error("Not attached to a graph - use !OPEN <port> to connect.")
-                return
+        elif command in ("GET", "SET", "PATCH", "CREATE", "DELETE", "EXECUTE"):
             resource, arg_list = args.partition(" ")[0::2]
             try:
                 arg_list = json.loads(arg_list)
@@ -117,7 +114,10 @@ class Shell(object):
             else:
                 if not isinstance(arg_list, list):
                     arg_list = [arg_list]
-                result = GraphBatch.single(self.graph.socket, GraphBatch.prepare, Response.single, command ,resource, *arg_list)
+                if self.graph:
+                    result = GraphBatch.single(self.graph.socket, GraphBatch.prepare, Response.atom, command ,resource, *arg_list)
+                else:
+                    result = ZerographBatch.single(self.zerograph.socket, ZerographBatch.prepare, Response.atom, command ,resource, *arg_list)
                 print(result)
         else:
             self.print_error("Unknown meta-command: !" + command)

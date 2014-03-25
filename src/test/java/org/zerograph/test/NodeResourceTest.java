@@ -3,12 +3,11 @@ package org.zerograph.test;
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
-import org.zerograph.resource.NodeResource;
-import org.zerograph.response.status2xx.Status2xx;
-import org.zerograph.response.status4xx.NotFound;
-import org.zerograph.response.status4xx.Status4xx;
-import org.zerograph.response.status5xx.Status5xx;
-import org.zerograph.test.helpers.FakeRequest;
+import org.zerograph.test.helpers.QuickMap;
+import org.zerograph.zap.NodeResource;
+import org.zerograph.zpp.Request;
+import org.zerograph.zpp.except.ClientError;
+import org.zerograph.zpp.except.ServerError;
 
 import java.util.ArrayList;
 
@@ -22,69 +21,85 @@ public class NodeResourceTest extends ResourceTest {
     }
 
     @Test
-    public void testCanGetExistingNode() throws Status4xx, Status5xx {
+    public void testCanGetExistingNode() throws ClientError, ServerError {
         Node created = createNode(ALICE);
-        FakeRequest request = new FakeRequest("GET", "node", created.getId());
+        Request request = new Request("GET", "node", QuickMap.from("id", created.getId()));
         Node got = (Node)resource.get(request, context);
         assert ALICE.equals(got);
-        assert responseCollector.matchSingleResponse(Status2xx.OK, created);
+        assert responseCollector.getBody().size() == 1;
+        assert responseCollector.getBody().get(0).equals(created);
     }
 
-    @Test(expected=NotFound.class)
-    public void testCannotGetNonExistentNode() throws Status4xx, Status5xx {
-        FakeRequest request = new FakeRequest("GET", "node", 0);
+    @Test(expected=ClientError.class)
+    public void testCannotGetNonExistentNode() throws ClientError, ServerError {
+        Request request = new Request("GET", "node", QuickMap.from("id", 0));
         resource.get(request, context);
     }
 
     @Test
-    public void testCanPutExistingNode() throws Status4xx, Status5xx {
+    public void testCanSetExistingNode() throws ClientError, ServerError {
         Node created = createNode();
-        FakeRequest request = new FakeRequest("PUT", "node", created.getId(), new ArrayList<>(ALICE.getLabels()), ALICE.getProperties());
-        Node put = (Node)resource.put(request, context);
+        Request request = new Request("PUT", "node",
+                QuickMap.from("id", created.getId(),
+                              "labels", new ArrayList<>(ALICE.getLabels()),
+                              "properties", ALICE.getProperties()));
+        Node put = (Node)resource.set(request, context);
         assert ALICE.equals(put);
-        assert responseCollector.matchSingleResponse(Status2xx.OK, put);
+        assert responseCollector.getBody().size() == 1;
+        assert responseCollector.getBody().get(0).equals(put);
     }
 
-    @Test(expected=NotFound.class)
-    public void testCannotPutNonExistentNode() throws Status4xx, Status5xx {
-        FakeRequest request = new FakeRequest("PUT", "node", 0, new ArrayList<>(ALICE.getLabels()), ALICE.getProperties());
-        resource.put(request, context);
+    @Test(expected=ClientError.class)
+    public void testCannotSetNonExistentNode() throws ClientError, ServerError {
+        Request request = new Request("PUT", "node",
+                QuickMap.from("id", 0,
+                              "labels", new ArrayList<>(ALICE.getLabels()),
+                              "properties", ALICE.getProperties()));
+        resource.set(request, context);
     }
 
     @Test
-    public void testCanPatchExistingNode() throws Status4xx, Status5xx {
+    public void testCanPatchExistingNode() throws ClientError, ServerError {
         Node created = createNode(ALICE);
-        FakeRequest request = new FakeRequest("PATCH", "node", created.getId(), new ArrayList<>(EMPLOYEE.getLabels()), EMPLOYEE.getProperties());
+        Request request = new Request("PATCH", "node",
+                QuickMap.from("id", created.getId(),
+                              "labels", new ArrayList<>(EMPLOYEE.getLabels()),
+                              "properties", EMPLOYEE.getProperties()));
         Node patched = (Node)resource.patch(request, context);
         assert ALICE_THE_EMPLOYEE.equals(patched);
-        assert responseCollector.matchSingleResponse(Status2xx.OK, patched);
+        assert responseCollector.getBody().size() == 1;
+        assert responseCollector.getBody().get(0).equals(patched);
     }
 
-    @Test(expected=NotFound.class)
-    public void testCannotPatchNonExistentNode() throws Status4xx, Status5xx {
-        FakeRequest request = new FakeRequest("PATCH", "node", 0, new ArrayList<>(EMPLOYEE.getLabels()), EMPLOYEE.getProperties());
-        resource.put(request, context);
+    @Test(expected=ClientError.class)
+    public void testCannotPatchNonExistentNode() throws ClientError, ServerError {
+        Request request = new Request("PATCH", "node",
+                QuickMap.from("id", 0,
+                              "labels", new ArrayList<>(EMPLOYEE.getLabels()),
+                              "properties", EMPLOYEE.getProperties()));
+        resource.set(request, context);
     }
 
     @Test
-    public void testCanCreateNode() throws Status4xx, Status5xx {
-        FakeRequest request = new FakeRequest("POST", "node", new ArrayList<>(ALICE.getLabels()), ALICE.getProperties());
-        Node created = (Node)resource.post(request, context);
+    public void testCanCreateNode() throws ClientError, ServerError {
+        Request request = new Request("POST", "node", QuickMap.from("labels", new ArrayList<>(ALICE.getLabels()), "properties", ALICE.getProperties()));
+        Node created = (Node)resource.create(request, context);
         assert ALICE.equals(created);
-        assert responseCollector.matchSingleResponse(Status2xx.CREATED, created);
+        assert responseCollector.getBody().size() == 1;
+        assert responseCollector.getBody().get(0).equals(created);
     }
 
     @Test
-    public void testCanDeleteExistingNode() throws Status4xx, Status5xx {
+    public void testCanDeleteExistingNode() throws ClientError, ServerError {
         Node created = database.createNode();
-        FakeRequest request = new FakeRequest("DELETE", "node", created.getId());
+        Request request = new Request("DELETE", "node", QuickMap.from("id", created.getId()));
         resource.delete(request, context);
-        assert responseCollector.matchSingleResponse(Status2xx.NO_CONTENT);
+        assert responseCollector.getBody().size() == 0;
     }
 
-    @Test(expected=NotFound.class)
-    public void testCannotDeleteNonExistentNode() throws Status4xx, Status5xx {
-        FakeRequest request = new FakeRequest("DELETE", "node", 0);
+    @Test(expected=ClientError.class)
+    public void testCannotDeleteNonExistentNode() throws ClientError, ServerError {
+        Request request = new Request("DELETE", "node", QuickMap.from("id", 0));
         resource.delete(request, context);
     }
 

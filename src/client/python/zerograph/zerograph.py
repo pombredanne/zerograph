@@ -93,7 +93,7 @@ class Request(object):
     def send(self, socket, more=False):
         args = [self.__method, self.__resource]
         args.extend(map(dehydrate, self.__data))
-        line = "\t".join(args)
+        line = " ".join(args)
         socket.send(line.encode("utf-8"), zmq.SNDMORE if more else 0)
 
 
@@ -110,6 +110,8 @@ class Response(object):
                                    "data")
             for line in frame.splitlines(False):
                 if line:
+                    print(line)
+                    continue
                     parts = line.split("\t")
                     status = int(parts[0])
                     data = tuple(hydrate(part) for part in parts[1:])
@@ -247,7 +249,7 @@ class GraphBatch(_Batch):
     def get_node(self, node_id):
         return self.prepare(Response.atom, "GET", "node", int(node_id))
 
-    def put_node(self, node_id, labels, properties):
+    def set_node(self, node_id, labels, properties):
         return self.prepare(Response.atom, "PUT", "node", int(node_id), labels, properties)
 
     def patch_node(self, node_id, labels, properties):
@@ -262,7 +264,7 @@ class GraphBatch(_Batch):
     def get_rel(self, rel_id):
         return self.prepare(Response.atom, "GET", "rel", int(rel_id))
 
-    def put_rel(self, rel_id, properties):
+    def set_rel(self, rel_id, properties):
         return self.prepare(Response.atom, "PUT", "rel", int(rel_id), properties)
 
     def patch_rel(self, rel_id, properties):
@@ -368,8 +370,8 @@ class Graph(_Client):
     def get_node(self, node_id):
         return GraphBatch.single(self.socket, GraphBatch.get_node, node_id)
 
-    def put_node(self, node_id, labels, properties):
-        return GraphBatch.single(self.socket, GraphBatch.put_node, node_id, labels, properties)
+    def set_node(self, node_id, labels, properties):
+        return GraphBatch.single(self.socket, GraphBatch.set_node, node_id, labels, properties)
 
     def patch_node(self, node_id, labels, properties):
         return GraphBatch.single(self.socket, GraphBatch.patch_node, node_id, labels, properties)
@@ -383,8 +385,8 @@ class Graph(_Client):
     def get_rel(self, rel_id):
         return GraphBatch.single(self.socket, GraphBatch.get_rel, rel_id)
 
-    def put_rel(self, rel_id, properties):
-        return GraphBatch.single(self.socket, GraphBatch.put_rel, rel_id, properties)
+    def set_rel(self, rel_id, properties):
+        return GraphBatch.single(self.socket, GraphBatch.set_rel, rel_id, properties)
 
     def patch_rel(self, rel_id, properties):
         return GraphBatch.single(self.socket, GraphBatch.patch_rel, rel_id, properties)

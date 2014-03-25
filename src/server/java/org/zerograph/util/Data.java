@@ -5,11 +5,11 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.zerograph.Graph;
-import org.zerograph.GraphDirectory;
-import org.zerograph.Zerograph;
-import org.zerograph.api.GraphInterface;
-import org.zerograph.api.ZerographInterface;
+import org.zerograph.service.Graph;
+import org.zerograph.service.GraphDirectory;
+import org.zerograph.service.Zerograph;
+import org.zerograph.service.api.GraphInterface;
+import org.zerograph.service.api.ZerographInterface;
 
 import java.io.IOException;
 import java.util.ArrayList;

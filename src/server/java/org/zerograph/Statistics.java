@@ -7,18 +7,18 @@ import java.util.Map;
 
 public class Statistics {
 
-    final private HashMap<String, Number> statistics;
+    final private HashMap<String, Object> statistics;
 
     public Statistics(QueryStatistics queryStatistics) {
         this.statistics = new HashMap<>();
         this.statistics.put("nodes_created", queryStatistics.getNodesCreated());
     }
 
-    public Map<String, Number> toMap() {
+    public Map<String, Object> toMap() {
         return statistics;
     }
 
-    public Number get(String key) {
+    public Object get(String key) {
         return statistics.get(key);
     }
 
