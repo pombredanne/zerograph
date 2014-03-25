@@ -7,7 +7,7 @@ import org.zerograph.zpp.Request;
 
 import java.util.HashMap;
 
-public class OldRequestTest {
+public class RequestTest {
 
     @Test
     public void testCanParseRequestStringWithoutData() throws MalformedRequest {
