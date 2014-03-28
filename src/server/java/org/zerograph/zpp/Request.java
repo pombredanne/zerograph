@@ -321,6 +321,6 @@ public class Request implements RequestInterface {
 
     @Override
     public void resolvePointers(List<PropertyContainer> values) {
-        throw new NotImplementedException();
+        // TODO
     }
 }

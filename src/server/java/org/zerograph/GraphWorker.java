@@ -1,10 +1,8 @@
-package org.zerograph.service;
+package org.zerograph;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
-import org.zerograph.neo4j.Database;
-import org.zerograph.service.api.ZerographInterface;
 import org.zerograph.zpp.Request;
 
 import java.util.ArrayList;
@@ -14,8 +12,8 @@ public class GraphWorker extends Worker<Graph> {
 
     final private GraphDatabaseService database;
 
-    public GraphWorker(ZerographInterface zerograph, Graph graph) {
-        super(zerograph, graph);
+    public GraphWorker(Graph graph) {
+        super(graph);
         this.database = graph.getDatabase();
     }
 
@@ -41,7 +39,9 @@ public class GraphWorker extends Worker<Graph> {
                 System.out.println("--- Successfully completed transaction in worker " + this.getUUID().toString() + " ---");
             } catch (Exception ex) {
                 responder.sendError(ex);
+                ex.printStackTrace(System.err);
             } finally {
+                responder.finish();
                 System.out.println();
             }
         }

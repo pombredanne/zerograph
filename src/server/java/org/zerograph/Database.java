@@ -1,4 +1,4 @@
-package org.zerograph.neo4j;
+package org.zerograph;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
@@ -16,7 +16,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.zerograph.IterableResult;
 import org.zerograph.Statistics;
-import org.zerograph.neo4j.api.DatabaseInterface;
+import org.zerograph.api.DatabaseInterface;
 
 import java.util.HashMap;
 import java.util.Iterator;

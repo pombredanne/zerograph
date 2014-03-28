@@ -3,8 +3,7 @@ package org.zerograph.zap;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.PropertyContainer;
-import org.zerograph.neo4j.api.DatabaseInterface;
-import org.zerograph.service.api.ZerographInterface;
+import org.zerograph.api.DatabaseInterface;
 import org.zerograph.zap.api.ResourceInterface;
 import org.zerograph.zpp.api.RequestInterface;
 import org.zerograph.zpp.api.ResponderInterface;
@@ -12,6 +11,7 @@ import org.zerograph.zpp.except.ClientError;
 import org.zerograph.zpp.except.ServerError;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,8 +20,8 @@ public class CypherResource extends AbstractResource implements ResourceInterfac
 
     final private static String NAME = "Cypher";
 
-    public CypherResource(ZerographInterface zerograph, ResponderInterface responder) {
-        super(zerograph, responder);
+    public CypherResource(ResponderInterface responder) {
+        super(responder);
     }
 
     public String getName() {
@@ -39,7 +39,7 @@ public class CypherResource extends AbstractResource implements ResourceInterfac
             ExecutionResult result = database.execute(query);
             HashMap<String, Object> meta = new HashMap<>();
             List<String> columns = result.columns();
-            meta.put("columns", columns.toArray(new Object[columns.size()]));
+            meta.put("columns", Arrays.asList(columns.toArray(new Object[columns.size()])));
             responder.sendHead(meta);
             PropertyContainer firstEntity = null;
             int rowNumber = 0;
@@ -48,7 +48,7 @@ public class CypherResource extends AbstractResource implements ResourceInterfac
                 for (String column : columns) {
                     values.add(row.get(column));
                 }
-                responder.sendBodyPart(values.toArray(new Object[values.size()]));
+                responder.sendBodyPart(Arrays.asList(values.toArray(new Object[values.size()])));
                 if (rowNumber == 0) {
                     Object firstValue = values.get(0);
                     if (firstValue instanceof PropertyContainer) {

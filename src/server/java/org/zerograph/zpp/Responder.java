@@ -26,7 +26,7 @@ public class Responder implements ResponderInterface {
 
     @Override
     public void beginResponse() throws MalformedResponse {
-        socket.sendMore("---\n");
+        sendMore("---");
         sentHead = false;
         sentBody = false;
         sentFoot = false;
@@ -36,7 +36,7 @@ public class Responder implements ResponderInterface {
     @Override
     public void sendHead(Map<String, Object> data) throws MalformedResponse {
         if (!sentHead && !sentBody && !sentFoot && !sentError) {
-            socket.sendMore("head: " + YAML.dump(data) + "\n");
+            sendMore("head: " + YAML.dump(data));
             sentHead = true;
         } else {
             throw new MalformedResponse();
@@ -47,10 +47,10 @@ public class Responder implements ResponderInterface {
     public void sendBodyPart(Object data) throws MalformedResponse {
         if (!sentFoot && !sentError) {
             if (!sentBody) {
-                socket.sendMore("body:\n");
+                sendMore("body:");
                 sentBody = true;
             }
-            socket.sendMore("  - " + YAML.dump(data) + "\n");
+            sendMore("  - " + YAML.dump(data));
         } else {
             throw new MalformedResponse();
         }
@@ -59,7 +59,7 @@ public class Responder implements ResponderInterface {
     @Override
     public void sendFoot(Map<String, Object> data) throws MalformedResponse {
         if (!sentFoot && !sentError) {
-            socket.sendMore("foot: " + YAML.dump(data) + "\n");
+            sendMore("foot: " + YAML.dump(data));
             sentFoot = true;
         } else {
             throw new MalformedResponse();
@@ -68,11 +68,16 @@ public class Responder implements ResponderInterface {
 
     public void sendError(Exception ex) {
         if (!sentError) {
-            socket.sendMore("error: " + ex.getMessage() + "\n");
+            sendMore("error: " + ex.getMessage());
             sentFoot = true;
         } else {
-            socket.sendMore("error: \"Malformed response\"\n");
+            sendMore("error: \"Malformed response\"");
         }
+    }
+
+    private void sendMore(String data) {
+        System.out.println(">>> " + data);
+        socket.sendMore(data + "\n");
     }
 
     public void endResponse() {

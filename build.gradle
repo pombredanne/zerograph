@@ -32,7 +32,7 @@ dependencies {
 
 group = 'org.zerograph'
 version = '0'
-mainClassName = 'org.zerograph.service.Zerograph'
+mainClassName = 'org.zerograph.Zerograph'
 jar {
     manifest {
         attributes 'Implementation-Title': 'Zerograph',

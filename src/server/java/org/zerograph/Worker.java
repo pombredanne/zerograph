@@ -1,10 +1,9 @@
-package org.zerograph.service;
+package org.zerograph;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.zerograph.ResourceSet;
-import org.zerograph.neo4j.api.DatabaseInterface;
-import org.zerograph.service.api.ServiceInterface;
-import org.zerograph.service.api.ZerographInterface;
+import org.zerograph.api.DatabaseInterface;
+import org.zerograph.api.ServiceInterface;
 import org.zerograph.zap.api.ResourceInterface;
 import org.zerograph.zpp.Request;
 import org.zerograph.zpp.Responder;
@@ -21,7 +20,6 @@ import java.util.UUID;
 
 public abstract class Worker<S extends ServiceInterface> implements Runnable {
 
-    final private ZerographInterface zerograph;
     final private UUID uuid;
     final private S service;
     final private ZMQ.Socket socket;
@@ -29,18 +27,13 @@ public abstract class Worker<S extends ServiceInterface> implements Runnable {
     final protected ResponderInterface responder;
     final protected ResourceSet resourceSet;
 
-    public Worker(ZerographInterface zerograph, S service) {
-        this.zerograph = zerograph;
+    public Worker(S service) {
         this.uuid = UUID.randomUUID();
         this.service = service;
         this.socket = service.getContext().socket(ZMQ.REP);
         this.socket.connect(this.service.getInternalAddress());
         this.responder = new Responder(this.getSocket());
         this.resourceSet = service.createResourceSet(responder);
-    }
-
-    public ZerographInterface getZerograph() {
-        return this.zerograph;
     }
 
     public UUID getUUID() {

@@ -10,10 +10,9 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.zerograph.neo4j.Database;
 import org.zerograph.api.NodeTemplateInterface;
 import org.zerograph.api.RelationshipTemplateInterface;
-import org.zerograph.test.helpers.FakeZerograph;
+import org.zerograph.Database;
 import org.zerograph.test.helpers.ResponseCollector;
 import org.zerograph.test.helpers.TestNodeTemplate;
 import org.zerograph.test.helpers.TestRelationshipTemplate;
@@ -32,7 +31,6 @@ public abstract class ResourceTest {
     final public static RelationshipTemplateInterface KNOWS_FROM_WORK = TestRelationshipTemplate.getKnowsFromWork();
     final public static RelationshipTemplateInterface KNOWS_SINCE_1999_FROM_WORK = TestRelationshipTemplate.getKnowsSince1999FromWork();
 
-    protected FakeZerograph fakeZerograph;
     protected GraphDatabaseService database;
     protected ResponseCollector responseCollector;
 
@@ -41,7 +39,6 @@ public abstract class ResourceTest {
 
     @Before
     public void setUp() {
-        fakeZerograph = new FakeZerograph();
         database = new TestGraphDatabaseFactory().newImpermanentDatabase();
         responseCollector = new ResponseCollector();
         tx = database.beginTx();

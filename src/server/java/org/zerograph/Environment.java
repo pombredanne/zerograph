@@ -2,8 +2,6 @@ package org.zerograph;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.zerograph.service.GraphDirectory;
-import org.zerograph.service.api.ZerographInterface;
 
 import java.io.File;
 import java.util.HashMap;
@@ -59,11 +57,11 @@ public class Environment {
         return directory;
     }
 
-    public synchronized GraphDatabaseService getDatabase(ZerographInterface zerograph, String host, int port) {
+    public synchronized GraphDatabaseService getDatabase(String host, int port) {
         if (databases.containsKey(port)) {
             return databases.get(port);
         } else {
-            GraphDirectory directory = new GraphDirectory(zerograph, host, port);
+            GraphDirectory directory = new GraphDirectory(host, port);
             if (directory.exists()) {
                 GraphDatabaseService database = factory.newEmbeddedDatabase(directory.getPath());
                 databases.put(port, database);
@@ -74,11 +72,11 @@ public class Environment {
         }
     }
 
-    public synchronized GraphDatabaseService getOrCreateDatabase(ZerographInterface zerograph, String host, int port) {
+    public synchronized GraphDatabaseService getOrCreateDatabase(String host, int port) {
         if (databases.containsKey(port)) {
             return databases.get(port);
         } else {
-            GraphDirectory directory = new GraphDirectory(zerograph, host, port);
+            GraphDirectory directory = new GraphDirectory(host, port);
             GraphDatabaseService database = factory.newEmbeddedDatabase(directory.getPath());
             databases.put(port, database);
             return database;

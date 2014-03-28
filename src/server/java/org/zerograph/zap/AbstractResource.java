@@ -1,8 +1,7 @@
 package org.zerograph.zap;
 
 import org.neo4j.graphdb.PropertyContainer;
-import org.zerograph.service.api.ZerographInterface;
-import org.zerograph.neo4j.api.DatabaseInterface;
+import org.zerograph.api.DatabaseInterface;
 import org.zerograph.zap.api.ResourceInterface;
 import org.zerograph.zpp.api.RequestInterface;
 import org.zerograph.zpp.api.ResponderInterface;
@@ -13,16 +12,10 @@ import org.zerograph.zpp.except.ServerError;
 
 public abstract class AbstractResource implements ResourceInterface {
 
-    final protected ZerographInterface zerograph;
     final protected ResponderInterface responder;
 
-    public AbstractResource(ZerographInterface zerograph, ResponderInterface responder) {
-        this.zerograph = zerograph;
+    public AbstractResource(ResponderInterface responder) {
         this.responder = responder;
-    }
-
-    public ZerographInterface getZerograph() {
-        return this.zerograph;
     }
 
     public PropertyContainer get(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {

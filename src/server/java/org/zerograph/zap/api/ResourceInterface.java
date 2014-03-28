@@ -1,7 +1,7 @@
 package org.zerograph.zap.api;
 
 import org.neo4j.graphdb.PropertyContainer;
-import org.zerograph.neo4j.api.DatabaseInterface;
+import org.zerograph.api.DatabaseInterface;
 import org.zerograph.zpp.api.RequestInterface;
 import org.zerograph.zpp.except.ClientError;
 import org.zerograph.zpp.except.ServerError;

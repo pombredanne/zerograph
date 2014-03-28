@@ -17,7 +17,7 @@ public class NodeResourceTest extends ResourceTest {
 
     @Before
     public void createResource() {
-        resource = new NodeResource(fakeZerograph, responseCollector);
+        resource = new NodeResource(responseCollector);
     }
 
     @Test

@@ -1,14 +1,13 @@
 package org.zerograph.except;
 
-import org.zerograph.service.Graph;
-import org.zerograph.service.api.ZerographInterface;
+import org.zerograph.Graph;
 
 public class GraphAlreadyStartedException extends GraphException {
 
     final private Graph graph;
 
-    public GraphAlreadyStartedException(ZerographInterface zerograph, String host, int port, Graph graph) {
-        super(zerograph, host, port);
+    public GraphAlreadyStartedException(String host, int port, Graph graph) {
+        super(host, port);
         this.graph = graph;
     }
 

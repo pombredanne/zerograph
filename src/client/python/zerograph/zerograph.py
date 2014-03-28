@@ -73,10 +73,10 @@ ERRORS = {
 
 class Request(object):
 
-    def __init__(self, method, resource, *data):
+    def __init__(self, method, resource, **arguments):
         self.__method = method
         self.__resource = resource
-        self.__data = data
+        self.__arguments = arguments
 
     @property
     def method(self):
@@ -86,14 +86,11 @@ class Request(object):
     def resource(self):
         return self.__resource
 
-    @property
-    def data(self):
-        return self.__data
+    def argument(self, name):
+        return self.__arguments.get(name)
 
     def send(self, socket, more=False):
-        args = [self.__method, self.__resource]
-        args.extend(map(dehydrate, self.__data))
-        line = " ".join(args)
+        line = " ".join((self.__method, self.__resource, json.dumps(self.__arguments, separators=",:", ensure_ascii=True)))
         socket.send(line.encode("utf-8"), zmq.SNDMORE if more else 0)
 
 
@@ -101,48 +98,44 @@ class Response(object):
 
     @classmethod
     def receive(cls, socket):
-        status = 0
-        while status < 200:
+        more = True
+        while more:
             try:
-                frame = socket.recv().decode("utf-8")
+                frame = socket.recv(copy=False)
+
             except zmq.error.ZMQError as err:
                 raise TimeoutError("Timeout occurred while trying to receive "
                                    "data")
-            for line in frame.splitlines(False):
-                if line:
-                    print(line)
-                    continue
-                    parts = line.split("\t")
-                    status = int(parts[0])
-                    data = tuple(hydrate(part) for part in parts[1:])
-                    if status >= 400:
-                        raise ERRORS[status](*data)
-                    yield cls(status, *data)
-
-    @classmethod
-    def atom(cls, socket):
-        rs = list(cls.receive(socket))
-        if len(rs) != 1:
-            raise TypeError("Expected single line response")
-        rs = rs[0]
-        value_count = len(rs.data)
-        if value_count == 0:
-            return None
-        elif value_count == 1:
-            return rs.data[0]
-        else:
-            raise TypeError("Expected single value response")
-
-    @classmethod
-    def chain(cls, socket):
-        lines = [rs.data[0] for rs in cls.receive(socket)]
-        lines, stats = lines[:-1], lines[-1]
-        # TODO: something with stats (put all this into an object like Table)
-        return lines
-
-    @classmethod
-    def table(cls, socket):
-        return Table(cls.receive(socket))
+            else:
+                for line in frame.bytes.decode("utf-8").splitlines(False):
+                    if line:
+                        print(line)
+                more = frame.more
+    #
+    #@classmethod
+    #def atom(cls, socket):
+    #    rs = list(cls.receive(socket))
+    #    if len(rs) != 1:
+    #        raise TypeError("Expected single line response")
+    #    rs = rs[0]
+    #    value_count = len(rs.data)
+    #    if value_count == 0:
+    #        return None
+    #    elif value_count == 1:
+    #        return rs.data[0]
+    #    else:
+    #        raise TypeError("Expected single value response")
+    #
+    #@classmethod
+    #def chain(cls, socket):
+    #    lines = [rs.data[0] for rs in cls.receive(socket)]
+    #    lines, stats = lines[:-1], lines[-1]
+    #    # TODO: something with stats (put all this into an object like Table)
+    #    return lines
+    #
+    #@classmethod
+    #def table(cls, socket):
+    #    return Table(cls.receive(socket))
 
     def __init__(self, status, *data):
         self.__status = status
@@ -206,69 +199,64 @@ class _Batch(object):
     def single(cls, socket, method, *args, **kwargs):
         batch = cls(socket)
         method(batch, *args, **kwargs)
-        rs = list(batch.submit())
-        return rs[0]
+        batch.submit()
 
     def __init__(self, socket):
         self.__socket = socket
-        self.__response_handlers = []
+        self.__count = 0
 
-    def prepare(self, response_handler, method, resource, *args):
-        Request(method, resource, *args).send(self.__socket, more=True)
-        pointer = Pointer(len(self.__response_handlers))
-        self.__response_handlers.append(response_handler)
+    def prepare(self, method, resource, **args):
+        Request(method, resource, **args).send(self.__socket, more=True)
+        pointer = Pointer(self.__count)
+        self.__count += 1
         return pointer
 
     def submit(self):
         self.__socket.send(b"")  # to close multipart message
-        for handler in self.__response_handlers:
-            if isgeneratorfunction(handler):
-                yield list(handler(self.__socket))
-            else:
-                yield handler(self.__socket)
-        next(Response.receive(self.__socket))  # overall batch response
+        Response.receive(self.__socket)
+        self.__count = 0
 
 
 class ZerographBatch(_Batch):
 
     def get_graph(self, host, port):
-        return self.prepare(Response.atom, "GET", "graph", host, int(port))
+        return self.prepare("GET", "GraphMap", host=host, port=int(port))
 
-    def open_graph(self, host, port, create=False):
-        return self.prepare(Response.atom, "PUT", "graph", host, int(port), create)
+    def open_graph(self, host, port):
+        return self.prepare("SET", "GraphMap", host=host, port=int(port))
 
     def close_graph(self, host, port, delete=False):
-        return self.prepare(Response.atom, "DELETE", "graph", host, int(port), delete)
+        return self.prepare("DELETE", "GraphMap", host=host, port=int(port), delete=delete)
 
 
 class GraphBatch(_Batch):
 
-    def execute(self, query):
-        return self.prepare(Response.table, "POST", "cypher", query)
+    def execute(self, query, params=None):
+        return self.prepare("EXECUTE", "Cypher", query=query, params=dict(params or {}))
 
     def get_node(self, node_id):
-        return self.prepare(Response.atom, "GET", "node", int(node_id))
+        return self.prepare("GET", "Node", id=int(node_id))
 
     def set_node(self, node_id, labels, properties):
-        return self.prepare(Response.atom, "PUT", "node", int(node_id), labels, properties)
+        return self.prepare("SET", "Node", id=int(node_id), labels=labels, properties=properties)
 
     def patch_node(self, node_id, labels, properties):
-        return self.prepare(Response.atom, "PATCH", "node", int(node_id), labels, properties)
+        return self.prepare("PATCH", "Node", id=int(node_id), labels=labels, properties=properties)
 
     def create_node(self, labels, properties):
-        return self.prepare(Response.atom, "POST", "node", labels, properties)
+        return self.prepare("CREATE", "Node", labels=labels, properties=properties)
 
     def delete_node(self, node_id):
-        return self.prepare(Response.atom, "DELETE", "node", int(node_id))
+        return self.prepare("DELETE", "Node", id=int(node_id))
 
     def get_rel(self, rel_id):
-        return self.prepare(Response.atom, "GET", "rel", int(rel_id))
+        return self.prepare("GET", "Rel", id=int(rel_id))
 
     def set_rel(self, rel_id, properties):
-        return self.prepare(Response.atom, "PUT", "rel", int(rel_id), properties)
+        return self.prepare("SET", "Rel", id=int(rel_id), properties=properties)
 
     def patch_rel(self, rel_id, properties):
-        return self.prepare(Response.atom, "PATCH", "rel", int(rel_id), properties)
+        return self.prepare("PATCH", "Rel", id=int(rel_id), properties=properties)
 
     def create_rel(self, start_node, end_node, type, properties):
         return self.prepare(Response.atom, "POST", "rel", start_node, end_node, type, properties)
@@ -346,8 +334,8 @@ class Zerograph(_Client):
     def get_graph(self, port):
         return ZerographBatch.single(self.socket, ZerographBatch.get_graph, self.host, port)
 
-    def open_graph(self, port, create=False):
-        return ZerographBatch.single(self.socket, ZerographBatch.open_graph, self.host, port, create)
+    def open_graph(self, port):
+        return ZerographBatch.single(self.socket, ZerographBatch.open_graph, self.host, port)
 
     def close_graph(self, port, delete=False):
         return ZerographBatch.single(self.socket, ZerographBatch.close_graph, self.host, port, delete)
@@ -358,8 +346,14 @@ class Graph(_Client):
     def __init__(self, attributes):
         _Client.__init__(self, attributes)
 
-    def close(self, delete=False):
-        self.zerograph.close_graph(self.port, delete=delete)
+    def get_graph(self, port):
+        return GraphBatch.single(self.socket, ZerographBatch.get_graph, self.host, port)
+
+    def open_graph(self, port):
+        return GraphBatch.single(self.socket, ZerographBatch.open_graph, self.host, port)
+
+    def close_graph(self, port, delete=False):
+        return GraphBatch.single(self.socket, ZerographBatch.close_graph, self.host, port, delete)
 
     def create_batch(self):
         return GraphBatch(self.__socket)

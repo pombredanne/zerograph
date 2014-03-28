@@ -3,7 +3,7 @@ package org.zerograph.yaml;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
 import org.neo4j.graphdb.Node;
-import org.zerograph.service.Graph;
+import org.zerograph.Graph;
 
 import java.io.IOException;
 import java.util.Arrays;

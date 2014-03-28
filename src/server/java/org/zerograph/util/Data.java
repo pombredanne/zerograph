@@ -5,11 +5,9 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.zerograph.service.Graph;
-import org.zerograph.service.GraphDirectory;
-import org.zerograph.service.Zerograph;
-import org.zerograph.service.api.GraphInterface;
-import org.zerograph.service.api.ZerographInterface;
+import org.zerograph.Graph;
+import org.zerograph.GraphDirectory;
+import org.zerograph.api.GraphInterface;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,7 +17,6 @@ import java.util.Map;
 
 public class Data {
 
-    final private static String ZEROGRAPH_HINT = "/*Zerograph*/";
     final private static String GRAPH_HINT = "/*Graph*/";
     final private static String NODE_HINT = "/*Node*/";
     final private static String REL_HINT = "/*Rel*/";
@@ -48,16 +45,8 @@ public class Data {
         return propertyMap;
     }
 
-    private static Map<String, Object> attributes(ZerographInterface zerograph) throws IOException {
-        HashMap<String, Object> attributes = new HashMap<>();
-        attributes.put("host", zerograph.getHost());
-        attributes.put("port", zerograph.getPort());
-        return attributes;
-    }
-
     private static Map<String, Object> attributes(Graph graph) throws IOException {
         HashMap<String, Object> attributes = new HashMap<>();
-        attributes.put("zerograph", attributes(graph.getZerograph()));
         attributes.put("host", graph.getHost());
         attributes.put("port", graph.getPort());
         return attributes;
@@ -65,7 +54,6 @@ public class Data {
 
     private static Map<String, Object> attributes(GraphDirectory directory) throws IOException {
         HashMap<String, Object> attributes = new HashMap<>();
-        attributes.put("zerograph", attributes(directory.getZerograph()));
         attributes.put("host", directory.getHost());
         attributes.put("port", directory.getPort());
         return attributes;
@@ -90,9 +78,7 @@ public class Data {
     }
 
     public static String encode(Object value) throws IOException {
-        if (value instanceof ZerographInterface) {
-            return ZEROGRAPH_HINT + mapper.writeValueAsString(attributes((Zerograph) value));
-        } else if (value instanceof GraphInterface) {
+        if (value instanceof GraphInterface) {
             return GRAPH_HINT + mapper.writeValueAsString(attributes((Graph) value));
         } else if (value instanceof GraphDirectory) {
             return GRAPH_HINT + mapper.writeValueAsString(attributes((GraphDirectory) value));

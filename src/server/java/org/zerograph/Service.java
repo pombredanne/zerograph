@@ -1,8 +1,7 @@
-package org.zerograph.service;
+package org.zerograph;
 
 import org.zerograph.Environment;
-import org.zerograph.service.api.ServiceInterface;
-import org.zerograph.service.api.ZerographInterface;
+import org.zerograph.api.ServiceInterface;
 import org.zeromq.ZMQ;
 
 public abstract class Service implements Runnable, ServiceInterface {
@@ -13,8 +12,6 @@ public abstract class Service implements Runnable, ServiceInterface {
 
     final public static int WORKER_COUNT = 40;
 
-    final protected ZerographInterface zerograph;
-
     final private String host;
     final private int port;
 
@@ -24,16 +21,11 @@ public abstract class Service implements Runnable, ServiceInterface {
     private ZMQ.Socket external;  // incoming requests from clients
     private ZMQ.Socket internal;  // request forwarding to workers
 
-    public Service(ZerographInterface zerograph, String host, int port) {
-        this.zerograph = zerograph;
+    public Service(String host, int port) {
         this.host = host;
         this.port = port;
         this.environment = Environment.getInstance();
         this.context = ZMQ.context(1);
-    }
-
-    public ZerographInterface getZerograph() {
-        return this.zerograph;
     }
 
     public String getHost() {

@@ -3,8 +3,7 @@ package org.zerograph.zap;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
-import org.zerograph.neo4j.api.DatabaseInterface;
-import org.zerograph.service.api.ZerographInterface;
+import org.zerograph.api.DatabaseInterface;
 import org.zerograph.zap.api.ResourceInterface;
 import org.zerograph.zpp.api.RequestInterface;
 import org.zerograph.zpp.api.ResponderInterface;
@@ -18,8 +17,8 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
 
     final private static String NAME = "Node";
 
-    public NodeResource(ZerographInterface zerograph, ResponderInterface responder) {
-        super(zerograph, responder);
+    public NodeResource(ResponderInterface responder) {
+        super(responder);
     }
 
     public String getName() {

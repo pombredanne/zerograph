@@ -19,7 +19,7 @@ public class RelationshipResourceTest extends ResourceTest {
 
     @Before
     public void createResource() {
-        resource = new RelationshipResource(fakeZerograph, responseCollector);
+        resource = new RelationshipResource(responseCollector);
         alice = createNode(ALICE);
         bob = createNode(BOB);
     }

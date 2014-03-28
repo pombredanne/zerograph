@@ -1,4 +1,4 @@
-package org.zerograph.neo4j.api;
+package org.zerograph.api;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionResult;

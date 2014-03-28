@@ -26,10 +26,9 @@ HELP = """\
 !HELP           display this help
 !EOF            exit the shell
 
-!OPEN <port>    open graph on port <port>
-!OPEN++ <port>  open graph on port <port>, creating it if it doesn't exist
-!CLOSE          close current graph
-!CLOSE--        close current graph and delete it
+!OPEN <port>    open graph on port <port>, creating it if it doesn't exist
+!CLOSE <port>   close graph on port <port>
+!DROP <port>    close graph on port <port> and delete it
 
 !GET <resource> <arg_list>
 !PUT <resource> <arg_list>
@@ -58,13 +57,8 @@ else:
 
 class Shell(object):
 
-    def __init__(self, zerograph):
-        self.__zerograph = zerograph
-        self.__graph = None
-
-    @property
-    def zerograph(self):
-        return self.__zerograph
+    def __init__(self, graph):
+        self.__graph = graph
 
     @property
     def graph(self):
@@ -72,10 +66,7 @@ class Shell(object):
 
     @property
     def prompt(self):
-        if self.__graph:
-            return "\x1b[32;1mzg:\x1b[34;1m{0}:{1}>\x1b[0m ".format(self.graph.host, self.graph.port)
-        else:
-            return "\x1b[32;1mzg:>\x1b[0m "
+        return "\x1b[32;1mzg:\x1b[34;1m{0}:{1}>\x1b[0m ".format(self.graph.host, self.graph.port)
 
     def print_error(self, message):
         print("\x1b[33m{0}\x1b[0m".format(message))
@@ -89,36 +80,25 @@ class Shell(object):
             self.help()
         elif command == "OPEN":
             port = int(args.partition(" ")[0])
-            self.__graph = self.__zerograph.open_graph(port)
-        elif command == "OPEN++":
-            port = int(args.partition(" ")[0])
-            self.__graph = self.__zerograph.open_graph(port, create=True)
+            self.__graph = self.__graph.open_graph(port)
         elif command == "CLOSE":
-            if self.graph:
-                self.__zerograph.close_graph(self.__graph.port)
-                self.__graph = None
-            else:
-                self.print_error("Not attached to a graph - use !OPEN <port> to connect.")
-        elif command == "CLOSE--":
-            if self.graph:
-                self.__zerograph.close_graph(self.__graph.port, delete=True)
-                self.__graph = None
-            else:
-                self.print_error("Not attached to a graph - use !OPEN <port> to connect.")
+            port = int(args.partition(" ")[0])
+            self.__graph.close_graph(port)
+        elif command == "DROP":
+            port = int(args.partition(" ")[0])
+            self.__graph.close_graph(port, delete=True)
         elif command in ("GET", "SET", "PATCH", "CREATE", "DELETE", "EXECUTE"):
-            resource, arg_list = args.partition(" ")[0::2]
+            resource, arguments = args.partition(" ")[0::2]
             try:
-                arg_list = json.loads(arg_list)
+                arguments = json.loads(arguments)
             except ValueError:
-                self.print_error("Bad JSON: " + arg_list)
+                self.print_error("Bad JSON: " + arguments)
             else:
-                if not isinstance(arg_list, list):
-                    arg_list = [arg_list]
-                if self.graph:
-                    result = GraphBatch.single(self.graph.socket, GraphBatch.prepare, Response.atom, command ,resource, *arg_list)
+                if isinstance(arguments, dict):
+                    result = GraphBatch.single(self.graph.socket, GraphBatch.prepare, command, resource, **arguments)
+                    print(result)
                 else:
-                    result = ZerographBatch.single(self.zerograph.socket, ZerographBatch.prepare, Response.atom, command ,resource, *arg_list)
-                print(result)
+                    self.print_error("Not a JSON object: {0}".format(arguments))
         else:
             self.print_error("Unknown meta-command: !" + command)
 
@@ -134,8 +114,6 @@ class Shell(object):
                 line = get_input(self.prompt)
                 if line.startswith("!"):
                     self.meta(line)
-                elif not self.graph:
-                    self.print_error("Not attached to a graph - use !OPEN <port> to connect.")
                 else:
                     try:
                         rs = self.graph.execute(line)
@@ -152,6 +130,6 @@ class Shell(object):
 
 
 if __name__ == "__main__":
-    shell = Shell(Zerograph())
+    shell = Shell(Graph({"host": "localhost", "port": 47470}))
     shell.welcome()
     shell.repl()
