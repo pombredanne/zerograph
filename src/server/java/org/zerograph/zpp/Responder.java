@@ -11,6 +11,7 @@ public class Responder implements ResponderInterface {
 
     final private ZMQ.Socket socket;
 
+    private int responseCount = 0;
     private boolean sentHead = false;
     private boolean sentBody = false;
     private boolean sentFoot = false;
@@ -25,8 +26,15 @@ public class Responder implements ResponderInterface {
     }
 
     @Override
+    public void beginResponseBatch() {
+        responseCount = 0;
+    }
+
+    @Override
     public void beginResponse() throws MalformedResponse {
-        sendMore("---");
+        if (responseCount > 0) {
+            sendMore("---");
+        }
         sentHead = false;
         sentBody = false;
         sentFoot = false;
@@ -81,11 +89,11 @@ public class Responder implements ResponderInterface {
     }
 
     public void endResponse() {
-        //
+        responseCount += 1;
     }
 
     @Override
-    public void finish() {
+    public void endResponseBatch() {
         socket.send("");
     }
 }

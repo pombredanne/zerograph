@@ -41,7 +41,7 @@ public class GraphWorker extends Worker<Graph> {
                 responder.sendError(ex);
                 ex.printStackTrace(System.err);
             } finally {
-                responder.finish();
+                responder.endResponseBatch();
                 System.out.println();
             }
         }

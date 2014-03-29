@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-from inspect import isgeneratorfunction
 import json
 import logging
 
+import yaml
 import zmq
 
 from .data import Data
@@ -14,12 +14,25 @@ log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
+class ResultNode(yaml.YAMLObject):
+    yaml_tag = '!Node'
+
+    def __repr__(self):
+        return "<Node {0}>".format(" ".join(key + "=" + repr(value) for key, value, in vars(self).items()))
+
+
+class ResultRel(yaml.YAMLObject):
+    yaml_tag = '!Rel'
+
+
+class ResultPath(yaml.YAMLObject):
+    yaml_tag = '!Path'
+
+
 def hydrate(string):
     # TODO: expand attributes to kwargs for cleaner constructors
     data = Data.decode(string)
-    if data.class_name == "Zerograph":
-        return Zerograph(data.value)
-    elif data.class_name == "Graph":
+    if data.class_name == "Graph":
         return Graph(data.value)
     elif data.class_name == "Node":
         return Node(data.value)
@@ -98,44 +111,19 @@ class Response(object):
 
     @classmethod
     def receive(cls, socket):
+        full = ""
         more = True
         while more:
             try:
                 frame = socket.recv(copy=False)
-
             except zmq.error.ZMQError as err:
                 raise TimeoutError("Timeout occurred while trying to receive "
                                    "data")
             else:
-                for line in frame.bytes.decode("utf-8").splitlines(False):
-                    if line:
-                        print(line)
+                full += frame.bytes.decode("utf-8")
                 more = frame.more
-    #
-    #@classmethod
-    #def atom(cls, socket):
-    #    rs = list(cls.receive(socket))
-    #    if len(rs) != 1:
-    #        raise TypeError("Expected single line response")
-    #    rs = rs[0]
-    #    value_count = len(rs.data)
-    #    if value_count == 0:
-    #        return None
-    #    elif value_count == 1:
-    #        return rs.data[0]
-    #    else:
-    #        raise TypeError("Expected single value response")
-    #
-    #@classmethod
-    #def chain(cls, socket):
-    #    lines = [rs.data[0] for rs in cls.receive(socket)]
-    #    lines, stats = lines[:-1], lines[-1]
-    #    # TODO: something with stats (put all this into an object like Table)
-    #    return lines
-    #
-    #@classmethod
-    #def table(cls, socket):
-    #    return Table(cls.receive(socket))
+        for document in yaml.load_all(full):
+            yield document
 
     def __init__(self, status, *data):
         self.__status = status
@@ -199,7 +187,9 @@ class _Batch(object):
     def single(cls, socket, method, *args, **kwargs):
         batch = cls(socket)
         method(batch, *args, **kwargs)
-        batch.submit()
+        results = batch.submit()
+        result = next(results)
+        return result
 
     def __init__(self, socket):
         self.__socket = socket
@@ -213,11 +203,12 @@ class _Batch(object):
 
     def submit(self):
         self.__socket.send(b"")  # to close multipart message
-        Response.receive(self.__socket)
+        for result in Response.receive(self.__socket):
+            yield result
         self.__count = 0
 
 
-class ZerographBatch(_Batch):
+class GraphBatch(_Batch):
 
     def get_graph(self, host, port):
         return self.prepare("GET", "GraphMap", host=host, port=int(port))
@@ -227,9 +218,6 @@ class ZerographBatch(_Batch):
 
     def close_graph(self, host, port, delete=False):
         return self.prepare("DELETE", "GraphMap", host=host, port=int(port), delete=delete)
-
-
-class GraphBatch(_Batch):
 
     def execute(self, query, params=None):
         return self.prepare("EXECUTE", "Cypher", query=query, params=dict(params or {}))
@@ -259,29 +247,24 @@ class GraphBatch(_Batch):
         return self.prepare("PATCH", "Rel", id=int(rel_id), properties=properties)
 
     def create_rel(self, start_node, end_node, type, properties):
-        return self.prepare(Response.atom, "POST", "rel", start_node, end_node, type, properties)
+        return self.prepare("CREATE", "Rel", start=start_node, end=end_node, type=type, properties=properties)
 
     def delete_rel(self, rel_id):
-        return self.prepare(Response.atom, "DELETE", "rel", int(rel_id))
+        return self.prepare("DELETE", "Rel", id=int(rel_id))
 
     def match_node_set(self, label, key, value):
-        return self.prepare(Response.chain, "GET", "node_set", label, key, value)
+        return self.prepare("GET", "NodeSet", label=label, key=key, value=value)
 
     def merge_node_set(self, label, key, value):
-        return self.prepare(Response.chain, "PUT", "node_set", label, key, value)
+        return self.prepare("PUT", "NodeSet", label=label, key=key, value=value)
 
     def purge_node_set(self, label, key, value):
-        return self.prepare(Response.chain, "DELETE", "node_set", label, key, value)
+        return self.prepare("DELETE", "NodeSet", label=label, key=key, value=value)
 
 
 class _Client(object):
 
     def __init__(self, attributes):
-        zerograph = attributes.get("zerograph")
-        if zerograph:
-            self.__zerograph = Zerograph(zerograph)
-        else:
-            self.__zerograph = None
         self.__host = attributes["host"]
         self.__port = attributes["port"]
         self.__address = "tcp://{0}:{1}".format(self.__host, self.__port)
@@ -296,10 +279,6 @@ class _Client(object):
                                                         self.__port))
 
     @property
-    def zerograph(self):
-        return self.__zerograph
-
-    @property
     def host(self):
         return self.__host
 
@@ -312,7 +291,7 @@ class _Client(object):
         return self.__socket
 
 
-class Zerograph(_Client):
+class Graph(_Client):
 
     def __init__(self, attributes=None, host=None, port=None):
         # TODO: maybe sniff types of arguments?
@@ -327,36 +306,17 @@ class Zerograph(_Client):
             attributes.setdefault("port", 47470)
         _Client.__init__(self, attributes)
 
-    @property
-    def zerograph(self):
-        return self
-
-    def get_graph(self, port):
-        return ZerographBatch.single(self.socket, ZerographBatch.get_graph, self.host, port)
-
-    def open_graph(self, port):
-        return ZerographBatch.single(self.socket, ZerographBatch.open_graph, self.host, port)
-
-    def close_graph(self, port, delete=False):
-        return ZerographBatch.single(self.socket, ZerographBatch.close_graph, self.host, port, delete)
-
-
-class Graph(_Client):
-
-    def __init__(self, attributes):
-        _Client.__init__(self, attributes)
-
-    def get_graph(self, port):
-        return GraphBatch.single(self.socket, ZerographBatch.get_graph, self.host, port)
-
-    def open_graph(self, port):
-        return GraphBatch.single(self.socket, ZerographBatch.open_graph, self.host, port)
-
-    def close_graph(self, port, delete=False):
-        return GraphBatch.single(self.socket, ZerographBatch.close_graph, self.host, port, delete)
-
     def create_batch(self):
         return GraphBatch(self.__socket)
+
+    def get_graph(self, port):
+        return GraphBatch.single(self.socket, GraphBatch.get_graph, self.host, port)
+
+    def open_graph(self, port):
+        return GraphBatch.single(self.socket, GraphBatch.open_graph, self.host, port)
+
+    def close_graph(self, port, delete=False):
+        return GraphBatch.single(self.socket, GraphBatch.close_graph, self.host, port, delete)
 
     def execute(self, query):
         return GraphBatch.single(self.socket, GraphBatch.execute, query)

@@ -34,6 +34,11 @@ public class ResponseCollector implements ResponderInterface {
     }
 
     @Override
+    public void beginResponseBatch() {
+
+    }
+
+    @Override
     public void beginResponse() throws MalformedResponse {
 
     }
@@ -64,7 +69,7 @@ public class ResponseCollector implements ResponderInterface {
     }
 
     @Override
-    public void finish() {
+    public void endResponseBatch() {
 
     }
 }

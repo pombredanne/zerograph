@@ -6,6 +6,8 @@ import java.util.Map;
 
 public interface ResponderInterface {
 
+    public void beginResponseBatch();
+
     public void beginResponse() throws MalformedResponse;
 
     public void sendHead(Map<String, Object> data) throws MalformedResponse;
@@ -18,6 +20,6 @@ public interface ResponderInterface {
 
     public void endResponse() throws MalformedResponse;
 
-    public void finish();
+    public void endResponseBatch();
 
 }
