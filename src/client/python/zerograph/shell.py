@@ -17,8 +17,10 @@ WELCOME = """\
 \x1b[37;1mZerø\x1b[32;1mgraph\x1b[0m Shell v0
 (C) Copyright 2014, Nigel Small <nigel@nigelsmall.com>
 
-Execute Cypher statements or meta-commands (prefixed with "!"). Type !HELP for
-help or type !EOF or press Ctrl+D to exit the shell.
+Execute Cypher statements or meta-commands (prefixed with "!"). Multiple Cypher
+statements can be separated by a semicolon and will be executed within the
+same batched transaction. Type !HELP for help or type !EOF or press Ctrl+D to
+exit the shell.
 
 """
 
@@ -30,11 +32,12 @@ HELP = """\
 !CLOSE <port>   close graph on port <port>
 !DROP <port>    close graph on port <port> and delete it
 
-!GET <resource> <arg_list>
-!PUT <resource> <arg_list>
-!PATCH <resource> <arg_list>
-!POST <resource> <arg_list>
-!DELETE <resource> <arg_list>
+!GET <resource> [<json_object_data>]
+!SET <resource> [<json_object_data>]
+!PATCH <resource> [<json_object_data>]
+!CREATE <resource> [<json_object_data>]
+!DELETE <resource> [<json_object_data>]
+!EXECUTE <resource> [<json_object_data>]
 """
 
 if sys.version_info >= (3,):
@@ -95,7 +98,7 @@ class Shell(object):
                 self.print_error("Bad JSON: " + arguments)
             else:
                 if isinstance(arguments, dict):
-                    result = GraphBatch.single(self.graph.socket, GraphBatch.prepare, command, resource, **arguments)
+                    result = Batch.single(self.graph, Batch.prepare, command, resource, **arguments)
                     print(result)
                 else:
                     self.print_error("Not a JSON object: {0}".format(arguments))
@@ -115,17 +118,22 @@ class Shell(object):
                 if line.startswith("!"):
                     self.meta(line)
                 else:
+                    batch = self.graph.create_batch()
+                    for query in line.split(";"):
+                        batch.execute(query)
                     try:
-                        rs = self.graph.execute(line)
+                        results = batch.submit()
+                        #rs = self.graph.execute(line)
                     except ClientError as err:
                         self.print_error(err.args[0])
                     else:
-                        print(rs)
+                        for result in results:
+                            print(result)
             except EOFError:
                 print("⌁")
                 break
-            except Exception as err:
-                self.print_error(err)
+            #except Exception as err:
+            #    self.print_error(err)
             print()
 
 

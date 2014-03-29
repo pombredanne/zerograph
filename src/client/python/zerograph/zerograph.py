@@ -2,53 +2,111 @@
 
 import json
 import logging
-
 import yaml
 import zmq
-
-from .data import Data
-from .entities import *
 
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
-class ResultNode(yaml.YAMLObject):
+class NotLinkedError(Exception):
+    pass
+
+
+class Node(yaml.YAMLObject):
     yaml_tag = '!Node'
 
+    @classmethod
+    def clone(cls, graph, id):
+        inst = Node()
+        inst.link(graph, id)
+        inst.pull()
+        return inst
+
+    @classmethod
+    def from_yaml(cls, loader, node):
+        mapping = loader.construct_mapping(node, deep=True)
+        labels = mapping.get("labels")
+        properties = mapping.get("properties")
+        inst = Node(labels, properties)
+        id_ = mapping.get("id")
+        if id_:
+            inst.link(loader.__graph__, id_)
+        return inst
+
+    def __init__(self, labels=None, properties=None):
+        self.__labels = set(labels or [])
+        self.__properties = dict(properties or {})
+        self.__graph = None
+        self.__id = None
+
     def __repr__(self):
-        return "<Node {0}>".format(" ".join(key + "=" + repr(value) for key, value, in vars(self).items()))
+        if self.linked:
+            return "<Node labels={0} properties={1} graph={2} id={3}>".format(self.__labels, self.__properties, self.__graph, self.__id)
+        else:
+            return "<Node labels={0} properties={1}>".format(self.__labels, self.__properties)
+
+    @property
+    def labels(self):
+        return self.__labels
+
+    @property
+    def properties(self):
+        return self.__properties
+
+    @property
+    def linked(self):
+        return self.__graph and self.__id
+
+    def link(self, graph, id):
+        self.__graph = graph
+        self.__id = id
+
+    def unlink(self):
+        self.__graph = None
+        self.__id = None
+
+    def __assert_linked(self):
+        if not self.linked:
+            raise NotLinkedError(self)
+
+    def pull(self):
+        self.__assert_linked()
+        n = self.__graph.get_node(self.__id)  # TODO: whittle
+        self.__labels = set(n.labels)
+        self.__properties = dict(n.properties)
+
+    def push(self):
+        self.__assert_linked()
+        self.__graph.set_node(self.__id, self.__labels, self.__properties)  # TODO: whittle
 
 
-class ResultRel(yaml.YAMLObject):
+class Relationship(yaml.YAMLObject):
     yaml_tag = '!Rel'
 
 
-class ResultPath(yaml.YAMLObject):
+class Path(yaml.YAMLObject):
     yaml_tag = '!Path'
 
 
-def hydrate(string):
-    # TODO: expand attributes to kwargs for cleaner constructors
-    data = Data.decode(string)
-    if data.class_name == "Graph":
-        return Graph(data.value)
-    elif data.class_name == "Node":
-        return Node(data.value)
-    elif data.class_name == "Rel":
-        return Rel(data.value)
-    elif data.class_name == "Pointer":
-        return Pointer(data.value)
-    else:
-        return data.value
+class Pointer(object):
 
+    def __init__(self, attributes):
+        self.__address = attributes
 
-def dehydrate(obj):
-    if isinstance(obj, Pointer):
-        return Data("Pointer", obj.address).encode()
-    else:
-        return json.dumps(obj, separators=",:")
+    def __repr__(self):
+        return "<Pointer address={0}>".format(self.address)
+
+    def __eq__(self, other):
+        return self.address == other.address
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    @property
+    def address(self):
+        return self.__address
 
 
 class ClientError(Exception):
@@ -110,19 +168,23 @@ class Request(object):
 class Response(object):
 
     @classmethod
-    def receive(cls, socket):
+    def receive(cls, graph):
+
+        class GraphLoader(yaml.Loader):
+            __graph__ = graph
+
         full = ""
         more = True
         while more:
             try:
-                frame = socket.recv(copy=False)
+                frame = graph.socket.recv(copy=False)
             except zmq.error.ZMQError as err:
                 raise TimeoutError("Timeout occurred while trying to receive "
                                    "data")
             else:
                 full += frame.bytes.decode("utf-8")
                 more = frame.more
-        for document in yaml.load_all(full):
+        for document in yaml.load_all(full, Loader=GraphLoader):
             yield document
 
     def __init__(self, status, *data):
@@ -181,18 +243,19 @@ class Table(object):
         return self.__stats
 
 
-class _Batch(object):
+class Batch(object):
 
     @classmethod
-    def single(cls, socket, method, *args, **kwargs):
-        batch = cls(socket)
+    def single(cls, graph, method, *args, **kwargs):
+        batch = cls(graph)
         method(batch, *args, **kwargs)
         results = batch.submit()
         result = next(results)
         return result
 
-    def __init__(self, socket):
-        self.__socket = socket
+    def __init__(self, graph):
+        self.__graph = graph
+        self.__socket = self.__graph.socket
         self.__count = 0
 
     def prepare(self, method, resource, **args):
@@ -203,12 +266,9 @@ class _Batch(object):
 
     def submit(self):
         self.__socket.send(b"")  # to close multipart message
-        for result in Response.receive(self.__socket):
+        for result in Response.receive(self.__graph):
             yield result
         self.__count = 0
-
-
-class GraphBatch(_Batch):
 
     def get_graph(self, host, port):
         return self.prepare("GET", "GraphMap", host=host, port=int(port))
@@ -262,9 +322,19 @@ class GraphBatch(_Batch):
         return self.prepare("DELETE", "NodeSet", label=label, key=key, value=value)
 
 
-class _Client(object):
+class Graph(object):
 
-    def __init__(self, attributes):
+    def __init__(self, attributes=None, host=None, port=None):
+        # TODO: maybe sniff types of arguments?
+        attributes = dict(attributes or {})
+        if host:
+            attributes["host"] = host
+        else:
+            attributes.setdefault("host", "localhost")
+        if port:
+            attributes["port"] = port
+        else:
+            attributes.setdefault("port", 47470)
         self.__host = attributes["host"]
         self.__port = attributes["port"]
         self.__address = "tcp://{0}:{1}".format(self.__host, self.__port)
@@ -278,6 +348,9 @@ class _Client(object):
                                "{0} on port {1}".format(self.__host,
                                                         self.__port))
 
+    def __repr__(self):
+        return "<Graph host={0} port={1}>".format(self.__host, self.__port)
+
     @property
     def host(self):
         return self.__host
@@ -290,72 +363,56 @@ class _Client(object):
     def socket(self):
         return self.__socket
 
-
-class Graph(_Client):
-
-    def __init__(self, attributes=None, host=None, port=None):
-        # TODO: maybe sniff types of arguments?
-        attributes = dict(attributes or {})
-        if host:
-            attributes["host"] = host
-        else:
-            attributes.setdefault("host", "localhost")
-        if port:
-            attributes["port"] = port
-        else:
-            attributes.setdefault("port", 47470)
-        _Client.__init__(self, attributes)
-
     def create_batch(self):
-        return GraphBatch(self.__socket)
+        return Batch(self)
 
     def get_graph(self, port):
-        return GraphBatch.single(self.socket, GraphBatch.get_graph, self.host, port)
+        return Batch.single(self, Batch.get_graph, self.host, port)
 
     def open_graph(self, port):
-        return GraphBatch.single(self.socket, GraphBatch.open_graph, self.host, port)
+        return Batch.single(self, Batch.open_graph, self.host, port)
 
     def close_graph(self, port, delete=False):
-        return GraphBatch.single(self.socket, GraphBatch.close_graph, self.host, port, delete)
+        return Batch.single(self, Batch.close_graph, self.host, port, delete)
 
     def execute(self, query):
-        return GraphBatch.single(self.socket, GraphBatch.execute, query)
+        return Batch.single(self, Batch.execute, query)
 
     def get_node(self, node_id):
-        return GraphBatch.single(self.socket, GraphBatch.get_node, node_id)
+        return Batch.single(self, Batch.get_node, node_id)
 
     def set_node(self, node_id, labels, properties):
-        return GraphBatch.single(self.socket, GraphBatch.set_node, node_id, labels, properties)
+        return Batch.single(self, Batch.set_node, node_id, labels, properties)
 
     def patch_node(self, node_id, labels, properties):
-        return GraphBatch.single(self.socket, GraphBatch.patch_node, node_id, labels, properties)
+        return Batch.single(self, Batch.patch_node, node_id, labels, properties)
 
     def create_node(self, labels, properties):
-        return GraphBatch.single(self.socket, GraphBatch.create_node, labels, properties)
+        return Batch.single(self, Batch.create_node, labels, properties)
 
     def delete_node(self, node_id):
-        return GraphBatch.single(self.socket, GraphBatch.delete_node, node_id)
+        return Batch.single(self, Batch.delete_node, node_id)
 
     def get_rel(self, rel_id):
-        return GraphBatch.single(self.socket, GraphBatch.get_rel, rel_id)
+        return Batch.single(self, Batch.get_rel, rel_id)
 
     def set_rel(self, rel_id, properties):
-        return GraphBatch.single(self.socket, GraphBatch.set_rel, rel_id, properties)
+        return Batch.single(self, Batch.set_rel, rel_id, properties)
 
     def patch_rel(self, rel_id, properties):
-        return GraphBatch.single(self.socket, GraphBatch.patch_rel, rel_id, properties)
+        return Batch.single(self, Batch.patch_rel, rel_id, properties)
 
     def create_rel(self, start_node, end_node, type, properties):
-        return GraphBatch.single(self.socket, GraphBatch.create_rel, start_node, end_node, type, properties)
+        return Batch.single(self, Batch.create_rel, start_node, end_node, type, properties)
 
     def delete_rel(self, rel_id):
-        return GraphBatch.single(self.socket, GraphBatch.delete_rel, rel_id)
+        return Batch.single(self, Batch.delete_rel, rel_id)
 
     def match_node_set(self, label, key, value):
-        return GraphBatch.single(self.socket, GraphBatch.match_node_set, label, key, value)
+        return Batch.single(self, Batch.match_node_set, label, key, value)
 
     def merge_node_set(self, label, key, value):
-        return GraphBatch.single(self.socket, GraphBatch.merge_node_set, label, key, value)
+        return Batch.single(self, Batch.merge_node_set, label, key, value)
 
     def purge_node_set(self, label, key, value):
-        return GraphBatch.single(self.socket, GraphBatch.purge_node_set, label, key, value)
+        return Batch.single(self, Batch.purge_node_set, label, key, value)
