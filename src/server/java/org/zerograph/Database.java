@@ -229,7 +229,36 @@ public class Database implements DatabaseInterface {
 
     private void addProperties(PropertyContainer entity, Map properties) {
         for (Object key : properties.keySet()) {
-            entity.setProperty(key.toString(), properties.get(key));
+            String keyString = key.toString();
+            Object value = properties.get(key);
+            if (value instanceof List) {
+                List listValue = (List) value;
+                int listValueSize = listValue.size();
+                if (listValueSize >= 1) {
+                    Object firstItem = listValue.get(0);
+                    try {
+                        if (firstItem instanceof Boolean) {
+                            entity.setProperty(keyString, listValue.toArray(new Boolean[listValueSize]));
+                        } else if (firstItem instanceof Integer) {
+                            entity.setProperty(keyString, listValue.toArray(new Integer[listValueSize]));
+                        } else if (firstItem instanceof Long) {
+                            entity.setProperty(keyString, listValue.toArray(new Long[listValueSize]));
+                        } else if (firstItem instanceof Double) {
+                            entity.setProperty(keyString, listValue.toArray(new Double[listValueSize]));
+                        } else if (firstItem instanceof String) {
+                            entity.setProperty(keyString, listValue.toArray(new String[listValueSize]));
+                        } else {
+                            throw new ClassCastException("Cannot cast List property to a supported type");
+                        }
+                    } catch (ArrayStoreException ex) {
+                        throw new ClassCastException("Cannot cast List property to a supported type");
+                    }
+                } else {
+                    entity.setProperty(keyString, new String[0]);
+                }
+            } else {
+                entity.setProperty(keyString, value);
+            }
         }
     }
 

@@ -70,23 +70,24 @@ public abstract class Worker<S extends ServiceInterface> implements Runnable {
             ResourceInterface resource = resourceSet.get(requestedResource);
             PropertyContainer entity;
             responder.beginResponse();
-            switch (request.getMethod()) {
-                case "GET":
+            switch (request.getMethod().charAt(0)) {
+                case 'G':  // GET
                     entity = resource.get(request, database);
                     break;
-                case "SET":
+                case 'S':  // SET
                     entity = resource.set(request, database);
                     break;
-                case "PATCH":
+                case 'P':  // PATCH
                     entity = resource.patch(request, database);
                     break;
-                case "CREATE":
+                case 'C':  // CREATE
                     entity = resource.create(request, database);
                     break;
-                case "DELETE":
+                case 'D':  // DELETE
                     entity = resource.delete(request, database);
                     break;
-                case "EXECUTE":
+                case 'E':  // EXECUTE
+                case 'X':  // EXECUTE
                     entity = resource.execute(request, database);
                     break;
                 default:

@@ -10,11 +10,15 @@ log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
 
 
-class ClientError(Exception):
-    pass
+GET = "GET"
+SET = "SET"
+PATCH = "PATCH"
+CREATE = "CREATE"
+DELETE = "DELETE"
+EXECUTE = "EXECUTE"
 
 
-class ServerError(Exception):
+class ErrorResponse(Exception):
     pass
 
 
@@ -71,7 +75,8 @@ class Response(object):
         self.__head = document.get("head")
         self.__body = document.get("body")
         self.__foot = document.get("foot")
-        # TODO: handle errors
+        if "error" in document:
+            raise ErrorResponse(document["error"])
 
     def __repr__(self):
         s = ["Response"]
@@ -95,33 +100,34 @@ class Response(object):
     def foot(self):
         return self.__foot
 
+    def to_table(self):
+        return Table(self.__head["columns"], self.__body)
+
 
 class Table(object):
 
-    def __init__(self, responses):
-        self.__columns = next(responses).data
-        self.__rows = []
-        self.__stats = None
-        for rs in responses:
-            if rs.status < 200:
-                self.__rows.append(rs.data)
-            else:
-                self.__stats = rs.data
+    def __init__(self, columns, rows):
+        self.__columns = list(columns)
+        self.__rows = list(rows)
 
     def __repr__(self):
         column_widths = [len(column) for column in self.__columns]
         for row in self.__rows:
             for i, value in enumerate(row):
-                column_widths[i] = max(column_widths[i], len(repr(value)))
+                column_widths[i] = max(column_widths[i], len(str(value)))
         out = [" " + " | ".join(column.ljust(column_widths[i])
                                 for i, column in enumerate(self.__columns)) + " "]
         out += ["-" + "-+-".join("-" * column_widths[i]
                                  for i, column in enumerate(self.__columns)) + "-"]
         for row in self.__rows:
-            out.append(" " + " | ".join(repr(value).ljust(column_widths[i])
+            out.append(" " + " | ".join(str(value).ljust(column_widths[i])
                                         for i, value in enumerate(row)) + " ")
-        return "\n".join(out)
-        #return "<Table columns={0} row_count={1}>".format(self.__columns, len(self.__rows))
+        out = "\n".join(out)
+        if len(self.__rows) == 1:
+            out += "\n(1 row)\n"
+        else:
+            out += "\n({0} rows)\n".format(len(self.__rows))
+        return out
 
     @property
     def columns(self):
@@ -130,10 +136,6 @@ class Table(object):
     @property
     def rows(self):
         return self.__rows
-
-    @property
-    def stats(self):
-        return self.__stats
 
 
 class Batch(object):
@@ -168,55 +170,55 @@ class Batch(object):
         self.__count = 0
 
     def get_graph(self, host, port):
-        return self.append("GET", "Graph", host=host, port=int(port))
+        return self.append(GET, "Graph", host=host, port=int(port))
 
     def open_graph(self, host, port):
-        return self.append("SET", "Graph", host=host, port=int(port))
+        return self.append(SET, "Graph", host=host, port=int(port))
 
     def close_graph(self, host, port, drop=False):
-        return self.append("DELETE", "Graph", host=host, port=int(port), drop=drop)
+        return self.append(DELETE, "Graph", host=host, port=int(port), drop=drop)
 
     def execute(self, query, params=None):
-        return self.append("EXECUTE", "Cypher", query=query, params=dict(params or {}))
+        return self.append(EXECUTE, "Cypher", query=query, params=dict(params or {}))
 
     def get_node(self, node_id):
-        return self.append("GET", "Node", id=int(node_id))
+        return self.append(GET, "Node", id=int(node_id))
 
     def set_node(self, node_id, labels, properties):
-        return self.append("SET", "Node", id=int(node_id), labels=labels, properties=properties)
+        return self.append(SET, "Node", id=int(node_id), labels=labels, properties=properties)
 
     def patch_node(self, node_id, labels, properties):
-        return self.append("PATCH", "Node", id=int(node_id), labels=labels, properties=properties)
+        return self.append(PATCH, "Node", id=int(node_id), labels=labels, properties=properties)
 
-    def create_node(self, labels, properties):
-        return self.append("CREATE", "Node", labels=labels, properties=properties)
+    def create_node(self, labels=None, properties=None):
+        return self.append(CREATE, "Node", labels=list(labels or []), properties=dict(properties or {}))
 
     def delete_node(self, node_id):
-        return self.append("DELETE", "Node", id=int(node_id))
+        return self.append(DELETE, "Node", id=int(node_id))
 
     def get_rel(self, rel_id):
-        return self.append("GET", "Rel", id=int(rel_id))
+        return self.append(GET, "Rel", id=int(rel_id))
 
     def set_rel(self, rel_id, properties):
-        return self.append("SET", "Rel", id=int(rel_id), properties=properties)
+        return self.append(SET, "Rel", id=int(rel_id), properties=properties)
 
     def patch_rel(self, rel_id, properties):
-        return self.append("PATCH", "Rel", id=int(rel_id), properties=properties)
+        return self.append(PATCH, "Rel", id=int(rel_id), properties=properties)
 
     def create_rel(self, start_node, end_node, type, properties):
-        return self.append("CREATE", "Rel", start=start_node, end=end_node, type=type, properties=properties)
+        return self.append(CREATE, "Rel", start=start_node, end=end_node, type=type, properties=properties)
 
     def delete_rel(self, rel_id):
-        return self.append("DELETE", "Rel", id=int(rel_id))
+        return self.append(DELETE, "Rel", id=int(rel_id))
 
     def match_node_set(self, label, key, value):
-        return self.append("GET", "NodeSet", label=label, key=key, value=value)
+        return self.append(GET, "NodeSet", label=label, key=key, value=value)
 
     def merge_node_set(self, label, key, value):
-        return self.append("PUT", "NodeSet", label=label, key=key, value=value)
+        return self.append(SET, "NodeSet", label=label, key=key, value=value)
 
     def purge_node_set(self, label, key, value):
-        return self.append("DELETE", "NodeSet", label=label, key=key, value=value)
+        return self.append(DELETE, "NodeSet", label=label, key=key, value=value)
 
 
 class Pointer(object):
@@ -308,7 +310,7 @@ class Graph(yaml.YAMLObject):
         return Batch(self)
 
     def execute(self, query):
-        return Batch.single(self, Batch.execute, query).table
+        return Batch.single(self, Batch.execute, query).to_table()
 
     def get_node(self, node_id):
         return Batch.single(self, Batch.get_node, node_id).body
@@ -319,7 +321,7 @@ class Graph(yaml.YAMLObject):
     def patch_node(self, node_id, labels, properties):
         return Batch.single(self, Batch.patch_node, node_id, labels, properties).body
 
-    def create_node(self, labels, properties):
+    def create_node(self, labels=None, properties=None):
         return Batch.single(self, Batch.create_node, labels, properties).body
 
     def delete_node(self, node_id):
@@ -375,6 +377,13 @@ class Node(yaml.YAMLObject):
             return "<Node labels={0} properties={1} graph={2} id={3}>".format(self.__labels, self.__properties, self.__graph, self.__id)
         else:
             return "<Node labels={0} properties={1}>".format(self.__labels, self.__properties)
+
+    def __str__(self):
+        if self.linked:
+            return "({0}{1} {2})".format(self.__id,
+                                         "".join(":" + label for label in self.__labels),
+                                         json.dumps(self.__properties)
+            )
 
     @property
     def labels(self):

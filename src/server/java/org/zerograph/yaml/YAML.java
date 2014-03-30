@@ -21,7 +21,9 @@ public class YAML {
     final private static ObjectWriter STRING_WRITER = MAPPER.writerWithType(String.class);
 
     public static String dump(Object data) {
-        if (data instanceof Boolean) {
+        if (data == null) {
+            return "null";
+        } else if (data instanceof Boolean) {
             return dump((Boolean) data);
         } else if (data instanceof Integer) {
             return dump((Integer) data);
@@ -31,6 +33,16 @@ public class YAML {
             return dump((Double) data);
         } else if (data instanceof String) {
             return dump((String) data);
+        } else if (data instanceof Boolean[]) {
+            return dump(Arrays.asList((Boolean[]) data));
+        } else if (data instanceof Integer[]) {
+            return dump(Arrays.asList((Integer[]) data));
+        } else if (data instanceof Long[]) {
+            return dump(Arrays.asList((Long[]) data));
+        } else if (data instanceof Double[]) {
+            return dump(Arrays.asList((Double[]) data));
+        } else if (data instanceof String[]) {
+            return dump(Arrays.asList((String[]) data));
         } else if (data instanceof List) {
             return dump((List) data);
         } else if (data instanceof Set) {

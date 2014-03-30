@@ -120,15 +120,15 @@ class Shell(object):
                 else:
                     batch = self.graph.create_batch()
                     for query in line.split(";"):
-                        batch.execute(query)
+                        batch.execute(query.strip())
                     try:
                         results = batch.submit()
                         #rs = self.graph.execute(line)
-                    except ClientError as err:
+                    except ErrorResponse as err:
                         self.print_error(err.args[0])
                     else:
                         for result in results:
-                            print(result)
+                            print(result.to_table())
             except EOFError:
                 print("⌁")
                 break
@@ -138,6 +138,6 @@ class Shell(object):
 
 
 if __name__ == "__main__":
-    shell = Shell(Graph({"host": "localhost", "port": 47470}))
+    shell = Shell(Graph.zero("localhost"))
     shell.welcome()
     shell.repl()
