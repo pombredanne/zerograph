@@ -219,82 +219,6 @@ class Batch(object):
         return self.append("DELETE", "NodeSet", label=label, key=key, value=value)
 
 
-class Node(yaml.YAMLObject):
-    yaml_tag = '!Node'
-
-    @classmethod
-    def clone(cls, graph, id):
-        inst = Node()
-        inst.link(graph, id)
-        inst.pull()
-        return inst
-
-    @classmethod
-    def from_yaml(cls, loader, node):
-        mapping = loader.construct_mapping(node, deep=True)
-        labels = mapping.get("labels")
-        properties = mapping.get("properties")
-        inst = Node(labels, properties)
-        id_ = mapping.get("id")
-        if id_ is not None:
-            inst.link(loader.__graph__, id_)
-        return inst
-
-    def __init__(self, labels=None, properties=None):
-        self.__labels = set(labels or [])
-        self.__properties = dict(properties or {})
-        self.__graph = None
-        self.__id = None
-
-    def __repr__(self):
-        if self.linked:
-            return "<Node labels={0} properties={1} graph={2} id={3}>".format(self.__labels, self.__properties, self.__graph, self.__id)
-        else:
-            return "<Node labels={0} properties={1}>".format(self.__labels, self.__properties)
-
-    @property
-    def labels(self):
-        return self.__labels
-
-    @property
-    def properties(self):
-        return self.__properties
-
-    @property
-    def linked(self):
-        return self.__graph is not None and self.__id is not None
-
-    def link(self, graph, id):
-        self.__graph = graph
-        self.__id = id
-
-    def unlink(self):
-        self.__graph = None
-        self.__id = None
-
-    def __assert_linked(self):
-        if not self.linked:
-            raise NotLinkedError(self)
-
-    def pull(self):
-        self.__assert_linked()
-        n = self.__graph.get_node(self.__id)
-        self.__labels = set(n.labels)
-        self.__properties = dict(n.properties)
-
-    def push(self):
-        self.__assert_linked()
-        self.__graph.set_node(self.__id, list(self.__labels), self.__properties)
-
-
-class Relationship(yaml.YAMLObject):
-    yaml_tag = '!Rel'
-
-
-class Path(yaml.YAMLObject):
-    yaml_tag = '!Path'
-
-
 class Pointer(object):
 
     def __init__(self, attributes):
@@ -424,3 +348,72 @@ class Graph(yaml.YAMLObject):
 
     def purge_node_set(self, label, key, value):
         return Batch.single(self, Batch.purge_node_set, label, key, value).generator
+
+
+class Node(yaml.YAMLObject):
+    yaml_tag = '!Node'
+
+    @classmethod
+    def from_yaml(cls, loader, node):
+        mapping = loader.construct_mapping(node, deep=True)
+        labels = mapping.get("labels")
+        properties = mapping.get("properties")
+        inst = Node(labels, properties)
+        id_ = mapping.get("id")
+        if id_ is not None:
+            inst.link(loader.__graph__, id_)
+        return inst
+
+    def __init__(self, labels=None, properties=None):
+        self.__labels = set(labels or [])
+        self.__properties = dict(properties or {})
+        self.__graph = None
+        self.__id = None
+
+    def __repr__(self):
+        if self.linked:
+            return "<Node labels={0} properties={1} graph={2} id={3}>".format(self.__labels, self.__properties, self.__graph, self.__id)
+        else:
+            return "<Node labels={0} properties={1}>".format(self.__labels, self.__properties)
+
+    @property
+    def labels(self):
+        return self.__labels
+
+    @property
+    def properties(self):
+        return self.__properties
+
+    @property
+    def linked(self):
+        return self.__graph is not None and self.__id is not None
+
+    def link(self, graph, id_):
+        self.__graph = graph
+        self.__id = id_
+
+    def unlink(self):
+        self.__graph = None
+        self.__id = None
+
+    def __assert_linked(self):
+        if not self.linked:
+            raise NotLinkedError(self)
+
+    def pull(self):
+        self.__assert_linked()
+        n = self.__graph.get_node(self.__id)
+        self.__labels = set(n.labels)
+        self.__properties = dict(n.properties)
+
+    def push(self):
+        self.__assert_linked()
+        self.__graph.set_node(self.__id, list(self.__labels), self.__properties)
+
+
+class Relationship(yaml.YAMLObject):
+    yaml_tag = '!Rel'
+
+
+class Path(yaml.YAMLObject):
+    yaml_tag = '!Path'
