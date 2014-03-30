@@ -13,6 +13,7 @@ public class Responder implements ResponderInterface {
 
     private int responseCount = 0;
     private boolean sentHead = false;
+    private boolean startedBody = false;
     private boolean sentBody = false;
     private boolean sentFoot = false;
     private boolean sentError = false;
@@ -36,6 +37,7 @@ public class Responder implements ResponderInterface {
             sendMore("---");
         }
         sentHead = false;
+        startedBody = false;
         sentBody = false;
         sentFoot = false;
         sentError = false;
@@ -52,11 +54,22 @@ public class Responder implements ResponderInterface {
     }
 
     @Override
+    public void sendBody(Object data) throws MalformedResponse {
+        if (!startedBody && !sentBody && !sentFoot && !sentError) {
+            sendMore("body: " + YAML.dump(data));
+            startedBody = true;
+            sentBody = true;
+        } else {
+            throw new MalformedResponse();
+        }
+    }
+
+    @Override
     public void sendBodyPart(Object data) throws MalformedResponse {
-        if (!sentFoot && !sentError) {
-            if (!sentBody) {
+        if (!sentBody && !sentFoot && !sentError) {
+            if (!startedBody) {
                 sendMore("body:");
-                sentBody = true;
+                startedBody = true;
             }
             sendMore("  - " + YAML.dump(data));
         } else {
@@ -67,6 +80,7 @@ public class Responder implements ResponderInterface {
     @Override
     public void sendFoot(Map<String, Object> data) throws MalformedResponse {
         if (!sentFoot && !sentError) {
+            sentBody = true;
             sendMore("foot: " + YAML.dump(data));
             sentFoot = true;
         } else {
@@ -77,7 +91,7 @@ public class Responder implements ResponderInterface {
     public void sendError(Exception ex) {
         if (!sentError) {
             sendMore("error: " + ex.getMessage());
-            sentFoot = true;
+            sentError = true;
         } else {
             sendMore("error: \"Malformed response\"");
         }

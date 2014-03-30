@@ -12,6 +12,8 @@ public interface ResponderInterface {
 
     public void sendHead(Map<String, Object> data) throws MalformedResponse;
 
+    public void sendBody(Object data) throws MalformedResponse;
+
     public void sendBodyPart(Object data) throws MalformedResponse;
 
     public void sendFoot(Map<String, Object> data) throws MalformedResponse;

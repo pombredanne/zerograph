@@ -13,11 +13,11 @@ import org.zerograph.zpp.api.ResponderInterface;
 import org.zerograph.zpp.except.ClientError;
 import org.zerograph.zpp.except.ServerError;
 
-public class GraphMapResource extends AbstractResource implements ResourceInterface {
+public class GraphResource extends AbstractResource implements ResourceInterface {
 
-    final private static String NAME = "GraphMap";
+    final private static String NAME = "Graph";
 
-    public GraphMapResource(ResponderInterface responder) {
+    public GraphResource(ResponderInterface responder) {
         super(responder);
     }
 
@@ -36,7 +36,7 @@ public class GraphMapResource extends AbstractResource implements ResourceInterf
         int port = request.getArgumentAsInteger("port");
         GraphDirectory directory = new GraphDirectory(host, port);
         if (directory.exists()) {
-            responder.sendBodyPart(directory);  // check if started
+            responder.sendBody(directory);  // check if started
         } else {
             throw new ClientError("No graph directory exists for " + host + ":" + port);
         }
@@ -54,15 +54,15 @@ public class GraphMapResource extends AbstractResource implements ResourceInterf
         int port = request.getArgumentAsInteger("port");
         try {
             GraphInterface graph = Graph.setInstance(host, port);
-            responder.sendBodyPart(graph);
+            responder.sendBody(graph);
         } catch (GraphAlreadyStartedException ex) {
-            responder.sendBodyPart(ex.getGraph());
+            responder.sendBody(ex.getGraph());
         }
         return null;
     }
 
     /**
-     * DELETE graph {host} {port} [{delete}]
+     * DELETE graph {host} {port} [{drop}]
      *
      * @param request
      */
@@ -70,8 +70,8 @@ public class GraphMapResource extends AbstractResource implements ResourceInterf
     public PropertyContainer delete(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
         String host = request.getArgumentAsString("host");
         int port = request.getArgumentAsInteger("port");
-        boolean delete = request.getArgumentAsBoolean("delete", false);
-        // TODO: get deleted flag
+        boolean drop = request.getArgumentAsBoolean("drop", false);
+        // TODO: get drop flag
         try {
             Graph.stopInstance(host, port, false);
         } catch (GraphNotStartedException ex) {

@@ -98,7 +98,7 @@ class Shell(object):
                 self.print_error("Bad JSON: " + arguments)
             else:
                 if isinstance(arguments, dict):
-                    result = Batch.single(self.graph, Batch.prepare, command, resource, **arguments)
+                    result = Batch.single(self.graph, Batch.append, command, resource, **arguments)
                     print(result)
                 else:
                     self.print_error("Not a JSON object: {0}".format(arguments))

@@ -5,7 +5,7 @@ import org.zerograph.except.GraphAlreadyStartedException;
 import org.zerograph.except.GraphNotStartedException;
 import org.zerograph.api.GraphInterface;
 import org.zerograph.zap.CypherResource;
-import org.zerograph.zap.GraphMapResource;
+import org.zerograph.zap.GraphResource;
 import org.zerograph.zap.NodeResource;
 import org.zerograph.zap.NodeSetResource;
 import org.zerograph.zap.RelationshipResource;
@@ -74,7 +74,7 @@ public class Graph extends Service implements GraphInterface {
     @Override
     public ResourceSet createResourceSet(ResponderInterface responder) {
         ResourceSet resourceSet = new ResourceSet();
-        resourceSet.add(new GraphMapResource(responder));
+        resourceSet.add(new GraphResource(responder));
         resourceSet.add(new CypherResource(responder));
         resourceSet.add(new NodeResource(responder));
         resourceSet.add(new NodeSetResource(responder));

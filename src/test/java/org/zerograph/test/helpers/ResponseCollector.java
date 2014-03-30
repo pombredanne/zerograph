@@ -49,6 +49,11 @@ public class ResponseCollector implements ResponderInterface {
     }
 
     @Override
+    public void sendBody(Object data) throws MalformedResponse {
+        body.add(data);
+    }
+
+    @Override
     public void sendBodyPart(Object data) throws MalformedResponse {
         body.add(data);
     }

@@ -35,7 +35,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
         long id = request.getArgumentAsLong("id");
         try {
             Node node = database.getNode(id);
-            responder.sendBodyPart(node);
+            responder.sendBody(node);
             return node;
         } catch (NotFoundException ex) {
             throw new ClientError("Node " + id + " not found");
@@ -56,7 +56,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
         Map properties = request.getArgumentAsMap("properties");
         try {
             Node node = database.putNode(id, labelNames, properties);
-            responder.sendBodyPart(node);
+            responder.sendBody(node);
             return node;
         } catch (NotFoundException ex) {
             throw new ClientError("Node " + id + " not found");
@@ -78,7 +78,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
         Map properties = request.getArgumentAsMap("properties");
         try {
             Node node = database.patchNode(id, labelNames, properties);
-            responder.sendBodyPart(node);
+            responder.sendBody(node);
             return node;
         } catch (NotFoundException ex) {
             throw new ClientError("Node " + id + " not found");
@@ -95,7 +95,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
         List labelNames = request.getArgumentAsList("labels");
         Map properties = request.getArgumentAsMap("properties");
         Node node = database.createNode(labelNames, properties);
-        responder.sendBodyPart(node);
+        responder.sendBody(node);
         return node;
     }
 

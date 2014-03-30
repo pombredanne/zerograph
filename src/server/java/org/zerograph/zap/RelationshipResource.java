@@ -35,7 +35,7 @@ public class RelationshipResource extends AbstractResource implements ResourceIn
         long id = request.getArgumentAsLong("id");
         try {
             Relationship rel = context.getRelationship(id);
-            responder.sendBodyPart(rel);
+            responder.sendBody(rel);
             return rel;
         } catch (NotFoundException ex) {
             throw new ClientError("Relationship " + id + " not found");
@@ -55,7 +55,7 @@ public class RelationshipResource extends AbstractResource implements ResourceIn
         Map properties = request.getArgumentAsMap("properties");
         try {
             Relationship rel = context.putRelationship(id, properties);
-            responder.sendBodyPart(rel);
+            responder.sendBody(rel);
             return rel;
         } catch (NotFoundException ex) {
             throw new ClientError("Relationship " + id + " not found");
@@ -76,7 +76,7 @@ public class RelationshipResource extends AbstractResource implements ResourceIn
         Map properties = request.getArgumentAsMap("properties");
         try {
             Relationship rel = context.patchRelationship(id, properties);
-            responder.sendBodyPart(rel);
+            responder.sendBody(rel);
             return rel;
         } catch (NotFoundException ex) {
             throw new ClientError("Relationship " + id + " not found");
@@ -95,7 +95,7 @@ public class RelationshipResource extends AbstractResource implements ResourceIn
         String typeName = request.getArgumentAsString("type");
         Map properties = request.getArgumentAsMap("properties");
         Relationship rel = context.createRelationship(startNode, endNode, typeName, properties);
-        responder.sendBodyPart(rel);
+        responder.sendBody(rel);
         return rel;
     }
 
