@@ -26,7 +26,7 @@ public interface RequestInterface {
 
     public List getArgumentAsList(String name) throws ClientError;
 
-    public Map getArgumentAsMap(String name) throws ClientError;
+    public Map<String, Object> getArgumentAsMap(String name) throws ClientError;
 
     public Object getArgument(String name, Object defaultValue);
 
@@ -42,7 +42,7 @@ public interface RequestInterface {
 
     public List getArgumentAsList(String name, List defaultValue);
 
-    public Map getArgumentAsMap(String name, Map defaultValue);
+    public Map<String, Object> getArgumentAsMap(String name, Map<String, Object> defaultValue);
 
     public void resolvePointers(List<PropertyContainer> values);
 

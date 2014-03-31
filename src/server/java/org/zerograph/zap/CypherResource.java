@@ -35,8 +35,14 @@ public class CypherResource extends AbstractResource implements ResourceInterfac
     @Override
     public PropertyContainer execute(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
         String query = request.getArgumentAsString("query");
+        Map<String, Object> params = request.getArgumentAsMap("params", null);
         try {
-            ExecutionResult result = database.execute(query);
+            ExecutionResult result;
+            if (params == null) {
+                result = database.execute(query);
+            } else {
+                result = database.execute(query, params);
+            }
             HashMap<String, Object> meta = new HashMap<>();
             List<String> columns = result.columns();
             meta.put("columns", Arrays.asList(columns.toArray(new Object[columns.size()])));

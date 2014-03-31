@@ -53,7 +53,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
     public PropertyContainer set(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
         long id = request.getArgumentAsLong("id");
         List labelNames = request.getArgumentAsList("labels");
-        Map properties = request.getArgumentAsMap("properties");
+        Map<String, Object> properties = request.getArgumentAsMap("properties");
         try {
             Node node = database.putNode(id, labelNames, properties);
             responder.sendBody(node);
@@ -75,7 +75,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
     public PropertyContainer patch(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
         long id = request.getArgumentAsLong("id");
         List labelNames = request.getArgumentAsList("labels");
-        Map properties = request.getArgumentAsMap("properties");
+        Map<String, Object> properties = request.getArgumentAsMap("properties");
         try {
             Node node = database.patchNode(id, labelNames, properties);
             responder.sendBody(node);
@@ -93,7 +93,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
     @Override
     public PropertyContainer create(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
         List labelNames = request.getArgumentAsList("labels");
-        Map properties = request.getArgumentAsMap("properties");
+        Map<String, Object> properties = request.getArgumentAsMap("properties");
         Node node = database.createNode(labelNames, properties);
         responder.sendBody(node);
         return node;

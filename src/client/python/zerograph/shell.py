@@ -62,6 +62,7 @@ class Shell(object):
 
     def __init__(self, graph):
         self.__graph = graph
+        self.__queries = {}
 
     @property
     def graph(self):
@@ -90,6 +91,20 @@ class Shell(object):
         elif command == "DROP":
             port = int(args.partition(" ")[0])
             self.__graph.close_graph(port, delete=True)
+        elif command == "RECORD":
+            name, query = args.partition(" ")[0::2]
+            self.__queries[name] = query
+            print("Query {0} recorded".format(repr(name)))
+        elif command == "PLAY":
+            name, param_sets = args.partition(" ")[0::2]
+            param_sets = json.loads(param_sets)
+            try:
+                query = self.__queries[name]
+            except KeyError:
+                self.print_error("No query named {0} recorded".format(repr(name)))
+            else:
+                print("Playing query {0}...\n".format(repr(name)))
+                self.execute_query(query, param_sets)
         elif command in ("GET", "SET", "PATCH", "CREATE", "DELETE", "EXECUTE"):
             resource, arguments = args.partition(" ")[0::2]
             try:
@@ -111,6 +126,29 @@ class Shell(object):
     def help(self):
         sys.stdout.write(HELP)
 
+    def _submit(self, batch):
+        try:
+            results = batch.submit()
+        except ErrorResponse as err:
+            self.print_error(err.args[0])
+        else:
+            for result in results:
+                print(result.to_table())
+
+    def execute_query(self, query, param_sets):
+        batch = self.graph.create_batch()
+        for params in param_sets:
+            batch.execute(query, params)
+        self._submit(batch)
+
+    def execute_queries(self, line):
+        batch = self.graph.create_batch()
+        for query in line.split(";"):
+            query = query.strip()
+            if query:
+                batch.execute(query.strip())
+        self._submit(batch)
+
     def repl(self):
         while True:
             try:
@@ -118,22 +156,12 @@ class Shell(object):
                 if line.startswith("!"):
                     self.meta(line)
                 else:
-                    batch = self.graph.create_batch()
-                    for query in line.split(";"):
-                        batch.execute(query.strip())
-                    try:
-                        results = batch.submit()
-                        #rs = self.graph.execute(line)
-                    except ErrorResponse as err:
-                        self.print_error(err.args[0])
-                    else:
-                        for result in results:
-                            print(result.to_table())
+                    self.execute_queries(line)
             except EOFError:
                 print("⌁")
                 break
-            #except Exception as err:
-            #    self.print_error(err)
+            except Exception as err:
+                self.print_error(err)
             print()
 
 

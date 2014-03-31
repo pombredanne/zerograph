@@ -10,6 +10,7 @@ import org.zerograph.zpp.except.MalformedRequest;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -183,13 +184,18 @@ public class Request implements RequestInterface {
     }
 
     @Override
-    public Map getArgumentAsMap(String name) throws ClientError {
+    public Map<String, Object> getArgumentAsMap(String name) throws ClientError {
         if (arguments.containsKey(name)) {
             Object value = arguments.get(name);
             if (value == null) {
                 return null;
             } else if (value instanceof Map) {
-                return ((Map) value);
+                Map mapValue = (Map) value;
+                HashMap<String, Object> map = new HashMap<>(mapValue.size());
+                for (Object key : mapValue.keySet()) {
+                    map.put(key.toString(), mapValue.get(key));
+                }
+                return map;
             } else {
                 throw new ClassCastException("Cannot cast argument \"" + name + "\" to Map");
             }
@@ -304,13 +310,18 @@ public class Request implements RequestInterface {
     }
 
     @Override
-    public Map getArgumentAsMap(String name, Map defaultValue) {
+    public Map<String, Object> getArgumentAsMap(String name, Map<String, Object> defaultValue) {
         if (arguments.containsKey(name)) {
             Object value = arguments.get(name);
             if (value == null) {
                 return null;
             } else if (value instanceof Map) {
-                return ((Map) value);
+                Map mapValue = (Map) value;
+                HashMap<String, Object> map = new HashMap<>(mapValue.size());
+                for (Object key : mapValue.keySet()) {
+                    map.put(key.toString(), mapValue.get(key));
+                }
+                return map;
             } else {
                 throw new ClassCastException("Cannot cast argument \"" + name + "\" to Map");
             }

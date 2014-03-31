@@ -52,7 +52,7 @@ public class RelationshipResource extends AbstractResource implements ResourceIn
     @Override
     public PropertyContainer set(RequestInterface request, DatabaseInterface context) throws ClientError, ServerError {
         long id = request.getArgumentAsLong("id");
-        Map properties = request.getArgumentAsMap("properties");
+        Map<String, Object> properties = request.getArgumentAsMap("properties");
         try {
             Relationship rel = context.putRelationship(id, properties);
             responder.sendBody(rel);
@@ -73,7 +73,7 @@ public class RelationshipResource extends AbstractResource implements ResourceIn
     @Override
     public PropertyContainer patch(RequestInterface request, DatabaseInterface context) throws ClientError, ServerError {
         long id = request.getArgumentAsLong("id");
-        Map properties = request.getArgumentAsMap("properties");
+        Map<String, Object> properties = request.getArgumentAsMap("properties");
         try {
             Relationship rel = context.patchRelationship(id, properties);
             responder.sendBody(rel);
@@ -93,7 +93,7 @@ public class RelationshipResource extends AbstractResource implements ResourceIn
         Node startNode = resolveNode(context, request.getArgument("start"));
         Node endNode = resolveNode(context, request.getArgument("end"));
         String typeName = request.getArgumentAsString("type");
-        Map properties = request.getArgumentAsMap("properties");
+        Map<String, Object> properties = request.getArgumentAsMap("properties");
         Relationship rel = context.createRelationship(startNode, endNode, typeName, properties);
         responder.sendBody(rel);
         return rel;
