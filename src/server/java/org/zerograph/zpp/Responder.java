@@ -90,11 +90,11 @@ public class Responder implements ResponderInterface {
 
     public void sendError(Exception ex) {
         if (!sentError) {
-            sendMore("error: " + ex.getMessage());
-            sentError = true;
+            sendMore("error: " + YAML.dump(ex.getMessage()));
         } else {
             sendMore("error: \"Malformed response\"");
         }
+        sentError = true;
     }
 
     private void sendMore(String data) {

@@ -332,6 +332,17 @@ public class Request implements RequestInterface {
 
     @Override
     public void resolvePointers(List<PropertyContainer> values) {
-        // TODO
+        HashMap<String, Object> resolved = new HashMap<>();
+        for (Map.Entry<String, Object> entry : arguments.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            if (key.endsWith("*")) {
+                key = key.substring(0, key.length() - 1);
+                PropertyContainer replacementValue = values.get(Integer.parseInt(value.toString()));
+                resolved.put(key, replacementValue);
+            }
+        }
+        arguments.putAll(resolved);
     }
+
 }

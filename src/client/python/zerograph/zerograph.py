@@ -18,6 +18,20 @@ DELETE = "DELETE"
 EXECUTE = "EXECUTE"
 
 
+class ZerographEncoder(json.JSONEncoder):
+
+    def encode(self, o):
+        if isinstance(o, dict):
+            o_ = {}
+            for key, value in o.items():
+                if isinstance(value, Pointer):
+                    o_[key + "*"] = value.address
+                else:
+                    o_[key] = value
+            o = o_
+        return json.JSONEncoder.encode(self, o)
+
+
 class ErrorResponse(Exception):
     pass
 
@@ -45,7 +59,7 @@ class Request(object):
         return self.__arguments.get(name)
 
     def send(self, socket, more=False):
-        line = " ".join((self.__method, self.__resource, json.dumps(self.__arguments, separators=",:", ensure_ascii=True)))
+        line = " ".join((self.__method, self.__resource, json.dumps(self.__arguments, separators=",:", ensure_ascii=True, cls=ZerographEncoder)))
         socket.send(line.encode("utf-8"), zmq.SNDMORE if more else 0)
 
 
@@ -175,8 +189,8 @@ class Batch(object):
     def open_graph(self, host, port):
         return self.append(SET, "Graph", host=host, port=int(port))
 
-    def close_graph(self, host, port, drop=False):
-        return self.append(DELETE, "Graph", host=host, port=int(port), drop=drop)
+    def close_graph(self, host, port):
+        return self.append(DELETE, "Graph", host=host, port=int(port))
 
     def execute(self, query, params=None):
         return self.append(EXECUTE, "Cypher", query=query, params=dict(params or {}))
@@ -205,8 +219,8 @@ class Batch(object):
     def patch_rel(self, rel_id, properties):
         return self.append(PATCH, "Rel", id=int(rel_id), properties=properties)
 
-    def create_rel(self, start_node, end_node, type, properties):
-        return self.append(CREATE, "Rel", start=start_node, end=end_node, type=type, properties=properties)
+    def create_rel(self, start_node, end_node, type, properties=None):
+        return self.append(CREATE, "Rel", start=start_node, end=end_node, type=type, properties=dict(properties or {}))
 
     def delete_rel(self, rel_id):
         return self.append(DELETE, "Rel", id=int(rel_id))
@@ -270,12 +284,7 @@ class Graph(yaml.YAMLObject):
     @classmethod
     def close(cls, host, port):
         zero = cls.zero(host)
-        return Batch.single(zero, Batch.close_graph, zero.host, port, drop=False).body
-
-    @classmethod
-    def drop(cls, host, port):
-        zero = cls.zero(host)
-        return Batch.single(zero, Batch.close_graph, zero.host, port, drop=True).body
+        return Batch.single(zero, Batch.close_graph, zero.host, port).body
 
     def __init__(self, host, port):
         self.__host = host
@@ -336,7 +345,7 @@ class Graph(yaml.YAMLObject):
     def patch_rel(self, rel_id, properties):
         return Batch.single(self, Batch.patch_rel, rel_id, properties).body
 
-    def create_rel(self, start_node, end_node, type, properties):
+    def create_rel(self, start_node, end_node, type, properties=None):
         return Batch.single(self, Batch.create_rel, start_node, end_node, type, properties).body
 
     def delete_rel(self, rel_id):

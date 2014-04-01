@@ -3,6 +3,7 @@ package org.zerograph.yaml;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.zerograph.Graph;
 
 import java.io.IOException;
@@ -51,6 +52,8 @@ public class YAML {
             return dump((Map) data);
         } else if (data instanceof Node) {
             return dump((Node) data);
+        } else if (data instanceof Relationship) {
+            return dump((Relationship) data);
         } else if (data instanceof Graph) {
             return dump((Graph) data);
         } else {
@@ -125,7 +128,7 @@ public class YAML {
     }
 
     public static String dump(Graph data) {
-        LinkedHashMap<String, Object> attributes = new LinkedHashMap<>(3);
+        LinkedHashMap<String, Object> attributes = new LinkedHashMap<>(2);
         attributes.put("host", data.getHost());
         attributes.put("port", data.getPort());
         return "!Graph " + dump(attributes);
@@ -137,6 +140,16 @@ public class YAML {
         attributes.put("labels", labelNameSet(data.getLabels()));
         attributes.put("properties", propertyMap(data));
         return "!Node " + dump(attributes);
+    }
+
+    public static String dump(Relationship data) {
+        LinkedHashMap<String, Object> attributes = new LinkedHashMap<>(5);
+        attributes.put("id", data.getId());
+        attributes.put("start", data.getStartNode());
+        attributes.put("end", data.getEndNode());
+        attributes.put("type", data.getType().name());
+        attributes.put("properties", propertyMap(data));
+        return "!Rel " + dump(attributes);
     }
 
 }

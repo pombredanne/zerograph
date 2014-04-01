@@ -12,6 +12,8 @@ import sys
 from .zerograph import *
 
 
+HOST = "localhost"
+
 WELCOME = """\
 
 \x1b[37;1mZerø\x1b[32;1mgraph\x1b[0m Shell v0
@@ -29,8 +31,7 @@ HELP = """\
 !EOF            exit the shell
 
 !OPEN <port>    open graph on port <port>, creating it if it doesn't exist
-!CLOSE <port>   close graph on port <port>
-!DROP <port>    close graph on port <port> and delete it
+!CLOSE <port>   close graph on port <port> and delete the files from disk
 
 !GET <resource> [<json_object_data>]
 !SET <resource> [<json_object_data>]
@@ -70,7 +71,7 @@ class Shell(object):
 
     @property
     def prompt(self):
-        return "\x1b[32;1mzg:\x1b[34;1m{0}:{1}>\x1b[0m ".format(self.graph.host, self.graph.port)
+        return "\x1b[32;1m(Z) \x1b[34;1m{0}:{1}>\x1b[0m ".format(self.graph.host, self.graph.port)
 
     def print_error(self, message):
         print("\x1b[33m{0}\x1b[0m".format(message))
@@ -84,13 +85,10 @@ class Shell(object):
             self.help()
         elif command == "OPEN":
             port = int(args.partition(" ")[0])
-            self.__graph = self.__graph.open_graph(port)
+            self.__graph = Graph.open(HOST, port)
         elif command == "CLOSE":
             port = int(args.partition(" ")[0])
-            self.__graph.close_graph(port)
-        elif command == "DROP":
-            port = int(args.partition(" ")[0])
-            self.__graph.close_graph(port, delete=True)
+            Graph.close(HOST, port)
         elif command == "RECORD":
             name, query = args.partition(" ")[0::2]
             self.__queries[name] = query
@@ -166,6 +164,6 @@ class Shell(object):
 
 
 if __name__ == "__main__":
-    shell = Shell(Graph.zero("localhost"))
+    shell = Shell(Graph.zero(HOST))
     shell.welcome()
     shell.repl()

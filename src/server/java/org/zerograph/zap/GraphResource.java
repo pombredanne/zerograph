@@ -53,7 +53,7 @@ public class GraphResource extends AbstractResource implements ResourceInterface
         String host = request.getArgumentAsString("host");
         int port = request.getArgumentAsInteger("port");
         try {
-            GraphInterface graph = Graph.setInstance(host, port);
+            GraphInterface graph = Graph.open(host, port);
             responder.sendBody(graph);
         } catch (GraphAlreadyStartedException ex) {
             responder.sendBody(ex.getGraph());
@@ -70,10 +70,8 @@ public class GraphResource extends AbstractResource implements ResourceInterface
     public PropertyContainer delete(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
         String host = request.getArgumentAsString("host");
         int port = request.getArgumentAsInteger("port");
-        boolean drop = request.getArgumentAsBoolean("drop", false);
-        // TODO: get drop flag
         try {
-            Graph.stopInstance(host, port, false);
+            Graph.close(host, port);
         } catch (GraphNotStartedException ex) {
             throw new ClientError("No graph on port " + port);
         }

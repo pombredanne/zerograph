@@ -21,12 +21,12 @@ public class Graph extends Service implements GraphInterface {
 
     final static private HashMap<String, Graph> instances = new HashMap<>(1);
 
-    public static synchronized Graph getInstance(String host, int port) {
+    public static synchronized Graph get(String host, int port) {
         String key = Graph.key(host, port);
         return instances.get(key);
     }
 
-    public static synchronized Graph setInstance(String host, int port) throws GraphAlreadyStartedException {
+    public static synchronized Graph open(String host, int port) throws GraphAlreadyStartedException {
         String key = Graph.key(host, port);
         if (instances.containsKey(key)) {
             throw new GraphAlreadyStartedException(host, port, instances.get(key));
@@ -43,15 +43,15 @@ public class Graph extends Service implements GraphInterface {
         }
     }
 
-    public static synchronized void stopInstance(String host, int port, boolean delete) throws GraphNotStartedException {
-        // TODO: handle delete flag
+    public static synchronized void close(String host, int port) throws GraphNotStartedException {
         String key = Graph.key(host, port);
         if (instances.containsKey(key)) {
             instances.get(key).stop();
+            instances.remove(key);
+            // TODO: delete files from disk
         } else {
             throw new GraphNotStartedException(host, port);
         }
-        instances.remove(key);
     }
 
     final private GraphDatabaseService database;
