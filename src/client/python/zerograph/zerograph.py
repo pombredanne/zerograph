@@ -95,11 +95,11 @@ class Response(object):
     def __repr__(self):
         s = ["Response"]
         if self.__head:
-            s.append("head={0}".format(self.__head))
+            s.append("head={0}".format(repr(self.__head)))
         if self.__body:
-            s.append("body={0}".format(self.__body))
+            s.append("body={0}".format(repr(self.__body)))
         if self.__foot:
-            s.append("foot={0}".format(self.__foot))
+            s.append("foot={0}".format(repr(self.__foot)))
         return "<" + " ".join(s) + ">"
 
     @property
@@ -180,7 +180,14 @@ class Batch(object):
     def submit(self):
         self.__socket.send(b"")  # to close multipart message
         for result in Response.receive(self.__graph):
-            yield result
+            # interpret the result type (should this be explicit?)
+            if isinstance(result.body, list):
+                if result.head and "columns" in result.head:
+                    yield result.to_table()
+                else:
+                    yield iter(result.body)
+            else:
+                yield result.body
         self.__count = 0
 
     def get_graph(self, host, port):
@@ -319,49 +326,91 @@ class Graph(yaml.YAMLObject):
         return Batch(self)
 
     def execute(self, query):
-        return Batch.single(self, Batch.execute, query).to_table()
+        return Batch.single(self, Batch.execute, query)
 
     def get_node(self, node_id):
-        return Batch.single(self, Batch.get_node, node_id).body
+        return Batch.single(self, Batch.get_node, node_id)
 
     def set_node(self, node_id, labels, properties):
-        return Batch.single(self, Batch.set_node, node_id, labels, properties).body
+        return Batch.single(self, Batch.set_node, node_id, labels, properties)
 
     def patch_node(self, node_id, labels, properties):
-        return Batch.single(self, Batch.patch_node, node_id, labels, properties).body
+        return Batch.single(self, Batch.patch_node, node_id, labels, properties)
 
     def create_node(self, labels=None, properties=None):
-        return Batch.single(self, Batch.create_node, labels, properties).body
+        return Batch.single(self, Batch.create_node, labels, properties)
 
     def delete_node(self, node_id):
-        return Batch.single(self, Batch.delete_node, node_id).body
+        return Batch.single(self, Batch.delete_node, node_id)
 
     def get_rel(self, rel_id):
-        return Batch.single(self, Batch.get_rel, rel_id).body
+        return Batch.single(self, Batch.get_rel, rel_id)
 
     def set_rel(self, rel_id, properties):
-        return Batch.single(self, Batch.set_rel, rel_id, properties).body
+        return Batch.single(self, Batch.set_rel, rel_id, properties)
 
     def patch_rel(self, rel_id, properties):
-        return Batch.single(self, Batch.patch_rel, rel_id, properties).body
+        return Batch.single(self, Batch.patch_rel, rel_id, properties)
 
     def create_rel(self, start_node, end_node, type, properties=None):
-        return Batch.single(self, Batch.create_rel, start_node, end_node, type, properties).body
+        return Batch.single(self, Batch.create_rel, start_node, end_node, type, properties)
 
     def delete_rel(self, rel_id):
-        return Batch.single(self, Batch.delete_rel, rel_id).body
+        return Batch.single(self, Batch.delete_rel, rel_id)
 
     def match_node_set(self, label, key, value):
-        return Batch.single(self, Batch.match_node_set, label, key, value).generator
+        return Batch.single(self, Batch.match_node_set, label, key, value)
 
     def merge_node_set(self, label, key, value):
-        return Batch.single(self, Batch.merge_node_set, label, key, value).generator
+        return Batch.single(self, Batch.merge_node_set, label, key, value)
 
     def purge_node_set(self, label, key, value):
-        return Batch.single(self, Batch.purge_node_set, label, key, value).generator
+        return Batch.single(self, Batch.purge_node_set, label, key, value)
 
 
-class Node(yaml.YAMLObject):
+class Linkable(object):
+    """ Mixin for objects that can be linked to remote graph database entities.
+    """
+
+    def __init__(self):
+        self.__graph = None
+        self.__id = None
+
+    @property
+    def linked_graph(self):
+        return self.__graph
+
+    @property
+    def linked_id(self):
+        return self.__id
+
+    @property
+    def linked(self):
+        return self.__graph is not None and self.__id is not None
+
+    def link(self, graph, id):
+        self.__graph = graph
+        self.__id = id
+
+    def unlink(self):
+        self.__graph = None
+        self.__id = None
+
+    def __assert_linked(self):
+        if not self.linked:
+            raise NotLinkedError(self)
+
+    def pull(self):
+        self.__assert_linked()
+
+    def push(self):
+        self.__assert_linked()
+
+
+class Node(Linkable, yaml.YAMLObject):
+    """ A local representation of a Neo4j graph node that may be linked to a
+    node in a remote graph database.
+    """
     yaml_tag = '!Node'
 
     @classmethod
@@ -376,23 +425,32 @@ class Node(yaml.YAMLObject):
         return inst
 
     def __init__(self, labels=None, properties=None):
+        Linkable.__init__(self)
         self.__labels = set(labels or [])
         self.__properties = dict(properties or {})
-        self.__graph = None
-        self.__id = None
 
     def __repr__(self):
         if self.linked:
-            return "<Node labels={0} properties={1} graph={2} id={3}>".format(self.__labels, self.__properties, self.__graph, self.__id)
+            return "<Node labels={0} properties={1} " \
+                   "graph={2} id={3}>".format(self.__labels, self.__properties,
+                                              self.linked_graph, self.linked_id)
         else:
-            return "<Node labels={0} properties={1}>".format(self.__labels, self.__properties)
+            return "<Node labels={0} properties={1}>".format(self.__labels,
+                                                             self.__properties)
 
     def __str__(self):
         if self.linked:
-            return "({0}{1} {2})".format(self.__id,
+            return "({0}{1} {2})".format(self.linked_id,
                                          "".join(":" + label for label in self.__labels),
                                          json.dumps(self.__properties)
             )
+
+    def __eq__(self, other):
+        return self.labels == other.labels and \
+               self.properties == other.properties
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     @property
     def labels(self):
@@ -402,34 +460,19 @@ class Node(yaml.YAMLObject):
     def properties(self):
         return self.__properties
 
-    @property
-    def linked(self):
-        return self.__graph is not None and self.__id is not None
-
-    def link(self, graph, id_):
-        self.__graph = graph
-        self.__id = id_
-
-    def unlink(self):
-        self.__graph = None
-        self.__id = None
-
-    def __assert_linked(self):
-        if not self.linked:
-            raise NotLinkedError(self)
-
     def pull(self):
-        self.__assert_linked()
-        n = self.__graph.get_node(self.__id)
+        Linkable.pull(self)
+        n = self.linked_graph.get_node(self.linked_id)
         self.__labels = set(n.labels)
         self.__properties = dict(n.properties)
 
     def push(self):
-        self.__assert_linked()
-        self.__graph.set_node(self.__id, list(self.__labels), self.__properties)
+        Linkable.push(self)
+        self.linked_graph.set_node(self.linked_id,
+                                   list(self.__labels), self.__properties)
 
 
-class Relationship(yaml.YAMLObject):
+class Relationship(Linkable, yaml.YAMLObject):
     yaml_tag = '!Rel'
 
 

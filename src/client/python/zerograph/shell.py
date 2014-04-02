@@ -131,7 +131,7 @@ class Shell(object):
             self.print_error(err.args[0])
         else:
             for result in results:
-                print(result.to_table())
+                print(result)
 
     def execute_query(self, query, param_sets):
         batch = self.graph.create_batch()
