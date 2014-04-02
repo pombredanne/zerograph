@@ -407,7 +407,29 @@ class Linkable(object):
         self.__assert_linked()
 
 
-class Node(Linkable, yaml.YAMLObject):
+class PropertySet(dict):
+
+    # TODO: make a PropertySet class that handles NULLs
+    pass
+
+
+class PropertyContainer(object):
+
+    def __init__(self, properties=None):
+        self.__properties = dict(properties or {})  # TODO: use PropertySet
+
+    def __eq__(self, other):
+        return self.properties == other.properties
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    @property
+    def properties(self):
+        return self.__properties
+
+
+class Node(Linkable, PropertyContainer, yaml.YAMLObject):
     """ A local representation of a Neo4j graph node that may be linked to a
     node in a remote graph database.
     """
@@ -426,28 +448,32 @@ class Node(Linkable, yaml.YAMLObject):
 
     def __init__(self, labels=None, properties=None):
         Linkable.__init__(self)
+        PropertyContainer.__init__(self, properties)
         self.__labels = set(labels or [])
-        self.__properties = dict(properties or {})
 
     def __repr__(self):
         if self.linked:
-            return "<Node labels={0} properties={1} " \
-                   "graph={2} id={3}>".format(self.__labels, self.__properties,
-                                              self.linked_graph, self.linked_id)
+            return "<Node labels={0} properties={1} graph={2} id={3}>".\
+                format(self.__labels, self.properties,
+                       self.linked_graph, self.linked_id)
         else:
-            return "<Node labels={0} properties={1}>".format(self.__labels,
-                                                             self.__properties)
+            return "<Node labels={0} properties={1}>".\
+                format(self.__labels, self.properties)
 
     def __str__(self):
         if self.linked:
-            return "({0}{1} {2})".format(self.linked_id,
-                                         "".join(":" + label for label in self.__labels),
-                                         json.dumps(self.__properties)
-            )
+            return "({0}{1} {2})".\
+                format(self.linked_id,
+                       "".join(":" + label for label in self.__labels),
+                       json.dumps(self.properties))
+        else:
+            return "({1} {2})".\
+                format("".join(":" + label for label in self.__labels),
+                       json.dumps(self.properties))
 
     def __eq__(self, other):
-        return self.labels == other.labels and \
-               self.properties == other.properties
+        return PropertyContainer.__eq__(self, other) and \
+               self.labels == other.labels
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -456,23 +482,20 @@ class Node(Linkable, yaml.YAMLObject):
     def labels(self):
         return self.__labels
 
-    @property
-    def properties(self):
-        return self.__properties
-
     def pull(self):
         Linkable.pull(self)
         n = self.linked_graph.get_node(self.linked_id)
         self.__labels = set(n.labels)
-        self.__properties = dict(n.properties)
+        self.properties.clear()
+        self.properties.update(n.properties)
 
     def push(self):
         Linkable.push(self)
         self.linked_graph.set_node(self.linked_id,
-                                   list(self.__labels), self.__properties)
+                                   list(self.__labels), self.properties)
 
 
-class Relationship(Linkable, yaml.YAMLObject):
+class Relationship(Linkable, PropertyContainer, yaml.YAMLObject):
     yaml_tag = '!Rel'
 
 
