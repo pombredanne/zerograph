@@ -39,17 +39,21 @@ public class NodeSetResource extends AbstractResource implements ResourceInterfa
     @Override
     public PropertyContainer get(RequestInterface request, DatabaseInterface context) throws ClientError, ServerError {
         String labelName = request.getArgumentAsString("label");
-        String key = request.getArgumentAsString("key");
-        Object value = request.getArgument("value");
+        String key = request.getArgumentAsString("key", null);
+        Object value = request.getArgument("value", null);
         HashMap<String, Object> stats = new HashMap<>();
-        IterableResult<Node> result = context.matchNodeSet(labelName, key, value);
+        Iterable<Node> result = context.matchNodeSet(labelName, key, value);
+        Node first = null;
         //stats.put("nodes_matched", 0);
         for (Node node : result) {
+            if (first == null) {
+                first = node;
+            }
             responder.sendBodyPart(node);
             //stats.put("nodes_matched", stats.get("nodes_matched") + 1);
         }
         responder.sendFoot(stats);
-        return result.getFirst();
+        return first;
     }
 
     /**
@@ -68,13 +72,18 @@ public class NodeSetResource extends AbstractResource implements ResourceInterfa
         String key = request.getArgumentAsString("key");
         Object value = request.getArgument("value");
         try {
-            IterableResult<Node> result = context.mergeNodeSet(labelName, key, value);
+            Iterable<Node> result = context.mergeNodeSet(labelName, key, value);
+            Node first = null;
             for (Node node : result) {
+                if (first == null) {
+                    first = node;
+                }
                 responder.sendBodyPart(node);
             }
-            Statistics stats = result.getStatistics();
-            responder.sendFoot(stats.toMap());
-            return result.getFirst();
+            //Statistics stats = result.getStatistics();
+            HashMap<String, Object> stats = new HashMap<>();
+            responder.sendFoot(stats);
+            return first;
         } catch (CypherException ex) {
             throw new ServerError(ex.getMessage());
         }

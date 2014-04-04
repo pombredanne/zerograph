@@ -7,7 +7,6 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.zerograph.zpp.api.RequestInterface;
 import org.zerograph.zpp.except.ClientError;
 import org.zerograph.zpp.except.MalformedRequest;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 import java.util.HashMap;

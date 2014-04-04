@@ -14,8 +14,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.zerograph.IterableResult;
-import org.zerograph.Statistics;
+import org.neo4j.tooling.GlobalGraphOperations;
 import org.zerograph.api.DatabaseInterface;
 
 import java.util.HashMap;
@@ -27,6 +26,7 @@ public class Database implements DatabaseInterface {
 
     final private GraphDatabaseService database;
     final private ExecutionEngine engine;
+    final private GlobalGraphOperations global;
     final private Transaction transaction;
 
     final private HashMap<String, Label> labelCache;
@@ -35,6 +35,7 @@ public class Database implements DatabaseInterface {
     public Database(GraphDatabaseService database, Transaction transaction) {
         this.database = database;
         this.engine = new ExecutionEngine(database);
+        this.global = GlobalGraphOperations.at(database);
         this.transaction = transaction;
         this.labelCache = new HashMap<>();
         this.typeCache = new HashMap<>();
@@ -154,12 +155,16 @@ public class Database implements DatabaseInterface {
     }
 
     @Override
-    public IterableResult<Node> matchNodeSet(String label, String key, Object value) {
-        return new IterableResult<>(database.findNodesByLabelAndProperty(getLabel(label), key, value));
+    public Iterable<Node> matchNodeSet(String label, String key, Object value) {
+        if (key == null) {
+            return global.getAllNodesWithLabel(getLabel(label));
+        } else {
+            return new IterableResult<>(database.findNodesByLabelAndProperty(getLabel(label), key, value));
+        }
     }
 
     @Override
-    public IterableResult<Node> mergeNodeSet(String label, String key, Object value) {
+    public Iterable<Node> mergeNodeSet(String label, String key, Object value) {
         String query = "MERGE (n:`" + label.replace("`", "``") +
                 "` {`" + key.replace("`", "``") + "`:{value}}) RETURN n";
         HashMap<String, Object> params = new HashMap<>(1);
@@ -211,7 +216,7 @@ public class Database implements DatabaseInterface {
     }
 
     @Override
-    public IterableResult<Node> purgeNodeSet(String label, String key, Object value) {
+    public Iterable<Node> purgeNodeSet(String label, String key, Object value) {
         for (Node node : database.findNodesByLabelAndProperty(getLabel(label), key, value)) {
             node.delete();
         }
@@ -223,7 +228,9 @@ public class Database implements DatabaseInterface {
 
     private void addLabels(Node node, List labelNames) {
         for (Object labelName : labelNames) {
-            node.addLabel(getLabel(labelName.toString()));
+            if (labelName != null) {
+                node.addLabel(getLabel(labelName.toString()));
+            }
         }
     }
 

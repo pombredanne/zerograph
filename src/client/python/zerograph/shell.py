@@ -9,7 +9,7 @@ import locale
 import readline
 import sys
 
-from .zerograph import *
+from . import *
 
 
 HOST = "localhost"
@@ -127,7 +127,7 @@ class Shell(object):
     def _submit(self, batch):
         try:
             results = batch.submit()
-        except ErrorResponse as err:
+        except Error as err:
             self.print_error(err.args[0])
         else:
             for result in results:

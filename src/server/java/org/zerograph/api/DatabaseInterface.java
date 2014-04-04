@@ -38,10 +38,10 @@ public interface DatabaseInterface {
 
     public void deleteRelationship(long id) throws NotFoundException;
 
-    public IterableResult<Node> matchNodeSet(String label, String key, Object value);
+    public Iterable<Node> matchNodeSet(String label, String key, Object value);
 
-    public IterableResult<Node> mergeNodeSet(String label, String key, Object value);
+    public Iterable<Node> mergeNodeSet(String label, String key, Object value);
 
-    public IterableResult<Node> purgeNodeSet(String label, String key, Object value);
+    public Iterable<Node> purgeNodeSet(String label, String key, Object value);
 
 }
