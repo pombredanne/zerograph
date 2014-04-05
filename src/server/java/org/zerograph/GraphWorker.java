@@ -4,9 +4,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.zerograph.zpp.Request;
+import org.zerograph.zpp.except.ClientError;
+import org.zerograph.zpp.except.ServerError;
+import org.zeromq.ZMQException;
+import zmq.ZError;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class GraphWorker extends Worker<Graph> {
 
@@ -23,11 +26,24 @@ public class GraphWorker extends Worker<Graph> {
 
     @Override
     public void run() {
-        while (!Thread.currentThread().isInterrupted()) {
+        while (true) {
             try {
-                List<Request> requests = receiveRequestBatch();
+                // receive request batch
+                ArrayList<Request> requests = new ArrayList<>();
+                boolean more = true;
+                while (more) {
+                    String frame = socket.recvStr();
+                    for (String line : frame.split("\\r|\\n|\\r\\n")) {
+                        if (line.length() > 0) {
+                            System.out.println("<<< " + line);
+                            requests.add(Request.parse(line));
+                        }
+                    }
+                    more = socket.hasReceiveMore();
+                }
+                // action requests
                 ArrayList<PropertyContainer> outputValues = new ArrayList<>(requests.size());
-                System.out.println("--- Beginning transaction in worker " + this.getUUID().toString() + " ---");
+                System.out.println("--- Beginning transaction for graph " + service.getPort() + " in worker " + this.getUUID().toString() + " ---");
                 try (Transaction tx = database.beginTx()) {
                     Database context = new Database(database, tx);  // TODO: construct higher up and just set tx here
                     for (Request request : requests) {
@@ -37,14 +53,22 @@ public class GraphWorker extends Worker<Graph> {
                     tx.success();
                 }
                 System.out.println("--- Successfully completed transaction in worker " + this.getUUID().toString() + " ---");
-            } catch (Exception ex) {
+            } catch (ZMQException ex) {
+                int errorCode = ex.getErrorCode();
+                if (errorCode == 156384765) {
+                    // shutting down
+                    break;
+                } else {
+                    ex.printStackTrace(System.err);
+                    throw ex;
+                }
+            } catch (ClientError | ServerError ex) {
                 responder.sendError(ex);
-                ex.printStackTrace(System.err);
-            } finally {
-                responder.endResponseBatch();
-                System.out.println();
             }
+            responder.endResponseBatch();
+            System.out.println();
         }
+        responder.close();
     }
 
 }

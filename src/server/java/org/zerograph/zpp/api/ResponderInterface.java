@@ -24,4 +24,6 @@ public interface ResponderInterface {
 
     public void endResponseBatch();
 
+    public void close();
+
 }

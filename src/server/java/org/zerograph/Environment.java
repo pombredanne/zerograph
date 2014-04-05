@@ -2,6 +2,7 @@ package org.zerograph;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.zerograph.util.Toolbox;
 
 import java.io.File;
 import java.util.HashMap;
@@ -33,7 +34,7 @@ public class Environment {
 
     private void setDirectories() {
         // set home directory
-        String home = System.getenv("ZG_HOME");
+        String home = System.getenv("ZEROGRAPH_HOME");
         if (home == null) {
             String userName = System.getProperty("user.name");
             if ("root".equals(userName))
@@ -80,6 +81,16 @@ public class Environment {
             GraphDatabaseService database = factory.newEmbeddedDatabase(directory.getPath());
             databases.put(port, database);
             return database;
+        }
+    }
+
+    public synchronized void dropDatabase(String host, int port) {
+        if (databases.containsKey(port)) {
+            GraphDirectory directory = new GraphDirectory(host, port);
+            Toolbox.delete(directory.getFile());
+            databases.remove(port);
+        } else {
+            throw new IllegalArgumentException("No such database");
         }
     }
 

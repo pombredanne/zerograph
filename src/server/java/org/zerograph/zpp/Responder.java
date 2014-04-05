@@ -71,7 +71,7 @@ public class Responder implements ResponderInterface {
                 sendMore("body:");
                 startedBody = true;
             }
-            sendMore("  - " + YAML.dump(data));
+            sendMore("- " + YAML.dump(data));
         } else {
             throw new MalformedResponse();
         }
@@ -110,4 +110,10 @@ public class Responder implements ResponderInterface {
     public void endResponseBatch() {
         socket.send("");
     }
+
+    @Override
+    public void close() {
+        socket.close();
+    }
+
 }

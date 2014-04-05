@@ -3,6 +3,7 @@ package org.zerograph.util;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.PropertyContainer;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -40,6 +41,15 @@ public class Toolbox {
             propertyMap.put(key, entity.getProperty(key));
         }
         return propertyMap;
+    }
+
+    public static boolean delete(File file) {
+        File[] files = file.listFiles();
+        if (files != null) {
+            for (File f : files)
+                delete(f);
+        }
+        return file.delete();
     }
 
 }

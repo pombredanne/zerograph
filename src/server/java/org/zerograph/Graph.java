@@ -4,6 +4,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.zerograph.except.GraphAlreadyStartedException;
 import org.zerograph.except.GraphNotStartedException;
 import org.zerograph.api.GraphInterface;
+import org.zerograph.util.Toolbox;
 import org.zerograph.zap.CypherResource;
 import org.zerograph.zap.GraphResource;
 import org.zerograph.zap.NodeResource;
@@ -11,6 +12,7 @@ import org.zerograph.zap.NodeSetResource;
 import org.zerograph.zap.RelationshipResource;
 import org.zerograph.zpp.api.ResponderInterface;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
@@ -20,6 +22,9 @@ import java.util.HashMap;
 public class Graph extends Service implements GraphInterface {
 
     final static private HashMap<String, Graph> instances = new HashMap<>(1);
+
+    private ArrayList<GraphWorker> workers;
+    private ArrayList<Thread> threads;
 
     public static synchronized Graph get(String host, int port) {
         String key = Graph.key(host, port);
@@ -43,12 +48,15 @@ public class Graph extends Service implements GraphInterface {
         }
     }
 
-    public static synchronized void close(String host, int port) throws GraphNotStartedException {
+    public static synchronized void close(String host, int port, boolean drop) throws GraphNotStartedException {
         String key = Graph.key(host, port);
         if (instances.containsKey(key)) {
-            instances.get(key).stop();
-            instances.remove(key);
-            // TODO: delete files from disk
+            Graph graph = instances.remove(key);
+            graph.stop();
+            graph.getDatabase().shutdown();
+            if (drop) {
+                Environment.getInstance().dropDatabase(host, port);
+            }
         } else {
             throw new GraphNotStartedException(host, port);
         }
@@ -59,15 +67,24 @@ public class Graph extends Service implements GraphInterface {
     public Graph(String host, int port) {
         super(host, port);
         this.database = getEnvironment().getOrCreateDatabase(host, port);
+        this.workers = new ArrayList<>(WORKER_COUNT);
+        this.threads = new ArrayList<>(WORKER_COUNT);
     }
 
     public GraphDatabaseService getDatabase() {
         return this.database;
     }
 
-    public void startWorkers(int count) {
-        for(int i = 0; i < count; i++) {
-            new Thread(new GraphWorker(this)).start();
+    @Override
+    public void startWorkers() {
+        System.out.println("Starting workers");
+        for(int i = 0; i < WORKER_COUNT; i++) {
+            GraphWorker worker = new GraphWorker(this);
+            Thread thread = new Thread(worker);
+            thread.setName(getPort() + "/" + worker.getUUID());
+            workers.add(worker);
+            threads.add(thread);
+            thread.start();
         }
     }
 

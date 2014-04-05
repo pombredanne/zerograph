@@ -11,13 +11,13 @@ public interface ServiceInterface {
 
     public int getPort();
 
-    public ZMQ.Context getContext();
-
     public Environment getEnvironment();
 
     public String getInternalAddress();
 
     public String getExternalAddress();
+
+    public ZMQ.Context getContext();
 
     public void start();
 

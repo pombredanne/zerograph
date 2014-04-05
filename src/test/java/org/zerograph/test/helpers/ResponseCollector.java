@@ -77,4 +77,10 @@ public class ResponseCollector implements ResponderInterface {
     public void endResponseBatch() {
 
     }
+
+    @Override
+    public void close() {
+
+    }
+
 }

@@ -1,8 +1,10 @@
 package org.zerograph;
 
-import org.zerograph.Environment;
 import org.zerograph.api.ServiceInterface;
 import org.zeromq.ZMQ;
+import zmq.ZError;
+
+import java.nio.channels.ClosedChannelException;
 
 public abstract class Service implements Runnable, ServiceInterface {
 
@@ -15,9 +17,9 @@ public abstract class Service implements Runnable, ServiceInterface {
     final private String host;
     final private int port;
 
-    final private ZMQ.Context context;
     final private Environment environment;
 
+    private ZMQ.Context context;
     private ZMQ.Socket external;  // incoming requests from clients
     private ZMQ.Socket internal;  // request forwarding to workers
 
@@ -25,7 +27,6 @@ public abstract class Service implements Runnable, ServiceInterface {
         this.host = host;
         this.port = port;
         this.environment = Environment.getInstance();
-        this.context = ZMQ.context(1);
     }
 
     public String getHost() {
@@ -34,10 +35,6 @@ public abstract class Service implements Runnable, ServiceInterface {
 
     public int getPort() {
         return this.port;
-    }
-
-    public ZMQ.Context getContext() {
-        return context;
     }
 
     public Environment getEnvironment() {
@@ -52,29 +49,42 @@ public abstract class Service implements Runnable, ServiceInterface {
         return "tcp://" + host + ":" + port;
     }
 
-    public abstract void startWorkers(int count);
+    public ZMQ.Context getContext() {
+        return context;
+    }
+
+    public abstract void startWorkers();
 
     public void run() {
         start();
-        stop();
     }
 
     public void start() {
         System.out.println("Starting service on " + this.port);
+        this.context = ZMQ.context(1);
         this.internal = context.socket(ZMQ.DEALER);
         this.internal.bind(getInternalAddress());
         this.external = context.socket(ZMQ.ROUTER);
         this.external.bind(getExternalAddress());
-        startWorkers(WORKER_COUNT);
-        ZMQ.proxy(external, internal, null);
+        startWorkers();
+        try {
+            ZMQ.proxy(external, internal, null);
+        } catch (ZError.IOException ex) {
+            Throwable cause = ex.getCause();
+            if (cause instanceof ClosedChannelException) {
+                stop();
+            } else {
+                throw ex;
+            }
+        }
     }
 
     public void stop() {
         System.out.println("Stopping service on " + this.port);
-        // TODO: interrupt this thread and shut down gracefully
         external.close();
         internal.close();
         context.term();
+        System.out.println("Stopped service on " + this.port);
     }
 
 }

@@ -71,7 +71,7 @@ public class GraphResource extends AbstractResource implements ResourceInterface
         String host = request.getArgumentAsString("host");
         int port = request.getArgumentAsInteger("port");
         try {
-            Graph.close(host, port);
+            Graph.close(host, port, true);
         } catch (GraphNotStartedException ex) {
             throw new ClientError("No graph on port " + port);
         }

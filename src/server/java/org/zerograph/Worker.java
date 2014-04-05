@@ -1,7 +1,6 @@
 package org.zerograph;
 
 import org.neo4j.graphdb.PropertyContainer;
-import org.zerograph.ResourceSet;
 import org.zerograph.api.DatabaseInterface;
 import org.zerograph.api.ServiceInterface;
 import org.zerograph.zap.api.ResourceInterface;
@@ -20,10 +19,10 @@ import java.util.UUID;
 
 public abstract class Worker<S extends ServiceInterface> implements Runnable {
 
-    final private UUID uuid;
-    final private S service;
-    final private ZMQ.Socket socket;
+    final protected UUID uuid;
+    final protected ZMQ.Socket socket;
 
+    final protected S service;
     final protected ResponderInterface responder;
     final protected ResourceSet resourceSet;
 
@@ -46,22 +45,6 @@ public abstract class Worker<S extends ServiceInterface> implements Runnable {
 
     public ZMQ.Socket getSocket() {
         return this.socket;
-    }
-
-    public List<Request> receiveRequestBatch() throws ClientError {
-        ArrayList<Request> requests = new ArrayList<>();
-        boolean more = true;
-        while (more) {
-            String frame = socket.recvStr();
-            for (String line : frame.split("\\r|\\n|\\r\\n")) {
-                if (line.length() > 0) {
-                    System.out.println("<<< " + line);
-                    requests.add(Request.parse(line));
-                }
-            }
-            more = socket.hasReceiveMore();
-        }
-        return requests;
     }
 
     protected PropertyContainer handle(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {

@@ -33,6 +33,10 @@ public class GraphDirectory {
         return this.file.getPath();
     }
 
+    public File getFile() {
+        return this.file;
+    }
+
     public boolean exists() {
         return this.file.exists();
     }

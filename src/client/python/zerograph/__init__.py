@@ -82,8 +82,11 @@ class Response(object):
             else:
                 full += frame.bytes.decode("utf-8")
                 more = frame.more
-        for document in yaml.load_all(full, Loader=GraphLoader):
-            yield Response(document)
+        if full:
+            for document in yaml.load_all(full, Loader=GraphLoader):
+                yield Response(document)
+        else:
+            yield Response({})
 
     def __init__(self, document):
         self.__head = document.get("head")
@@ -183,11 +186,12 @@ class Batch(object):
             # interpret the result type (should this be explicit?)
             if isinstance(result.body, list):
                 if result.head and "columns" in result.head:
-                    yield result.to_table()
+                    value = result.to_table()
                 else:
-                    yield iter(result.body)
+                    value = iter(result.body)
             else:
-                yield result.body
+                value = result.body
+            yield value
         self.__count = 0
 
     def get_graph(self, host, port):
@@ -196,11 +200,14 @@ class Batch(object):
     def open_graph(self, host, port):
         return self.append(SET, "Graph", host=host, port=int(port))
 
-    def close_graph(self, host, port):
+    def drop_graph(self, host, port):
         return self.append(DELETE, "Graph", host=host, port=int(port))
 
     def execute(self, query, params=None):
-        return self.append(EXECUTE, "Cypher", query=query, params=dict(params or {}))
+        if params is None:
+            return self.append(EXECUTE, "Cypher", query=query)
+        else:
+            return self.append(EXECUTE, "Cypher", query=query, params=dict(params))
 
     def get_node(self, node_id):
         return self.append(GET, "Node", id=int(node_id))
@@ -232,13 +239,16 @@ class Batch(object):
     def delete_rel(self, rel_id):
         return self.append(DELETE, "Rel", id=int(rel_id))
 
-    def match_node_set(self, label, key=None, value=None):
-        return self.append(GET, "NodeSet", label=label, key=key, value=value)
+    def match_nodes(self, label, key=None, value=None):
+        if key is None:
+            return self.append(GET, "NodeSet", label=label)
+        else:
+            return self.append(GET, "NodeSet", label=label, key=key, value=value)
 
-    def merge_node_set(self, label, key, value):
+    def merge_nodes(self, label, key, value):
         return self.append(SET, "NodeSet", label=label, key=key, value=value)
 
-    def purge_node_set(self, label, key, value):
+    def purge_nodes(self, label, key, value):
         return self.append(DELETE, "NodeSet", label=label, key=key, value=value)
 
 
@@ -264,7 +274,9 @@ class Pointer(object):
 class Graph(yaml.YAMLObject):
     yaml_tag = '!Graph'
 
-    __zero_instances = {}
+    ZEROGRAPH_PORT = 47470
+
+    __services = {}
 
     @classmethod
     def from_yaml(cls, loader, node):
@@ -275,23 +287,18 @@ class Graph(yaml.YAMLObject):
         return inst
 
     @classmethod
-    def zero(cls, host):
+    def open(cls, host="localhost", port=ZEROGRAPH_PORT):
+        host_port = (host, port)
         try:
-            return cls.__zero_instances[host]
+            return cls.__services[host_port]
         except KeyError:
-            inst = cls(host=host, port=47470)
-            cls.__zero_instances[host] = inst
-            return inst
-
-    @classmethod
-    def open(cls, host, port):
-        zero = cls.zero(host)
-        return Batch.single(zero, Batch.open_graph, zero.host, port).body
-
-    @classmethod
-    def close(cls, host, port):
-        zero = cls.zero(host)
-        return Batch.single(zero, Batch.close_graph, zero.host, port).body
+            if port == cls.ZEROGRAPH_PORT:
+                graph = cls(host, port)
+            else:
+                zerograph = cls.open(host)
+                graph = Batch.single(zerograph, Batch.open_graph, zerograph.host, port)
+            cls.__services[host_port] = graph
+            return graph
 
     def __init__(self, host, port):
         self.__host = host
@@ -319,14 +326,33 @@ class Graph(yaml.YAMLObject):
         return self.__port
 
     @property
+    def address(self):
+        return self.__address
+
+    @property
     def socket(self):
         return self.__socket
+
+    @property
+    def zerograph(self):
+        if self.__port == self.ZEROGRAPH_PORT:
+            return self
+        else:
+            return self.open(self.__host)
+
+    def drop(self):
+        if self.__port == self.ZEROGRAPH_PORT:
+            raise ValueError("Cannot drop zerograph")
+        else:
+            zerograph = Graph.open(self.__host)
+            return Batch.single(zerograph, Batch.drop_graph, self.__host, self.__port)
+        # TODO: mark as dropped and disallow any further actions? (maybe)
 
     def create_batch(self):
         return Batch(self)
 
-    def execute(self, query):
-        return Batch.single(self, Batch.execute, query)
+    def execute(self, query, params=None):
+        return Batch.single(self, Batch.execute, query, params)
 
     def get_node(self, node_id):
         return Batch.single(self, Batch.get_node, node_id)
@@ -358,14 +384,14 @@ class Graph(yaml.YAMLObject):
     def delete_rel(self, rel_id):
         return Batch.single(self, Batch.delete_rel, rel_id)
 
-    def match_node_set(self, label, key=None, value=None):
-        return Batch.single(self, Batch.match_node_set, label, key, value)
+    def match_nodes(self, label, key=None, value=None):
+        return Batch.single(self, Batch.match_nodes, label, key, value)
 
-    def merge_node_set(self, label, key, value):
-        return Batch.single(self, Batch.merge_node_set, label, key, value)
+    def merge_nodes(self, label, key, value):
+        return Batch.single(self, Batch.merge_nodes, label, key, value)
 
-    def purge_node_set(self, label, key, value):
-        return Batch.single(self, Batch.purge_node_set, label, key, value)
+    def purge_nodes(self, label, key, value):
+        return Batch.single(self, Batch.purge_nodes, label, key, value)
 
 
 class Linkable(object):
