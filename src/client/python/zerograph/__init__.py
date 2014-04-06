@@ -312,7 +312,7 @@ class Graph(yaml.YAMLObject):
         self.__address = "tcp://{0}:{1}".format(self.__host, self.__port)
         self.__context = zmq.Context()
         self.__socket = self.__context.socket(zmq.REQ)
-        self.__socket.setsockopt(zmq.RCVTIMEO, 30000)  # TODO: configurable timeout
+        self.__socket.setsockopt(zmq.RCVTIMEO, 120000)  # TODO: configurable timeout
         try:
             self.__socket.connect(self.__address)
         except zmq.error.ZMQError as err:

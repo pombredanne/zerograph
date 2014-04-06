@@ -7,7 +7,6 @@ import org.zerograph.zpp.Request;
 import org.zerograph.zpp.except.ClientError;
 import org.zerograph.zpp.except.ServerError;
 import org.zeromq.ZMQException;
-import zmq.ZError;
 
 import java.util.ArrayList;
 
