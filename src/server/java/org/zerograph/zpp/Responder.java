@@ -9,14 +9,20 @@ import java.util.Map;
 
 public class Responder implements ResponderInterface {
 
+    public static int ERROR = -1;
+    public static int BEGIN = 0;
+    public static int HEAD = 1;
+    public static int BODY = 2;
+    public static int START_BODY_LIST = 3;
+    public static int BODY_ITEM = 4;
+    public static int END_BODY_LIST = 5;
+    public static int FOOT = 6;
+    public static int END = 7;
+
     final private ZMQ.Socket socket;
 
     private int responseCount = 0;
-    private boolean sentHead = false;
-    private boolean startedBody = false;
-    private boolean sentBody = false;
-    private boolean sentFoot = false;
-    private boolean sentError = false;
+    private int state;
 
     public Responder(ZMQ.Socket socket) {
         this.socket = socket;
@@ -36,18 +42,14 @@ public class Responder implements ResponderInterface {
         if (responseCount > 0) {
             sendMore("---");
         }
-        sentHead = false;
-        startedBody = false;
-        sentBody = false;
-        sentFoot = false;
-        sentError = false;
+        state = BEGIN;
     }
 
     @Override
     public void sendHead(Map<String, Object> data) throws MalformedResponse {
-        if (!sentHead && !sentBody && !sentFoot && !sentError) {
+        if (state == BEGIN) {
             sendMore("head: " + YAML.dump(data));
-            sentHead = true;
+            state = HEAD;
         } else {
             throw new MalformedResponse();
         }
@@ -55,22 +57,30 @@ public class Responder implements ResponderInterface {
 
     @Override
     public void sendBody(Object data) throws MalformedResponse {
-        if (!startedBody && !sentBody && !sentFoot && !sentError) {
+        if (state == BEGIN || state == HEAD) {
             sendMore("body: " + YAML.dump(data));
-            startedBody = true;
-            sentBody = true;
+            state = BODY;
         } else {
             throw new MalformedResponse();
         }
     }
 
     @Override
-    public void sendBodyPart(Object data) throws MalformedResponse {
-        if (!sentBody && !sentFoot && !sentError) {
-            if (!startedBody) {
-                sendMore("body:");
-                startedBody = true;
-            }
+    public void startBodyList() throws MalformedResponse {
+        if (state == BEGIN || state == HEAD) {
+            state = START_BODY_LIST;
+        } else {
+            throw new MalformedResponse();
+        }
+    }
+
+    @Override
+    public void sendBodyItem(Object data) throws MalformedResponse {
+        if (state == START_BODY_LIST) {
+            sendMore("body:");
+            sendMore("- " + YAML.dump(data));
+            state = BODY_ITEM;
+        } else if (state == BODY_ITEM) {
             sendMore("- " + YAML.dump(data));
         } else {
             throw new MalformedResponse();
@@ -78,31 +88,36 @@ public class Responder implements ResponderInterface {
     }
 
     @Override
-    public void sendFoot(Map<String, Object> data) throws MalformedResponse {
-        if (!sentFoot && !sentError) {
-            sentBody = true;
-            sendMore("foot: " + YAML.dump(data));
-            sentFoot = true;
+    public void endBodyList() throws MalformedResponse {
+        if (state == START_BODY_LIST) {
+            sendMore("body: []");
+            state = END_BODY_LIST;
+        } else if (state == BODY_ITEM) {
+            state = END_BODY_LIST;
         } else {
             throw new MalformedResponse();
         }
     }
 
-    public void sendError(Exception ex) {
-        if (!sentError) {
-            sendMore("error: " + YAML.dump(ex.getMessage()));
+    @Override
+    public void sendFoot(Map<String, Object> data) throws MalformedResponse {
+        if (state == BODY || state == END_BODY_LIST) {
+            sendMore("foot: " + YAML.dump(data));
+            state = FOOT;
         } else {
-            sendMore("error: \"Malformed response\"");
+            throw new MalformedResponse();
         }
-        sentError = true;
     }
 
-    private void sendMore(String data) {
-        System.out.println(">>> " + data);
-        socket.sendMore(data + "\n");
+    @Override
+    public void sendError(Exception ex) {
+        sendMore("error: " + YAML.dump(ex.getMessage()));
+        state = ERROR;
     }
 
+    @Override
     public void endResponse() {
+        state = END;
         responseCount += 1;
     }
 
@@ -114,6 +129,11 @@ public class Responder implements ResponderInterface {
     @Override
     public void close() {
         socket.close();
+    }
+
+    private void sendMore(String data) {
+        System.out.println(">>> " + data);
+        socket.sendMore(data + "\n");
     }
 
 }

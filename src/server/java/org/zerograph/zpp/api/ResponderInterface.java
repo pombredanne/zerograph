@@ -14,7 +14,11 @@ public interface ResponderInterface {
 
     public void sendBody(Object data) throws MalformedResponse;
 
-    public void sendBodyPart(Object data) throws MalformedResponse;
+    public void startBodyList() throws MalformedResponse;
+
+    public void sendBodyItem(Object data) throws MalformedResponse;
+
+    public void endBodyList() throws MalformedResponse;
 
     public void sendFoot(Map<String, Object> data) throws MalformedResponse;
 

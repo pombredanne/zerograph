@@ -1,7 +1,6 @@
 package org.zerograph.test.helpers;
 
 import org.zerograph.zpp.api.ResponderInterface;
-import org.zerograph.api.ResponseInterface;
 import org.zerograph.zpp.except.MalformedResponse;
 
 import java.util.ArrayList;
@@ -54,8 +53,18 @@ public class ResponseCollector implements ResponderInterface {
     }
 
     @Override
-    public void sendBodyPart(Object data) throws MalformedResponse {
+    public void startBodyList() throws MalformedResponse {
+
+    }
+
+    @Override
+    public void sendBodyItem(Object data) throws MalformedResponse {
         body.add(data);
+    }
+
+    @Override
+    public void endBodyList() throws MalformedResponse {
+
     }
 
     @Override

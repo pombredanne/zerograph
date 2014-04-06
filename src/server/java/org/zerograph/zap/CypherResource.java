@@ -49,12 +49,13 @@ public class CypherResource extends AbstractResource implements ResourceInterfac
             responder.sendHead(meta);
             PropertyContainer firstEntity = null;
             int rowNumber = 0;
+            responder.startBodyList();
             for (Map<String, Object> row : result) {
                 ArrayList<Object> values = new ArrayList<>();
                 for (String column : columns) {
                     values.add(row.get(column));
                 }
-                responder.sendBodyPart(Arrays.asList(values.toArray(new Object[values.size()])));
+                responder.sendBodyItem(Arrays.asList(values.toArray(new Object[values.size()])));
                 if (rowNumber == 0) {
                     Object firstValue = values.get(0);
                     if (firstValue instanceof PropertyContainer) {
@@ -63,6 +64,7 @@ public class CypherResource extends AbstractResource implements ResourceInterfac
                 }
                 rowNumber += 1;
             }
+            responder.endBodyList();
             return firstEntity;
         } catch (CypherException ex) {
             throw new ClientError(ex.getMessage());

@@ -3,8 +3,6 @@ package org.zerograph.zap;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
-import org.zerograph.IterableResult;
-import org.zerograph.Statistics;
 import org.zerograph.api.DatabaseInterface;
 import org.zerograph.zap.api.ResourceInterface;
 import org.zerograph.zpp.api.RequestInterface;
@@ -45,13 +43,15 @@ public class NodeSetResource extends AbstractResource implements ResourceInterfa
         Iterable<Node> result = context.matchNodeSet(labelName, key, value);
         Node first = null;
         //stats.put("nodes_matched", 0);
+        responder.startBodyList();
         for (Node node : result) {
             if (first == null) {
                 first = node;
             }
-            responder.sendBodyPart(node);
+            responder.sendBodyItem(node);
             //stats.put("nodes_matched", stats.get("nodes_matched") + 1);
         }
+        responder.endBodyList();
         responder.sendFoot(stats);
         return first;
     }
@@ -74,12 +74,14 @@ public class NodeSetResource extends AbstractResource implements ResourceInterfa
         try {
             Iterable<Node> result = context.mergeNodeSet(labelName, key, value);
             Node first = null;
+            responder.startBodyList();
             for (Node node : result) {
                 if (first == null) {
                     first = node;
                 }
-                responder.sendBodyPart(node);
+                responder.sendBodyItem(node);
             }
+            responder.endBodyList();
             //Statistics stats = result.getStatistics();
             HashMap<String, Object> stats = new HashMap<>();
             responder.sendFoot(stats);
@@ -106,6 +108,8 @@ public class NodeSetResource extends AbstractResource implements ResourceInterfa
         HashMap<String, Object> stats = new HashMap<>();
         //stats.put("nodes_deleted", 0);
         context.purgeNodeSet(labelName, key, value);
+        responder.startBodyList();
+        responder.endBodyList();
         //stats.put("nodes_deleted", stats.get("nodes_deleted") + 1);
         responder.sendFoot(stats);
         return null;
