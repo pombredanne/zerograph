@@ -203,11 +203,17 @@ class Batch(object):
     def drop_graph(self, host, port):
         return self.append(DELETE, "Graph", host=host, port=int(port))
 
-    def execute(self, query, params=None):
-        if params is None:
+    def execute(self, query, *param_sets):
+        param_set_count = len(param_sets)
+        if param_set_count == 0:
             return self.append(EXECUTE, "Cypher", query=query)
+        elif param_set_count == 1:
+            return self.append(EXECUTE, "Cypher", query=query, params=dict(param_sets[0]))
         else:
-            return self.append(EXECUTE, "Cypher", query=query, params=dict(params))
+            pointers = []
+            for param_set in param_sets:
+                pointers.append(self.append(EXECUTE, "Cypher", query=query, params=dict(param_set)))
+            return pointers
 
     def get_node(self, node_id):
         return self.append(GET, "Node", id=int(node_id))
@@ -351,8 +357,18 @@ class Graph(yaml.YAMLObject):
     def create_batch(self):
         return Batch(self)
 
-    def execute(self, query, params=None):
-        return Batch.single(self, Batch.execute, query, params)
+    def execute(self, query, *param_sets):
+        param_set_count = len(param_sets)
+        if param_set_count == 0:
+            return Batch.single(self, Batch.execute, query)
+        elif param_set_count == 1:
+            return Batch.single(self, Batch.execute, query, param_sets[0])
+        else:
+            batch = Batch(self)
+            for param_set in param_sets:
+                Batch.execute(batch, query, param_set)
+            results = batch.submit()
+            return list(results)
 
     def get_node(self, node_id):
         return Batch.single(self, Batch.get_node, node_id)
