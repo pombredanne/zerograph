@@ -91,8 +91,8 @@ class Shell(object):
             if port == 47470:
                 self.print_error("Cannot drop zerograph on port 47470")
             else:
-                
                 Graph.open(HOST, port).drop()
+                print("Dropped graph on port {0}".format(port))
         elif command == "RECORD":
             name, query = args.partition(" ")[0::2]
             self.__queries[name] = query
@@ -168,6 +168,6 @@ class Shell(object):
 
 
 if __name__ == "__main__":
-    shell = Shell(Graph.zero(HOST))
+    shell = Shell(Graph.open(HOST))
     shell.welcome()
     shell.repl()

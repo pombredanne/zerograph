@@ -42,8 +42,8 @@ exit the shell.
 !HELP           display this help
 !EOF            exit the shell
 
-!OPEN <port>    open graph on port <port>, creating it if it doesn't exist
-!DROP <port>    close graph on port <port> and delete the files from disk
+!OPEN <port>    open the graph on port <port>, creating it if it doesn't exist
+!DROP <port>    drop the graph on port <port> and delete the files from disk
 
 !GET <resource> [<json_object_data>]
 !SET <resource> [<json_object_data>]
