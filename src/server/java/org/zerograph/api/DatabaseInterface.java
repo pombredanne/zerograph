@@ -44,4 +44,10 @@ public interface DatabaseInterface {
 
     public Iterable<Node> purgeNodeSet(String label, String key, Object value);
 
+    public Iterable<Relationship> matchRelationshipSet(Node startNode, Node endNode, String type);
+
+    public Iterable<Relationship> mergeRelationshipSet(Node startNode, Node endNode, String type);
+
+    public Iterable<Relationship> purgeRelationshipSet(Node startNode, Node endNode, String type);
+
 }

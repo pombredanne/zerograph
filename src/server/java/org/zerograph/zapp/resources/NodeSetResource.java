@@ -1,14 +1,14 @@
-package org.zerograph.zap;
+package org.zerograph.zapp.resources;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.zerograph.api.DatabaseInterface;
-import org.zerograph.zap.api.ResourceInterface;
-import org.zerograph.zpp.api.RequestInterface;
-import org.zerograph.zpp.api.ResponderInterface;
-import org.zerograph.zpp.except.ClientError;
-import org.zerograph.zpp.except.ServerError;
+import org.zerograph.zapp.api.ResourceInterface;
+import org.zerograph.zapp.api.RequestInterface;
+import org.zerograph.zapp.api.ResponderInterface;
+import org.zerograph.zapp.except.ClientError;
+import org.zerograph.zapp.except.ServerError;
 
 import java.util.HashMap;
 
@@ -25,14 +25,11 @@ public class NodeSetResource extends AbstractResource implements ResourceInterfa
     }
 
     /**
-     * GET nodeset {label} {key} {value}
+     * GET NodeSet {"label": ?}
+     * GET NodeSet {"label": ?, "key": ?, "value": ?}
      *
-     * tx.find(label, key, value)
+     * Fetch all nodes that have the specified label and, optionally, property.
      *
-     * MATCH-RETURN
-     * No locking
-     *
-     * @param request
      */
     @Override
     public PropertyContainer get(RequestInterface request, DatabaseInterface context) throws ClientError, ServerError {
@@ -41,64 +38,32 @@ public class NodeSetResource extends AbstractResource implements ResourceInterfa
         Object value = request.getArgument("value", null);
         HashMap<String, Object> stats = new HashMap<>();
         Iterable<Node> result = context.matchNodeSet(labelName, key, value);
-        Node first = null;
-        //stats.put("nodes_matched", 0);
-        responder.startBodyList();
-        for (Node node : result) {
-            if (first == null) {
-                first = node;
-            }
-            responder.sendBodyItem(node);
-            //stats.put("nodes_matched", stats.get("nodes_matched") + 1);
-        }
-        responder.endBodyList();
+        Node first = responder.sendNodes(result);
         responder.sendFoot(stats);
         return first;
     }
 
     /**
-     * PUT nodeset {label} {key} {value}
+     * PATCH NodeSet {"label": ?, "key": ?, "value": ?}
      *
-     * tx.merge(label, key, value)
+     * Ensure at least one node exists with the specified criteria.
      *
-     * MERGE-RETURN
-     * No locking(?)
-     *
-     * @param request
      */
     @Override
-    public PropertyContainer set(RequestInterface request, DatabaseInterface context) throws ClientError, ServerError {
+    public PropertyContainer patch(RequestInterface request, DatabaseInterface context) throws ClientError, ServerError {
         String labelName = request.getArgumentAsString("label");
         String key = request.getArgumentAsString("key");
         Object value = request.getArgument("value");
-        try {
-            Iterable<Node> result = context.mergeNodeSet(labelName, key, value);
-            Node first = null;
-            responder.startBodyList();
-            for (Node node : result) {
-                if (first == null) {
-                    first = node;
-                }
-                responder.sendBodyItem(node);
-            }
-            responder.endBodyList();
-            //Statistics stats = result.getStatistics();
-            HashMap<String, Object> stats = new HashMap<>();
-            responder.sendFoot(stats);
-            return first;
-        } catch (CypherException ex) {
-            throw new ServerError(ex.getMessage());
-        }
+        Iterable<Node> result = context.mergeNodeSet(labelName, key, value);
+        Node first = responder.sendNodes(result);
+        HashMap<String, Object> stats = new HashMap<>();
+        responder.sendFoot(stats);
+        return first;
     }
 
     /**
-     * DELETE nodeset {label} {key} {value}
+     * DELETE NodeSet {"label": ?, "key": ?, "value": ?}
      *
-     * tx.purge(label. key, value)
-     *
-     * MATCH-DELETE
-     *
-     * @param request
      */
     @Override
     public PropertyContainer delete(RequestInterface request, DatabaseInterface context) throws ClientError, ServerError {

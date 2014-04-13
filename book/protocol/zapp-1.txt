@@ -1,42 +1,45 @@
-========================================================
-Zerograph Presentation Protocol (ZPP), version 1 (draft)
+=====================================================================
+Zerograph Application/Presentation Protocol (ZAPP), version 1 (draft)
 (C) Copyright 2014, Nigel Small <nigel@nigelsmall.com>
-========================================================
+=====================================================================
 
 
 Introduction
 ============
-The Zerograph Presentation Protocol (ZPP) is an OSI level 6 text-based
-request-response protocol that is used to define communications between 
-client applications that require a graph database and server applications
-that provide a Neo4j data store.
+The Zerograph Application/Presentation Protocol (ZAPP) provides an OSI levels
+6 and OSI level 7 text-based request-response protocol that is used to define
+communications between client applications that require a graph database and
+server applications that provide a Neo4j data store.
 
-The reference implementation for ZPP - the Zerograph server bundle - transmits
+The reference implementation for ZAPP - the Zerograph server bundle - transmits
 all messages over ZeroMQ. This means of transmission is independent to the
 protocol however and any request-response mechanism that supports textual
-messaging should be able to support ZPP.
+messaging should be able to support ZAPP.
 
-This specification is intended to be used in conjunction with a corresponding
-application level protocol, generally the Zerograph Application Protocol (ZAP).
 
+General
+=======
 
 Encoding
-========
+--------
 All requests and responses MUST only use characters from the basic ASCII set,
 i.e. 0x00 to 0x7F. Extended characters can be represented with the appropriate
 JSON or YAML encoding: generally the "\uXXXX" sequence.
 
 
 End of Line Sequences
-=====================
+---------------------
 Lines may be separated by any common end-of-line sequence as defined below:
 
 eol := <CR> | <LF> | <CR><LF>
 
 
+Presentation Protocol (OSI Level 6)
+===================================
+
 General Request/Response Layout
-===============================
-At the highest level, ZPP clients package a number of individual requests into
+-------------------------------
+At the highest level, ZAPP clients package a number of individual requests into
 a request batch, one per line. These include a JSON payload which MUST not
 contain any end of line sequences itself so as to avoid ambiguity. Responses
 are encoded using YAML and contain one document per request line. A final,
@@ -53,7 +56,7 @@ from the underlying transmission protocol.
 
 
 Requests
-========
+--------
 Each individual request within a batch occupies a single line and comprises
 two mandatory elements and one optional element, each separated by single space
 characters. Blank lines and a trailing end-of-line sequence MAY be included but
@@ -76,7 +79,7 @@ delimitation.
 
 
 Responses
-=========
+---------
 A response batch consists of a sequence of YAML documents, one for each request
 sent in the corresponding request batch. A final document may also be included
 which could, for example, contain a statistical summary of the batch's
@@ -111,7 +114,13 @@ foot             := "foot:" [<SP>] <YAML_MAPPING> eol
 error            := "error:" [<SP>] <YAML_VALUE> eol
 
 
-Example
+Application Protocol (OSI Level 7)
+==================================
+
+TODO
+
+
+Examples
 ========
 The example below shows example request and response batches:
 

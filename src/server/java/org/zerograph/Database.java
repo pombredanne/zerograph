@@ -3,6 +3,7 @@ package org.zerograph;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -17,6 +18,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.tooling.GlobalGraphOperations;
 import org.zerograph.api.DatabaseInterface;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -169,50 +171,8 @@ public class Database implements DatabaseInterface {
                 "` {`" + key.replace("`", "``") + "`:{value}}) RETURN n";
         HashMap<String, Object> params = new HashMap<>(1);
         params.put("value", value);
-        final ExecutionResult result = execute(query, params);
-
-        return new IterableResult<Node>() {
-
-            final Iterator<Map<String, Object>> resultIterator = result.iterator();
-
-            @Override
-            public Statistics getStatistics() {
-                return new Statistics(result.getQueryStatistics());
-            }
-
-            @Override
-            public Iterator<Node> iterator() {
-
-                return new Iterator<Node>() {
-
-                    public boolean hasNext() {
-                        return resultIterator.hasNext();
-                    }
-
-                    public Node next() {
-                        Map<String, Object> row = resultIterator.next();
-                        Object value = row.get("n");
-                        if (value instanceof Node) {
-                            Node nodeValue = (Node) value;
-                            if (getFirst() == null) {
-                                setFirst(nodeValue);
-                            }
-                            return nodeValue;
-                        } else {
-                            return null;
-                        }
-                    }
-
-                    @Override
-                    public void remove() {
-                        throw new UnsupportedOperationException();
-                    }
-
-                };
-
-            }
-
-        };
+        IterableExecutor<Node> executor = new IterableExecutor<>(engine);
+        return executor.execute(query, params, "n");
     }
 
     @Override
@@ -221,6 +181,86 @@ public class Database implements DatabaseInterface {
             node.delete();
         }
         return null;
+    }
+
+    @Override
+    public Iterable<Relationship> matchRelationshipSet(Node startNode, Node endNode, String type) {
+        if (startNode != null && endNode != null) {
+            String query;
+            if (type == null) {
+                query = "START a=node({a}), b=node({b}) MATCH (a)-[ab]->(b) RETURN ab";
+            } else {
+                query = "START a=node({a}), b=node({b}) MATCH (a)-[ab:`" + type + "`]->(b) RETURN ab";
+            }
+            HashMap<String, Object> params = new HashMap<>(1);
+            params.put("a", startNode.getId());
+            params.put("b", endNode.getId());
+            IterableExecutor<Relationship> executor = new IterableExecutor<>(engine);
+            return executor.execute(query, params, "ab");
+        } else if (startNode != null) {
+            if (type == null) {
+                return startNode.getRelationships(Direction.OUTGOING);
+            } else {
+                return startNode.getRelationships(Direction.OUTGOING, getRelationshipType(type));
+            }
+        } else if (endNode != null) {
+            if (type == null) {
+                return endNode.getRelationships(Direction.INCOMING);
+            } else {
+                return endNode.getRelationships(Direction.INCOMING, getRelationshipType(type));
+            }
+        } else {
+            throw new IllegalArgumentException("Either start or end nodes must be specified");
+        }
+    }
+
+    @Override
+    public Iterable<Relationship> mergeRelationshipSet(Node startNode, Node endNode, String type) {
+        String query = "START a=node({a}), b=node({b}) MERGE (a)-[ab:`" + type + "`]->(b) RETURN ab";
+        HashMap<String, Object> params = new HashMap<>(1);
+        params.put("a", startNode.getId());
+        params.put("b", endNode.getId());
+        IterableExecutor<Relationship> executor = new IterableExecutor<>(engine);
+        return executor.execute(query, params, "ab");
+    }
+
+    @Override
+    public Iterable<Relationship> purgeRelationshipSet(Node startNode, Node endNode, String type) {
+        if (startNode != null && endNode != null) {
+            String query;
+            if (type == null) {
+                query = "START a=node({a}), b=node({b}) MATCH (a)-[ab]->(b) DELETE ab";
+            } else {
+                query = "START a=node({a}), b=node({b}) MATCH (a)-[ab:`" + type + "`]->(b) DELETE ab";
+            }
+            HashMap<String, Object> params = new HashMap<>(1);
+            params.put("a", startNode.getId());
+            params.put("b", endNode.getId());
+            engine.execute(query, params);
+        } else if (startNode != null) {
+            Iterable<Relationship> rels;
+            if (type == null) {
+                rels = startNode.getRelationships(Direction.OUTGOING);
+            } else {
+                rels = startNode.getRelationships(Direction.OUTGOING, getRelationshipType(type));
+            }
+            for (Relationship rel : rels) {
+                rel.delete();
+            }
+        } else if (endNode != null) {
+            Iterable<Relationship> rels;
+            if (type == null) {
+                rels = endNode.getRelationships(Direction.INCOMING);
+            } else {
+                rels = endNode.getRelationships(Direction.INCOMING, getRelationshipType(type));
+            }
+            for (Relationship rel : rels) {
+                rel.delete();
+            }
+        } else {
+            throw new IllegalArgumentException("Either start or end nodes must be specified");
+        }
+        return new ArrayList<>();
     }
 
 

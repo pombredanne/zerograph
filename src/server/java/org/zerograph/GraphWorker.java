@@ -3,9 +3,9 @@ package org.zerograph;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
-import org.zerograph.zpp.Request;
-import org.zerograph.zpp.except.ClientError;
-import org.zerograph.zpp.except.ServerError;
+import org.zerograph.zapp.Request;
+import org.zerograph.zapp.except.ClientError;
+import org.zerograph.zapp.except.ServerError;
 import org.zeromq.ZMQException;
 
 import java.util.ArrayList;
@@ -61,7 +61,7 @@ public class GraphWorker extends Worker<Graph> {
                     ex.printStackTrace(System.err);
                     throw ex;
                 }
-            } catch (ClientError | ServerError ex) {
+            } catch (IllegalArgumentException | ClientError | ServerError ex) {
                 responder.sendError(ex);
             }
             responder.endResponseBatch();

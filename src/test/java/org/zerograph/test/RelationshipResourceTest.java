@@ -5,10 +5,10 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.zerograph.test.helpers.QuickMap;
-import org.zerograph.zap.RelationshipResource;
-import org.zerograph.zpp.Request;
-import org.zerograph.zpp.except.ClientError;
-import org.zerograph.zpp.except.ServerError;
+import org.zerograph.zapp.resources.RelationshipResource;
+import org.zerograph.zapp.Request;
+import org.zerograph.zapp.except.ClientError;
+import org.zerograph.zapp.except.ServerError;
 
 public class RelationshipResourceTest extends ResourceTest {
 

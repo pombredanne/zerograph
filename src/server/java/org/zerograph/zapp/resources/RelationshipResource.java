@@ -1,15 +1,15 @@
-package org.zerograph.zap;
+package org.zerograph.zapp.resources;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.zerograph.api.DatabaseInterface;
-import org.zerograph.zap.api.ResourceInterface;
-import org.zerograph.zpp.api.RequestInterface;
-import org.zerograph.zpp.api.ResponderInterface;
-import org.zerograph.zpp.except.ClientError;
-import org.zerograph.zpp.except.ServerError;
+import org.zerograph.zapp.api.ResourceInterface;
+import org.zerograph.zapp.api.RequestInterface;
+import org.zerograph.zapp.api.ResponderInterface;
+import org.zerograph.zapp.except.ClientError;
+import org.zerograph.zapp.except.ServerError;
 
 import java.util.Map;
 
@@ -43,7 +43,7 @@ public class RelationshipResource extends AbstractResource implements ResourceIn
     }
 
     /**
-     * PUT rel {rel_id} {properties}
+     * SET rel {rel_id} {properties}
      *
      * Replace all properties on a relationship identified by ID.
      * This will not create a relationship with the given ID if one does not
@@ -63,7 +63,7 @@ public class RelationshipResource extends AbstractResource implements ResourceIn
     }
 
     /**
-     * PATCH rel {rel_id} {properties}
+     * PATCH Rel {rel_id} {properties}
      *
      * Add new properties to a relationship identified by ID.
      * This will not create a relationship with the given ID if one does not
@@ -84,7 +84,7 @@ public class RelationshipResource extends AbstractResource implements ResourceIn
     }
 
     /**
-     * POST rel {start_node} {end_node} {type} {properties}
+     * CREATE Rel {start_node} {end_node} {type} {properties}
      *
      * Create a new relationship.
      */
@@ -112,26 +112,6 @@ public class RelationshipResource extends AbstractResource implements ResourceIn
             return null;
         } catch (NotFoundException ex) {
             throw new ClientError("Relationship " + id + " not found");
-        }
-    }
-
-    private Node resolveNode(DatabaseInterface context, Object value) throws ClientError {
-        if (value instanceof Node) {
-            return (Node)value;
-        } else if (value instanceof Integer) {
-            try {
-                return context.getNode((Integer) value);
-            } catch (NotFoundException ex) {
-                throw new ClientError("Relationship " + value + " not found");
-            }
-        } else if (value instanceof Long) {
-            try {
-                return context.getNode((Long) value);
-            } catch (NotFoundException ex) {
-                throw new ClientError("Relationship " + value + " not found");
-            }
-        } else {
-            throw new ClientError("Cannot resolve relationship " + value);
         }
     }
 

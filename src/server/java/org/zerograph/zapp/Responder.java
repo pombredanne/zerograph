@@ -1,8 +1,10 @@
-package org.zerograph.zpp;
+package org.zerograph.zapp;
 
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.zerograph.yaml.YAML;
-import org.zerograph.zpp.api.ResponderInterface;
-import org.zerograph.zpp.except.MalformedResponse;
+import org.zerograph.zapp.api.ResponderInterface;
+import org.zerograph.zapp.except.MalformedResponse;
 import org.zeromq.ZMQ;
 
 import java.util.Map;
@@ -134,6 +136,34 @@ public class Responder implements ResponderInterface {
     private void sendMore(String data) {
         System.out.println(">>> " + data);
         socket.sendMore(data + "\n");
+    }
+
+    @Override
+    public Node sendNodes(Iterable<Node> result) throws MalformedResponse {
+        Node first = null;
+        startBodyList();
+        for (Node rel : result) {
+            if (first == null) {
+                first = rel;
+            }
+            sendBodyItem(rel);
+        }
+        endBodyList();
+        return first;
+    }
+
+    @Override
+    public Relationship sendRelationships(Iterable<Relationship> result) throws MalformedResponse {
+        Relationship first = null;
+        startBodyList();
+        for (Relationship rel : result) {
+            if (first == null) {
+                first = rel;
+            }
+            sendBodyItem(rel);
+        }
+        endBodyList();
+        return first;
     }
 
 }

@@ -4,10 +4,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.zerograph.test.helpers.QuickMap;
-import org.zerograph.zap.NodeResource;
-import org.zerograph.zpp.Request;
-import org.zerograph.zpp.except.ClientError;
-import org.zerograph.zpp.except.ServerError;
+import org.zerograph.zapp.resources.NodeResource;
+import org.zerograph.zapp.Request;
+import org.zerograph.zapp.except.ClientError;
+import org.zerograph.zapp.except.ServerError;
 
 import java.util.ArrayList;
 

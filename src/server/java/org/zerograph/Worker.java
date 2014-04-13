@@ -3,18 +3,15 @@ package org.zerograph;
 import org.neo4j.graphdb.PropertyContainer;
 import org.zerograph.api.DatabaseInterface;
 import org.zerograph.api.ServiceInterface;
-import org.zerograph.zap.api.ResourceInterface;
-import org.zerograph.zpp.Request;
-import org.zerograph.zpp.Responder;
-import org.zerograph.zpp.api.RequestInterface;
-import org.zerograph.zpp.api.ResponderInterface;
-import org.zerograph.zpp.except.ClientError;
-import org.zerograph.zpp.except.MethodNotAllowed;
-import org.zerograph.zpp.except.ServerError;
+import org.zerograph.zapp.api.ResourceInterface;
+import org.zerograph.zapp.Responder;
+import org.zerograph.zapp.api.RequestInterface;
+import org.zerograph.zapp.api.ResponderInterface;
+import org.zerograph.zapp.except.ClientError;
+import org.zerograph.zapp.except.MethodNotAllowed;
+import org.zerograph.zapp.except.ServerError;
 import org.zeromq.ZMQ;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 public abstract class Worker<S extends ServiceInterface> implements Runnable {

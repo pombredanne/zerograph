@@ -1,15 +1,17 @@
-package org.zerograph.zap;
+package org.zerograph.zapp.resources;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.zerograph.api.DatabaseInterface;
-import org.zerograph.zap.api.ResourceInterface;
-import org.zerograph.zpp.api.RequestInterface;
-import org.zerograph.zpp.api.ResponderInterface;
-import org.zerograph.zpp.except.ClientError;
-import org.zerograph.zpp.except.ServerError;
+import org.zerograph.zapp.api.ResourceInterface;
+import org.zerograph.zapp.api.RequestInterface;
+import org.zerograph.zapp.api.ResponderInterface;
+import org.zerograph.zapp.except.ClientError;
+import org.zerograph.zapp.except.ServerError;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,7 +28,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
     }
 
     /**
-     * GET Node {"id": 1}
+     * GET Node {"id": ?}
      *
      * Fetch a single node by ID.
      */
@@ -43,7 +45,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
     }
 
     /**
-     * SET Node {node_id} {labels} {properties}
+     * SET Node {"id": ?, "labels": ?, "properties": ?}
      *
      * Replace all labels and properties on a node identified by ID.
      * This will not create a node with the given ID if one does not
@@ -64,7 +66,9 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
     }
 
     /**
-     * PATCH node {node_id} {labels} {properties}
+     * PATCH Node {"id": ?, "labels": ?}
+     * PATCH Node {"id": ?, "properties": ?}
+     * PATCH Node {"id": ?, "labels": ?, "properties": ?}
      *
      * Add new labels and properties to a node identified by ID.
      * This will not create a node with the given ID if one does not
@@ -74,8 +78,8 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
     @Override
     public PropertyContainer patch(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
         long id = request.getArgumentAsLong("id");
-        List labelNames = request.getArgumentAsList("labels");
-        Map<String, Object> properties = request.getArgumentAsMap("properties");
+        List labelNames = request.getArgumentAsList("labels", new ArrayList());
+        Map<String, Object> properties = request.getArgumentAsMap("properties", new HashMap<String, Object>());
         try {
             Node node = database.patchNode(id, labelNames, properties);
             responder.sendBody(node);
@@ -86,7 +90,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
     }
 
     /**
-     * POST node {labels} {properties}
+     * CREATE Node {"labels": ?, "properties": ?}
      *
      * Create a new node with the given labels and properties.
      */
@@ -100,7 +104,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
     }
 
     /**
-     * DELETE node {node_id}
+     * DELETE node {"id": ?}
      *
      * Delete a node identified by ID.
      */

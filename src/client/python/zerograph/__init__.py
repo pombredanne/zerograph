@@ -239,7 +239,17 @@ class Batch(object):
     def patch_rel(self, rel_id, properties):
         return self.append(PATCH, "Rel", id=int(rel_id), properties=properties)
 
-    def create_rel(self, start_node, end_node, type, properties=None):
+    def create_rel(self, start_node, type, end_node, properties=None):
+        if isinstance(start_node, Node):
+            if start_node.linked_graph == self.__graph:
+                start_node = start_node.linked_id
+            else:
+                raise ValueError("Start node belongs to a different graph")
+        if isinstance(end_node, Node):
+            if end_node.linked_graph == self.__graph:
+                end_node = end_node.linked_id
+            else:
+                raise ValueError("End node belongs to a different graph")
         return self.append(CREATE, "Rel", start=start_node, end=end_node, type=type, properties=dict(properties or {}))
 
     def delete_rel(self, rel_id):
@@ -252,10 +262,43 @@ class Batch(object):
             return self.append(GET, "NodeSet", label=label, key=key, value=value)
 
     def merge_nodes(self, label, key, value):
-        return self.append(SET, "NodeSet", label=label, key=key, value=value)
+        return self.append(PATCH, "NodeSet", label=label, key=key, value=value)
 
     def purge_nodes(self, label, key, value):
         return self.append(DELETE, "NodeSet", label=label, key=key, value=value)
+
+    def match_rels(self, start_node=None, type=None, end_node=None):
+        if isinstance(start_node, Node):
+            start_node = start_node.linked_id
+        elif start_node is not None:
+            raise TypeError("Start node must be a Node instance")
+        if isinstance(end_node, Node):
+            end_node = end_node.linked_id
+        elif end_node is not None:
+            raise TypeError("End node must be a Node instance")
+        return self.append(GET, "RelSet", start=start_node, end=end_node, type=type)
+
+    def merge_rels(self, start_node, type, end_node):
+        if isinstance(start_node, Node):
+            start_node = start_node.linked_id
+        else:
+            raise TypeError("Start node must be a Node instance")
+        if isinstance(end_node, Node):
+            end_node = end_node.linked_id
+        else:
+            raise TypeError("End node must be a Node instance")
+        return self.append(PATCH, "RelSet", start=start_node, end=end_node, type=type)
+
+    def purge_rels(self, start_node=None, type=None, end_node=None):
+        if isinstance(start_node, Node):
+            start_node = start_node.linked_id
+        elif start_node is not None:
+            raise TypeError("Start node must be a Node instance")
+        if isinstance(end_node, Node):
+            end_node = end_node.linked_id
+        elif end_node is not None:
+            raise TypeError("End node must be a Node instance")
+        return self.append(DELETE, "RelSet", start=start_node, end=end_node, type=type)
 
 
 class Pointer(object):
@@ -394,8 +437,8 @@ class Graph(yaml.YAMLObject):
     def patch_rel(self, rel_id, properties):
         return Batch.single(self, Batch.patch_rel, rel_id, properties)
 
-    def create_rel(self, start_node, end_node, type, properties=None):
-        return Batch.single(self, Batch.create_rel, start_node, end_node, type, properties)
+    def create_rel(self, start_node, type, end_node, properties=None):
+        return Batch.single(self, Batch.create_rel, start_node, type, end_node, properties)
 
     def delete_rel(self, rel_id):
         return Batch.single(self, Batch.delete_rel, rel_id)
@@ -408,6 +451,15 @@ class Graph(yaml.YAMLObject):
 
     def purge_nodes(self, label, key, value):
         return Batch.single(self, Batch.purge_nodes, label, key, value)
+
+    def match_rels(self, start_node=None, type=None, end_node=None):
+        return Batch.single(self, Batch.match_rels, start_node, type, end_node)
+
+    def merge_rels(self, start_node, type, end_node):
+        return Batch.single(self, Batch.merge_rels, start_node, type, end_node)
+
+    def purge_rels(self, start_node=None, type=None, end_node=None):
+        return Batch.single(self, Batch.purge_rels, start_node, type, end_node)
 
 
 class Linkable(object):
@@ -499,7 +551,7 @@ class PropertyContainer(object):
     """ Base class for entities that contain properties.
     """
 
-    def __init__(self, properties=None):
+    def __init__(self, **properties):
         self.__properties = PropertySet(properties or {})
 
     def __eq__(self, other):
@@ -507,6 +559,15 @@ class PropertyContainer(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __getitem__(self, key):
+        return self.properties.__getitem__(key)
+
+    def __setitem__(self, key, value):
+        return self.properties.__setitem__(key, value)
+
+    def __delitem__(self, key):
+        return self.properties.__delitem__(key)
 
     @property
     def properties(self):
@@ -521,34 +582,29 @@ class Node(Linkable, PropertyContainer, yaml.YAMLObject):
 
     @classmethod
     def from_yaml(cls, loader, node):
+        graph = loader.__graph__
         mapping = loader.construct_mapping(node, deep=True)
         labels = mapping.get("labels")
         properties = mapping.get("properties")
-        inst = Node(labels, properties)
+        inst = Node(*labels, **properties)
         id_ = mapping.get("id")
         if id_ is not None:
-            inst.link(loader.__graph__, id_)
+            inst.link(graph, id_)
         return inst
 
-    def __init__(self, labels=None, properties=None):
+    def __init__(self, *labels, **properties):
         Linkable.__init__(self)
-        PropertyContainer.__init__(self, properties)
+        PropertyContainer.__init__(self, **properties)
         self.__labels = set(labels or [])
 
     def __repr__(self):
-        return "<Node labels={0} properties={1}>".format(self.__labels,
-                                                         self.properties)
-
-    def __str__(self):
         if self.linked:
-            return "({0}{1} {2})".\
-                format(self.linked_id,
-                       "".join(":" + label for label in self.__labels),
-                       json.dumps(self.properties))
+            id_ = self.linked_id
         else:
-            return "({1} {2})".\
-                format("".join(":" + label for label in self.__labels),
-                       json.dumps(self.properties))
+            id_ = ""
+        return "({0}{1} {2})".\
+            format(id_, "".join(":" + label for label in self.__labels),
+                   json.dumps(self.properties, separators=",:"))
 
     def __eq__(self, other):
         return (PropertyContainer.__eq__(self, other) and
@@ -563,10 +619,10 @@ class Node(Linkable, PropertyContainer, yaml.YAMLObject):
 
     def pull(self):
         Linkable.pull(self)
-        n = self.linked_graph.get_node(self.linked_id)
-        self.__labels = set(n.labels)
+        remote = self.linked_graph.get_node(self.linked_id)
+        self.__labels = set(remote.labels)
         self.properties.clear()
-        self.properties.update(n.properties)
+        self.properties.update(remote.properties)
 
     def push(self):
         Linkable.push(self)
@@ -576,6 +632,65 @@ class Node(Linkable, PropertyContainer, yaml.YAMLObject):
 
 class Relationship(Linkable, PropertyContainer, yaml.YAMLObject):
     yaml_tag = '!Rel'
+
+    @classmethod
+    def from_yaml(cls, loader, rel):
+        graph = loader.__graph__
+        mapping = loader.construct_mapping(rel, deep=True)
+        start_node = mapping.get("start")
+        type_ = mapping.get("type")
+        end_node = mapping.get("end")
+        properties = mapping.get("properties")
+        inst = Relationship(*(start_node, type_, end_node), **properties)
+        id_ = mapping.get("id")
+        if id_ is not None:
+            inst.link(graph, id_)
+        return inst
+
+    def __init__(self, *triple, **properties):
+        Linkable.__init__(self)
+        PropertyContainer.__init__(self, **properties)
+        if len(triple) != 3:
+            raise ValueError("Relationships constructors must specify a "
+                             "start-type-end triple")
+        self.__start_node = triple[0]
+        self.__type = triple[1]
+        self.__end_node = triple[2]
+        if not isinstance(self.__start_node, Node):
+            raise ValueError("Relationships must start with a Node object")
+        if not isinstance(self.__end_node, Node):
+            raise ValueError("Relationships must end with a Node object")
+
+    def __repr__(self):
+        if self.linked:
+            id_ = self.linked_id
+        else:
+            id_ = ""
+        return "-[{0}:{1} {2}]->".\
+            format(id_, self.__type,
+                   json.dumps(self.properties, separators=",:"))
+
+    @property
+    def start_node(self):
+        return self.__start_node
+
+    @property
+    def end_node(self):
+        return self.__end_node
+
+    @property
+    def type(self):
+        return self.__type
+
+    def pull(self):
+        Linkable.pull(self)
+        remote = self.linked_graph.get_rel(self.linked_id)
+        self.properties.clear()
+        self.properties.update(remote.properties)
+
+    def push(self):
+        Linkable.push(self)
+        self.linked_graph.set_rel(self.linked_id, self.properties)
 
 
 class Path(yaml.YAMLObject):

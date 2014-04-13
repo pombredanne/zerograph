@@ -1,7 +1,7 @@
-package org.zerograph.zpp.api;
+package org.zerograph.zapp.api;
 
 import org.neo4j.graphdb.PropertyContainer;
-import org.zerograph.zpp.except.ClientError;
+import org.zerograph.zapp.except.ClientError;
 
 import java.util.List;
 import java.util.Map;

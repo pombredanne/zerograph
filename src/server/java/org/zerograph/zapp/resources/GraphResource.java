@@ -1,4 +1,4 @@
-package org.zerograph.zap;
+package org.zerograph.zapp.resources;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.zerograph.except.GraphAlreadyStartedException;
@@ -7,11 +7,11 @@ import org.zerograph.api.DatabaseInterface;
 import org.zerograph.Graph;
 import org.zerograph.GraphDirectory;
 import org.zerograph.api.GraphInterface;
-import org.zerograph.zap.api.ResourceInterface;
-import org.zerograph.zpp.api.RequestInterface;
-import org.zerograph.zpp.api.ResponderInterface;
-import org.zerograph.zpp.except.ClientError;
-import org.zerograph.zpp.except.ServerError;
+import org.zerograph.zapp.api.ResourceInterface;
+import org.zerograph.zapp.api.RequestInterface;
+import org.zerograph.zapp.api.ResponderInterface;
+import org.zerograph.zapp.except.ClientError;
+import org.zerograph.zapp.except.ServerError;
 
 public class GraphResource extends AbstractResource implements ResourceInterface {
 

@@ -20,7 +20,16 @@ variable.
 ### Service
 
 The default service (graph zero) listens on port 47470. Graph services may be
-created on other ports as required and dropped if necessary.
+opened on other ports as required and dropped when no longer needed. On
+startup, all configured graph services will be started on their respective
+ports.
+
+One big benefit on the ZeroMQ infrastructure is a reduced impact to client
+applications when server disruption occurs. When a client submits a request,
+the server may or may not be available. If unavailable, the request will be
+queued automatically until the server once again becomes available at which
+point it will be processed as usual. No extra logic is required within the
+client application to manage retries.
 
 
 ## Shell

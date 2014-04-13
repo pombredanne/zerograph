@@ -1,13 +1,15 @@
-package org.zerograph.zap;
+package org.zerograph.zapp.resources;
 
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.zerograph.api.DatabaseInterface;
-import org.zerograph.zap.api.ResourceInterface;
-import org.zerograph.zpp.api.RequestInterface;
-import org.zerograph.zpp.api.ResponderInterface;
-import org.zerograph.zpp.except.ClientError;
-import org.zerograph.zpp.except.MethodNotAllowed;
-import org.zerograph.zpp.except.ServerError;
+import org.zerograph.zapp.api.ResourceInterface;
+import org.zerograph.zapp.api.RequestInterface;
+import org.zerograph.zapp.api.ResponderInterface;
+import org.zerograph.zapp.except.ClientError;
+import org.zerograph.zapp.except.MethodNotAllowed;
+import org.zerograph.zapp.except.ServerError;
 
 
 public abstract class AbstractResource implements ResourceInterface {
@@ -40,6 +42,28 @@ public abstract class AbstractResource implements ResourceInterface {
 
     public PropertyContainer execute(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
         throw new MethodNotAllowed(request.getMethod());
+    }
+
+    protected Node resolveNode(DatabaseInterface context, Object value) throws ClientError {
+        if (value == null) {
+            return null;
+        } else if (value instanceof Node) {
+            return (Node)value;
+        } else if (value instanceof Integer) {
+            try {
+                return context.getNode((Integer) value);
+            } catch (NotFoundException ex) {
+                throw new ClientError("Relationship " + value + " not found");
+            }
+        } else if (value instanceof Long) {
+            try {
+                return context.getNode((Long) value);
+            } catch (NotFoundException ex) {
+                throw new ClientError("Relationship " + value + " not found");
+            }
+        } else {
+            throw new ClientError("Cannot resolve relationship " + value);
+        }
     }
 
 }

@@ -1,7 +1,9 @@
 package org.zerograph.test.helpers;
 
-import org.zerograph.zpp.api.ResponderInterface;
-import org.zerograph.zpp.except.MalformedResponse;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.zerograph.zapp.api.ResponderInterface;
+import org.zerograph.zapp.except.MalformedResponse;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -90,6 +92,34 @@ public class ResponseCollector implements ResponderInterface {
     @Override
     public void close() {
 
+    }
+
+    @Override
+    public Node sendNodes(Iterable<Node> result) throws MalformedResponse {
+        Node first = null;
+        startBodyList();
+        for (Node rel : result) {
+            if (first == null) {
+                first = rel;
+            }
+            sendBodyItem(rel);
+        }
+        endBodyList();
+        return first;
+    }
+
+    @Override
+    public Relationship sendRelationships(Iterable<Relationship> result) throws MalformedResponse {
+        Relationship first = null;
+        startBodyList();
+        for (Relationship rel : result) {
+            if (first == null) {
+                first = rel;
+            }
+            sendBodyItem(rel);
+        }
+        endBodyList();
+        return first;
     }
 
 }

@@ -1,4 +1,4 @@
-package org.zerograph.zpp.except;
+package org.zerograph.zapp.except;
 
 public class MalformedRequest extends ClientError {
 

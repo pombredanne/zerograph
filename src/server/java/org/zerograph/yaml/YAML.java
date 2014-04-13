@@ -7,6 +7,7 @@ import org.neo4j.graphdb.Relationship;
 import org.zerograph.Graph;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,6 +35,34 @@ public class YAML {
             return dump((Double) data);
         } else if (data instanceof String) {
             return dump((String) data);
+        } else if (data instanceof boolean[]) {
+            boolean[] arrayData = (boolean[]) data;
+            ArrayList<Boolean> values = new ArrayList<>(arrayData.length);
+            for (boolean value : arrayData) {
+                values.add(value);
+            }
+            return dump(values);
+        } else if (data instanceof int[]) {
+            int[] arrayData = (int[]) data;
+            ArrayList<Integer> values = new ArrayList<>(arrayData.length);
+            for (int value : arrayData) {
+                values.add(value);
+            }
+            return dump(values);
+        } else if (data instanceof long[]) {
+            long[] arrayData = (long[]) data;
+            ArrayList<Long> values = new ArrayList<>(arrayData.length);
+            for (long value : arrayData) {
+                values.add(value);
+            }
+            return dump(values);
+        } else if (data instanceof double[]) {
+            double[] arrayData = (double[]) data;
+            ArrayList<Double> values = new ArrayList<>(arrayData.length);
+            for (double value : arrayData) {
+                values.add(value);
+            }
+            return dump(values);
         } else if (data instanceof Boolean[]) {
             return dump(Arrays.asList((Boolean[]) data));
         } else if (data instanceof Integer[]) {

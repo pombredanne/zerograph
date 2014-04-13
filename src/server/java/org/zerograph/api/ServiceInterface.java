@@ -2,7 +2,7 @@ package org.zerograph.api;
 
 import org.zerograph.Environment;
 import org.zerograph.ResourceSet;
-import org.zerograph.zpp.api.ResponderInterface;
+import org.zerograph.zapp.api.ResponderInterface;
 import org.zeromq.ZMQ;
 
 public interface ServiceInterface {

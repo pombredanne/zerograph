@@ -1,6 +1,8 @@
-package org.zerograph.zpp.api;
+package org.zerograph.zapp.api;
 
-import org.zerograph.zpp.except.MalformedResponse;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.zerograph.zapp.except.MalformedResponse;
 
 import java.util.Map;
 
@@ -29,5 +31,9 @@ public interface ResponderInterface {
     public void endResponseBatch();
 
     public void close();
+
+    public Node sendNodes(Iterable<Node> result) throws MalformedResponse;
+
+    public Relationship sendRelationships(Iterable<Relationship> result) throws MalformedResponse;
 
 }
