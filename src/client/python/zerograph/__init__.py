@@ -617,6 +617,16 @@ class Node(Linkable, PropertyContainer, yaml.YAMLObject):
     def labels(self):
         return self.__labels
 
+    @property
+    def exists(self):
+        Linkable.pull(self)
+        try:
+            self.linked_graph.get_node(self.linked_id)
+        except Error:  # TODO: NotExistsError
+            return False
+        else:
+            return True
+
     def pull(self):
         Linkable.pull(self)
         remote = self.linked_graph.get_node(self.linked_id)
@@ -681,6 +691,16 @@ class Relationship(Linkable, PropertyContainer, yaml.YAMLObject):
     @property
     def type(self):
         return self.__type
+
+    @property
+    def exists(self):
+        Linkable.pull(self)
+        try:
+            self.linked_graph.get_rel(self.linked_id)
+        except Error:  # TODO: NotExistsError
+            return False
+        else:
+            return True
 
     def pull(self):
         Linkable.pull(self)
