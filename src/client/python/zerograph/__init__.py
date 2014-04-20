@@ -345,7 +345,7 @@ class Graph(yaml.YAMLObject):
                 graph = cls(host, port)
             else:
                 zerograph = cls.open(host)
-                graph = Batch.single(zerograph, Batch.open_graph, zerograph.host, port)
+                graph = Batch.single(zerograph, Batch.patch_graph, zerograph.host, port)
             cls.__services[host_port] = graph
             return graph
 
@@ -404,7 +404,7 @@ class Graph(yaml.YAMLObject):
             raise ValueError("Cannot drop zerograph")
         else:
             zerograph = Graph.open(self.__host)
-            return Batch.single(zerograph, Batch.drop_graph, self.__host, self.__port)
+            return Batch.single(zerograph, Batch.delete_graph, self.__host, self.__port)
         # TODO: mark as dropped and disallow any further actions? (maybe)
 
     def batch(self):

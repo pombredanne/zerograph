@@ -10,23 +10,23 @@ class NodeFromYamlTestCase(TestCase):
     def test_can_hydrate_empty_node(self):
         hydrated = yaml.load('!Node {}')
         assert hydrated == Node()
-        assert not hydrated.linked
+        assert not hydrated.bound
 
     def test_can_hydrate_node_with_labels(self):
         hydrated = yaml.load('!Node {"labels":["Human","Female"]}')
         assert hydrated == Node("Human", "Female")
-        assert not hydrated.linked
+        assert not hydrated.bound
 
     def test_can_hydrate_node_with_properties(self):
         hydrated = yaml.load('!Node {"properties":{"name":"Alice","age":33}}')
         assert hydrated == Node(name="Alice", age=33)
-        assert not hydrated.linked
+        assert not hydrated.bound
 
     def test_can_hydrate_node_with_labels_and_properties(self):
         hydrated = yaml.load('!Node {"labels":["Human","Female"],'
                              '"properties":{"name":"Alice","age":33}}')
         assert hydrated == Node("Human", "Female", name="Alice", age=33)
-        assert not hydrated.linked
+        assert not hydrated.bound
 
 
 class NodeCastTestCase(TestCase):

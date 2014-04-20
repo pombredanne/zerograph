@@ -8,7 +8,7 @@ from .helpers import ZerographTestCase
 class PointersTestCase(ZerographTestCase):
 
     def test_can_use_pointers(self):
-        batch = self.graph.create_batch()
+        batch = self.graph.batch()
         a = batch.create_node()
         b = batch.create_node()
         batch.create_rel(a, b, "KNOWS")

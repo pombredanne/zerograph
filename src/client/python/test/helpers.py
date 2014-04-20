@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from zerograph import Graph
+from zerograph import Graph, Error
 
 
 class ZerographTestCase(TestCase):
@@ -15,4 +15,4 @@ class ZerographTestCase(TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.graph.drop()
+        pass

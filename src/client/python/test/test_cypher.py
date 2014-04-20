@@ -13,7 +13,7 @@ class CypherTestCase(ZerographTestCase):
         assert isinstance(result, Table)
         assert result.columns == ["a"]
         assert result.rows == [
-            [Node({"Person"}, {"name": "Alice"})],
+            [Node("Person", name="Alice")],
         ]
 
     def test_statement_with_parameters(self):
@@ -22,7 +22,7 @@ class CypherTestCase(ZerographTestCase):
         assert isinstance(result, Table)
         assert result.columns == ["a"]
         assert result.rows == [
-            [Node({"Person"}, {"name": "Alice"})],
+            [Node("Person", name="Alice")],
         ]
 
     def test_statement_with_multiple_parameters(self):
@@ -34,7 +34,7 @@ class CypherTestCase(ZerographTestCase):
             assert isinstance(result, Table)
             assert result.columns == ["a"]
             assert result.rows == [
-                [Node({"Person"}, param_sets[i])],
+                [Node("Person", **param_sets[i])],
             ]
 
 
