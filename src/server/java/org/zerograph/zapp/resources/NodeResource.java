@@ -28,7 +28,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
     }
 
     /**
-     * GET Node {"id": ?}
+     * GET Node {"id": …}
      *
      * Fetch a single node by ID.
      */
@@ -45,7 +45,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
     }
 
     /**
-     * SET Node {"id": ?, "labels": ?, "properties": ?}
+     * SET Node {"id": …, "labels": …, "properties": …}
      *
      * Replace all labels and properties on a node identified by ID.
      * This will not create a node with the given ID if one does not
@@ -66,9 +66,9 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
     }
 
     /**
-     * PATCH Node {"id": ?, "labels": ?}
-     * PATCH Node {"id": ?, "properties": ?}
-     * PATCH Node {"id": ?, "labels": ?, "properties": ?}
+     * PATCH Node {"id": …, "labels": …}
+     * PATCH Node {"id": …, "properties": …}
+     * PATCH Node {"id": …, "labels": …, "properties": …}
      *
      * Add new labels and properties to a node identified by ID.
      * This will not create a node with the given ID if one does not
@@ -90,7 +90,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
     }
 
     /**
-     * CREATE Node {"labels": ?, "properties": ?}
+     * CREATE Node {"labels": …, "properties": …}
      *
      * Create a new node with the given labels and properties.
      */
@@ -104,7 +104,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
     }
 
     /**
-     * DELETE node {"id": ?}
+     * DELETE node {"id": …}
      *
      * Delete a node identified by ID.
      */

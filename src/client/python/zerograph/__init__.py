@@ -18,6 +18,10 @@ DELETE = "DELETE"
 EXECUTE = "EXECUTE"
 
 
+def is_safe_char(x):
+    return x.isalpha() or x.isdigit() or x == "_"
+
+
 class ZerographEncoder(json.JSONEncoder):
 
     def encode(self, o):
@@ -36,7 +40,7 @@ class Error(Exception):
     pass
 
 
-class NotLinkedError(Exception):
+class UnboundError(Exception):
     pass
 
 
@@ -175,7 +179,13 @@ class Batch(object):
     def append(self, method, resource, **args):
         """ Append a request.
         """
-        Request(method, resource, **args).send(self.__socket, more=True)
+        adjusted = {}
+        for key, value in args.items():
+            if isinstance(value, Pointer):
+                adjusted[key + "*"] = value.address
+            elif value is not None:
+                adjusted[key] = value
+        Request(method, resource, **adjusted).send(self.__socket, more=True)
         pointer = Pointer(self.__count)
         self.__count += 1
         return pointer
@@ -194,16 +204,9 @@ class Batch(object):
             yield value
         self.__count = 0
 
-    def get_graph(self, host, port):
-        return self.append(GET, "Graph", host=host, port=int(port))
+    ### Cypher ###
 
-    def open_graph(self, host, port):
-        return self.append(SET, "Graph", host=host, port=int(port))
-
-    def drop_graph(self, host, port):
-        return self.append(DELETE, "Graph", host=host, port=int(port))
-
-    def execute(self, query, *param_sets):
+    def execute_cypher(self, query, *param_sets):
         param_set_count = len(param_sets)
         if param_set_count == 0:
             return self.append(EXECUTE, "Cypher", query=query)
@@ -215,90 +218,87 @@ class Batch(object):
                 pointers.append(self.append(EXECUTE, "Cypher", query=query, params=dict(param_set)))
             return pointers
 
-    def get_node(self, node_id):
-        return self.append(GET, "Node", id=int(node_id))
+    ### Graph ###
 
-    def set_node(self, node_id, labels, properties):
-        return self.append(SET, "Node", id=int(node_id), labels=labels, properties=properties)
+    def get_graph(self, host, port):
+        return self.append(GET, "Graph", host=host, port=int(port))
 
-    def patch_node(self, node_id, labels, properties):
-        return self.append(PATCH, "Node", id=int(node_id), labels=labels, properties=properties)
+    def patch_graph(self, host, port):
+        return self.append(PATCH, "Graph", host=host, port=int(port))
+
+    def delete_graph(self, host, port):
+        return self.append(DELETE, "Graph", host=host, port=int(port))
+
+    ### Node ###
+
+    def get_node(self, id):
+        return self.append(GET, "Node", id=id)
+
+    def set_node(self, id, labels, properties):
+        return self.append(SET, "Node", id=id, labels=labels, properties=properties)
+
+    def patch_node(self, id, labels, properties):
+        return self.append(PATCH, "Node", id=id, labels=labels, properties=properties)
 
     def create_node(self, labels=None, properties=None):
         return self.append(CREATE, "Node", labels=list(labels or []), properties=dict(properties or {}))
 
-    def delete_node(self, node_id):
-        return self.append(DELETE, "Node", id=int(node_id))
+    def delete_node(self, id):
+        return self.append(DELETE, "Node", id=id)
 
-    def get_rel(self, rel_id):
-        return self.append(GET, "Rel", id=int(rel_id))
+    ### NodeSet ###
 
-    def set_rel(self, rel_id, properties):
-        return self.append(SET, "Rel", id=int(rel_id), properties=properties)
-
-    def patch_rel(self, rel_id, properties):
-        return self.append(PATCH, "Rel", id=int(rel_id), properties=properties)
-
-    def create_rel(self, start_node, type, end_node, properties=None):
-        if isinstance(start_node, Node):
-            if start_node.linked_graph == self.__graph:
-                start_node = start_node.linked_id
-            else:
-                raise ValueError("Start node belongs to a different graph")
-        if isinstance(end_node, Node):
-            if end_node.linked_graph == self.__graph:
-                end_node = end_node.linked_id
-            else:
-                raise ValueError("End node belongs to a different graph")
-        return self.append(CREATE, "Rel", start=start_node, end=end_node, type=type, properties=dict(properties or {}))
-
-    def delete_rel(self, rel_id):
-        return self.append(DELETE, "Rel", id=int(rel_id))
-
-    def match_nodes(self, label, key=None, value=None):
+    def get_node_set(self, label, key=None, value=None):
         if key is None:
             return self.append(GET, "NodeSet", label=label)
         else:
             return self.append(GET, "NodeSet", label=label, key=key, value=value)
 
-    def merge_nodes(self, label, key, value):
+    def patch_node_set(self, label, key, value):
         return self.append(PATCH, "NodeSet", label=label, key=key, value=value)
 
-    def purge_nodes(self, label, key, value):
-        return self.append(DELETE, "NodeSet", label=label, key=key, value=value)
-
-    def match_rels(self, start_node=None, type=None, end_node=None):
-        if isinstance(start_node, Node):
-            start_node = start_node.linked_id
-        elif start_node is not None:
-            raise TypeError("Start node must be a Node instance")
-        if isinstance(end_node, Node):
-            end_node = end_node.linked_id
-        elif end_node is not None:
-            raise TypeError("End node must be a Node instance")
-        return self.append(GET, "RelSet", start=start_node, end=end_node, type=type)
-
-    def merge_rels(self, start_node, type, end_node):
-        if isinstance(start_node, Node):
-            start_node = start_node.linked_id
+    def delete_node_set(self, label, key, value):
+        if key is None:
+            return self.append(DELETE, "NodeSet", label=label)
         else:
-            raise TypeError("Start node must be a Node instance")
-        if isinstance(end_node, Node):
-            end_node = end_node.linked_id
-        else:
-            raise TypeError("End node must be a Node instance")
-        return self.append(PATCH, "RelSet", start=start_node, end=end_node, type=type)
+            return self.append(DELETE, "NodeSet", label=label, key=key, value=value)
 
-    def purge_rels(self, start_node=None, type=None, end_node=None):
-        if isinstance(start_node, Node):
-            start_node = start_node.linked_id
-        elif start_node is not None:
-            raise TypeError("Start node must be a Node instance")
-        if isinstance(end_node, Node):
-            end_node = end_node.linked_id
-        elif end_node is not None:
-            raise TypeError("End node must be a Node instance")
-        return self.append(DELETE, "RelSet", start=start_node, end=end_node, type=type)
+    ### Rel ###
+
+    def get_rel(self, id):
+        return self.append(GET, "Rel", id=id)
+
+    def set_rel(self, id, properties):
+        return self.append(SET, "Rel", id=id, properties=properties)
+
+    def patch_rel(self, id, properties):
+        return self.append(PATCH, "Rel", id=id, properties=properties)
+
+    def create_rel(self, start, end, type, properties=None):
+        return self.append(CREATE, "Rel", start=start, end=end, type=type, properties=dict(properties or {}))
+
+    def delete_rel(self, id):
+        return self.append(DELETE, "Rel", id=id)
+
+    ### RelSet ###
+
+    def get_rel_set(self, start=None, end=None, type=None):
+        if start is None and end is None:
+            raise ValueError("Either start or end node must be specified")
+        return self.append(GET, "RelSet", start=start, end=end, type=type)
+
+    def patch_rel_set(self, start, end, type):
+        return self.append(PATCH, "RelSet", start=start, end=end, type=type)
+
+    def delete_rel_set(self, start=None, end=None, type=None):
+        if start is None and end is None:
+            raise ValueError("Either start or end node must be specified")
+        return self.append(DELETE, "RelSet", start=start, end=end, type=type)
+
+    ### Zerograph ###
+    
+    def get_zerograph(self):
+        return self.append(GET, "Zerograph")
 
 
 class Pointer(object):
@@ -389,6 +389,16 @@ class Graph(yaml.YAMLObject):
         else:
             return self.open(self.__host)
 
+    @property
+    def order(self):
+        # TODO: count all nodes
+        pass
+
+    @property
+    def size(self):
+        # TODO: count all rels
+        pass
+
     def drop(self):
         if self.__port == self.ZEROGRAPH_PORT:
             raise ValueError("Cannot drop zerograph")
@@ -397,73 +407,49 @@ class Graph(yaml.YAMLObject):
             return Batch.single(zerograph, Batch.drop_graph, self.__host, self.__port)
         # TODO: mark as dropped and disallow any further actions? (maybe)
 
-    def create_batch(self):
+    def batch(self):
         return Batch(self)
 
     def execute(self, query, *param_sets):
         param_set_count = len(param_sets)
         if param_set_count == 0:
-            return Batch.single(self, Batch.execute, query)
+            return Batch.single(self, Batch.execute_cypher, query)
         elif param_set_count == 1:
-            return Batch.single(self, Batch.execute, query, param_sets[0])
+            return Batch.single(self, Batch.execute_cypher, query, param_sets[0])
         else:
             batch = Batch(self)
             for param_set in param_sets:
-                Batch.execute(batch, query, param_set)
+                batch.execute_cypher(query, param_set)
             results = batch.submit()
             return list(results)
 
-    def get_node(self, node_id):
+    def node(self, node_id):
         return Batch.single(self, Batch.get_node, node_id)
 
-    def set_node(self, node_id, labels, properties):
-        return Batch.single(self, Batch.set_node, node_id, labels, properties)
-
-    def patch_node(self, node_id, labels, properties):
-        return Batch.single(self, Batch.patch_node, node_id, labels, properties)
-
-    def create_node(self, labels=None, properties=None):
-        return Batch.single(self, Batch.create_node, labels, properties)
-
-    def delete_node(self, node_id):
-        return Batch.single(self, Batch.delete_node, node_id)
-
-    def get_rel(self, rel_id):
+    def path(self, rel_id):
         return Batch.single(self, Batch.get_rel, rel_id)
 
-    def set_rel(self, rel_id, properties):
-        return Batch.single(self, Batch.set_rel, rel_id, properties)
+    def create(self, *entities):
+        batch = Batch(self)
+        for entity in entities:
+            if isinstance(entity, Node):
+                batch.create_node(entity.labels, entity.properties)
+            elif isinstance(entity, Path):
+                pass  # TODO
+            else:
+                raise ValueError("Cannot create a {}".format(entity.__class__.__name__))
+        return batch.submit()
 
-    def patch_rel(self, rel_id, properties):
-        return Batch.single(self, Batch.patch_rel, rel_id, properties)
+    def delete(self, *entities):
+        # TODO
+        pass
 
-    def create_rel(self, start_node, type, end_node, properties=None):
-        return Batch.single(self, Batch.create_rel, start_node, type, end_node, properties)
-
-    def delete_rel(self, rel_id):
-        return Batch.single(self, Batch.delete_rel, rel_id)
-
-    def match_nodes(self, label, key=None, value=None):
+    def find(self, label, key=None, value=None):
         return Batch.single(self, Batch.match_nodes, label, key, value)
 
-    def merge_nodes(self, label, key, value):
-        return Batch.single(self, Batch.merge_nodes, label, key, value)
 
-    def purge_nodes(self, label, key, value):
-        return Batch.single(self, Batch.purge_nodes, label, key, value)
-
-    def match_rels(self, start_node=None, type=None, end_node=None):
-        return Batch.single(self, Batch.match_rels, start_node, type, end_node)
-
-    def merge_rels(self, start_node, type, end_node):
-        return Batch.single(self, Batch.merge_rels, start_node, type, end_node)
-
-    def purge_rels(self, start_node=None, type=None, end_node=None):
-        return Batch.single(self, Batch.purge_rels, start_node, type, end_node)
-
-
-class Linkable(object):
-    """ Mixin for objects that can be linked to remote graph database entities.
+class Bindable(object):
+    """ Mixin for objects that can be bound to remote graph database entities.
     """
 
     def __init__(self):
@@ -471,34 +457,34 @@ class Linkable(object):
         self.__id = None
 
     @property
-    def linked_graph(self):
+    def bound_graph(self):
         return self.__graph
 
     @property
-    def linked_id(self):
+    def bound_id(self):
         return self.__id
 
     @property
-    def linked(self):
+    def bound(self):
         return self.__graph is not None and self.__id is not None
 
-    def link(self, graph, id):
+    def bind(self, graph, id):
         self.__graph = graph
         self.__id = id
 
-    def unlink(self):
+    def unbind(self):
         self.__graph = None
         self.__id = None
 
-    def __assert_linked(self):
-        if not self.linked:
-            raise NotLinkedError(self)
+    def __assert_bound(self):
+        if not self.bound:
+            raise UnboundError(self)
 
     def pull(self):
-        self.__assert_linked()
+        self.__assert_bound()
 
     def push(self):
-        self.__assert_linked()
+        self.__assert_bound()
 
 
 class PropertySet(dict):
@@ -526,6 +512,34 @@ class PropertySet(dict):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def __len__(self):
+        return dict.__len__(self)
+
+    def __bool__(self):
+        return dict.__len__(self) > 0
+
+    def __nonzero__(self):
+        return dict.__len__(self) > 0
+
+    def to_cypher(self):
+        s = []
+        for key in sorted(self.keys()):
+            if s:
+                s += ","
+            if all(map(is_safe_char, key)):
+                s.append(key)
+            else:
+                s.append("`")
+                s.append(key.replace("`", "``"))
+                s.append("`")
+            s.append(":")
+            s.append(json.dumps(self[key], separators=",:", sort_keys=True))
+        s = ["{"] + s + ["}"]
+        return "".join(s)
+
+    def to_json(self):
+        return json.dumps(self, separators=",:", sort_keys=True)
 
     def setdefault(self, key, default=None):
         if key in self:
@@ -574,37 +588,58 @@ class PropertyContainer(object):
         return self.__properties
 
 
-class Node(Linkable, PropertyContainer, yaml.YAMLObject):
-    """ A local representation of a Neo4j graph node that may be linked to a
+class Node(Bindable, PropertyContainer, yaml.YAMLObject):
+    """ A local representation of a Neo4j graph node that may be bound to a
     node in a remote graph database.
     """
-    yaml_tag = '!Node'
+    yaml_tag = "!Node"
 
     @classmethod
     def from_yaml(cls, loader, node):
-        graph = loader.__graph__
         mapping = loader.construct_mapping(node, deep=True)
-        labels = mapping.get("labels")
-        properties = mapping.get("properties")
-        inst = Node(*labels, **properties)
+        labels = mapping.get("labels") or []
+        properties = mapping.get("properties") or {}
+        inst = cls(*labels, **properties)
         id_ = mapping.get("id")
         if id_ is not None:
-            inst.link(graph, id_)
+            inst.bind(loader.__graph__, id_)
         return inst
 
+    @classmethod
+    def cast(cls, x):
+        if x is None:
+            return None
+        if isinstance(x, cls):
+            return x
+        if not isinstance(x, (tuple, list, set)):
+            x = [x]
+        labels = []
+        properties = {}
+        for item in x:
+            if isinstance(item, dict):
+                properties.update(item)
+            else:
+                labels.append(item)
+        return cls(*labels, **properties)
+    
     def __init__(self, *labels, **properties):
-        Linkable.__init__(self)
+        Bindable.__init__(self)
         PropertyContainer.__init__(self, **properties)
         self.__labels = set(labels or [])
 
     def __repr__(self):
-        if self.linked:
-            id_ = self.linked_id
-        else:
-            id_ = ""
-        return "({0}{1} {2})".\
-            format(id_, "".join(":" + label for label in self.__labels),
-                   json.dumps(self.properties, separators=",:"))
+        s = []
+        if self.bound:
+            s.append(str(self.bound_id))
+        for label in sorted(self.__labels):
+            s.append(":")
+            s.append(label)
+        if self.properties:
+            if s:
+                s.append(" ")
+            s.append(self.properties.to_json())
+        s = ["("] + s + [")"]
+        return "".join(s)
 
     def __eq__(self, other):
         return (PropertyContainer.__eq__(self, other) and
@@ -619,99 +654,236 @@ class Node(Linkable, PropertyContainer, yaml.YAMLObject):
 
     @property
     def exists(self):
-        Linkable.pull(self)
+        Bindable.pull(self)
         try:
-            self.linked_graph.get_node(self.linked_id)
+            self.bound_graph.get_node(self.bound_id)
         except Error:  # TODO: NotExistsError
             return False
         else:
             return True
 
     def pull(self):
-        Linkable.pull(self)
-        remote = self.linked_graph.get_node(self.linked_id)
+        Bindable.pull(self)
+        remote = self.bound_graph.get_node(self.bound_id)
         self.__labels = set(remote.labels)
         self.properties.clear()
         self.properties.update(remote.properties)
 
     def push(self):
-        Linkable.push(self)
-        self.linked_graph.set_node(self.linked_id,
-                                   list(self.__labels), self.properties)
+        Bindable.push(self)
+        self.bound_graph.set_node(self.bound_id,
+                                  list(self.__labels), self.properties)
+
+    def to_cypher(self):
+        s = []
+        if self.bound:
+            s.append("_")
+            s.append(str(self.bound_id))
+        for label in sorted(self.__labels):
+            s.append(":")
+            s.append(label)
+        if self.properties:
+            if s:
+                s.append(" ")
+            s.append(self.properties.to_cypher())
+        s = ["("] + s + [")"]
+        return "".join(s)
+
+    def to_geoff(self):
+        s = []
+        if self.bound:
+            s.append(str(self.bound_id))
+        for label in sorted(self.__labels):
+            s.append(":")
+            s.append(label)
+        if self.properties:
+            if s:
+                s.append(" ")
+            s.append(self.properties.to_json())
+        s = ["("] + s + [")"]
+        return "".join(s)
+
+    def to_yaml(self):
+        s = []
+        if self.bound:
+            s.append('"id":')
+            s.append(str(self.bound_id))
+            s.append(",")
+        s.append('"labels":')
+        s.append(json.dumps(list(self.__labels), separators=",:"))
+        s.append(',"properties":')
+        s.append(self.properties.to_json())
+        s = [self.yaml_tag, " ", "{"] + s + ["}"]
+        return "".join(s)
 
 
-class Relationship(Linkable, PropertyContainer, yaml.YAMLObject):
-    yaml_tag = '!Rel'
-
+class Rel(Bindable, PropertyContainer, yaml.YAMLObject):
+    yaml_tag = "!Rel"
+    
     @classmethod
-    def from_yaml(cls, loader, rel):
-        graph = loader.__graph__
-        mapping = loader.construct_mapping(rel, deep=True)
-        start_node = mapping.get("start")
+    def from_yaml(cls, loader, node):
+        mapping = loader.construct_mapping(node, deep=True)
         type_ = mapping.get("type")
-        end_node = mapping.get("end")
-        properties = mapping.get("properties")
-        inst = Relationship(*(start_node, type_, end_node), **properties)
+        properties = mapping.get("properties") or {}
+        inst = cls(type_, **properties)
         id_ = mapping.get("id")
         if id_ is not None:
-            inst.link(graph, id_)
+            inst.bind(loader.__graph__, id_)
         return inst
 
-    def __init__(self, *triple, **properties):
-        Linkable.__init__(self)
+    @classmethod
+    def cast(cls, x):
+        if x is None:
+            return None
+        if isinstance(x, cls):
+            return x
+        if not isinstance(x, (tuple, list, set)):
+            x = [x]
+        type_ = []
+        properties = {}
+        for item in x:
+            if isinstance(item, dict):
+                properties.update(item)
+            else:
+                type_.append(item)
+        return cls(*type_, **properties)
+    
+    def __init__(self, *type_, **properties):
+        Bindable.__init__(self)
         PropertyContainer.__init__(self, **properties)
-        if len(triple) != 3:
-            raise ValueError("Relationships constructors must specify a "
-                             "start-type-end triple")
-        self.__start_node = triple[0]
-        self.__type = triple[1]
-        self.__end_node = triple[2]
-        if not isinstance(self.__start_node, Node):
-            raise ValueError("Relationships must start with a Node object")
-        if not isinstance(self.__end_node, Node):
-            raise ValueError("Relationships must end with a Node object")
+        if len(type_) == 0:
+            raise ValueError("A relationship type is required")
+        elif len(type_) > 1:
+            raise ValueError("Only one relationship type can be specified")
+        self.__type = type_[0]
+        self.__reverse = False
 
     def __repr__(self):
-        if self.linked:
-            id_ = self.linked_id
+        s = []
+        if self.bound:
+            s.append(str(self.bound_id))
+        s.append(":")
+        s.append(self.__type)
+        if self.properties:
+            s.append(" ")
+            s.append(self.properties.to_json())
+        if self.__reverse:
+            s = ["<-["] + s + ["]-"]
         else:
-            id_ = ""
-        return "-[{0}:{1} {2}]->".\
-            format(id_, self.__type,
-                   json.dumps(self.properties, separators=",:"))
-
-    @property
-    def start_node(self):
-        return self.__start_node
-
-    @property
-    def end_node(self):
-        return self.__end_node
+            s = ["-["] + s + ["]->"]
+        return "".join(s)
 
     @property
     def type(self):
         return self.__type
 
     @property
+    def reverse(self):
+        return self.__reverse
+
+    @property
     def exists(self):
-        Linkable.pull(self)
+        Bindable.pull(self)
         try:
-            self.linked_graph.get_rel(self.linked_id)
+            self.bound_graph.get_rel(self.bound_id)
         except Error:  # TODO: NotExistsError
             return False
         else:
             return True
 
     def pull(self):
-        Linkable.pull(self)
-        remote = self.linked_graph.get_rel(self.linked_id)
+        Bindable.pull(self)
+        remote = self.bound_graph.get_rel(self.bound_id)
         self.properties.clear()
         self.properties.update(remote.properties)
 
     def push(self):
-        Linkable.push(self)
-        self.linked_graph.set_rel(self.linked_id, self.properties)
+        Bindable.push(self)
+        self.bound_graph.set_rel(self.bound_id, self.properties)
+
+
+class Rev(Rel):
+    yaml_tag = "!Rev"
+
+    def __init__(self, *type_, **properties):
+        Rel.__init__(self, *type_, **properties)
+        self._Rel__reverse = True
 
 
 class Path(yaml.YAMLObject):
     yaml_tag = '!Path'
+
+    @classmethod
+    def from_yaml(cls, loader, node):
+        """ Hydrate Path from YAML.
+        
+        !Path [!Node {}, !Rel {"type":"KNOWS"}, !Node {}]
+        
+        """
+        sequence = loader.construct_sequence(node, deep=True)
+        inst = cls(*sequence)
+        return inst
+            
+    def __init__(self, node, *rels_and_nodes):
+        if len(rels_and_nodes) % 2 != 0:
+            raise ValueError("An even number of trailing rels and nodes must "
+                             "be provided")
+        self.__nodes = (Node.cast(node),)
+        self.__nodes += tuple(map(Node.cast, rels_and_nodes[1::2]))
+        self.__rels = tuple(map(Rel.cast, rels_and_nodes[0::2]))
+        graphs = ({n.bound_graph for n in self.__nodes if n.bound_graph} |
+                  {r.bound_graph for r in self.__rels if r.bound_graph})
+        if len(graphs) > 1:
+            raise ValueError("Bound path entities cannot span multiple "
+                             "graphs")
+
+    def __repr__(self):
+        s = [repr(self.__nodes[0])]
+        for i, rel in enumerate(self.__rels):
+            s.append(repr(rel))
+            s.append(repr(self.__nodes[i + 1]))
+        return "".join(s)
+
+    def __getitem__(self, index):
+        try:
+            return Path(self.__nodes[index], self.__rels[index], self.__nodes[index + 1])
+        except IndexError:
+            raise IndexError("Path segment index out of range")
+
+    def __iter__(self):
+        for i, rel in enumerate(self.__rels):
+            yield Path(self.__nodes[i], rel, self.__nodes[i + 1])
+
+    def __len__(self):
+        return self.size
+
+    def __reversed__(self):
+        # TODO
+        pass
+
+    @property
+    def order(self):
+        return len(self.__nodes)
+
+    @property
+    def size(self):
+        return len(self.__rels)
+
+    @property
+    def start_node(self):
+        return self.__nodes[0]
+
+    @property
+    def end_node(self):
+        return self.__nodes[-1]
+
+    @property
+    def nodes(self):
+        return self.__nodes
+
+    @property
+    def rels(self):
+        return self.__rels
+
+    # TODO - push and pull any that are bound
+

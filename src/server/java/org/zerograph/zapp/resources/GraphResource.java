@@ -26,9 +26,8 @@ public class GraphResource extends AbstractResource implements ResourceInterface
     }
 
     /**
-     * GET GraphMap {host} {port}
+     * GET Graph {"host": …, "port": …}
      *
-     * @param request
      */
     @Override
     public PropertyContainer get(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
@@ -44,12 +43,11 @@ public class GraphResource extends AbstractResource implements ResourceInterface
     }
 
     /**
-     * SET graph {host} {port} [{create}]
+     * PATCH Graph {"host": …, "port": …}
      *
-     * @param request
      */
     @Override
-    public PropertyContainer set(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
+    public PropertyContainer patch(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
         String host = request.getArgumentAsString("host");
         int port = request.getArgumentAsInteger("port");
         try {
@@ -62,9 +60,8 @@ public class GraphResource extends AbstractResource implements ResourceInterface
     }
 
     /**
-     * DELETE graph {host} {port} [{drop}]
+     * DELETE Graph {"host": …, "port": …}
      *
-     * @param request
      */
     @Override
     public PropertyContainer delete(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {

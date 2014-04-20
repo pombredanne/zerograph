@@ -10,11 +10,11 @@ import org.zerograph.zapp.api.ResponderInterface;
 import org.zerograph.zapp.except.ClientError;
 import org.zerograph.zapp.except.ServerError;
 
-public class RelationshipSetResource extends AbstractResource implements ResourceInterface {
+public class RelSetResource extends AbstractResource implements ResourceInterface {
 
     final private static String NAME = "RelSet";
 
-    public RelationshipSetResource(ResponderInterface responder) {
+    public RelSetResource(ResponderInterface responder) {
         super(responder);
     }
 
@@ -23,12 +23,12 @@ public class RelationshipSetResource extends AbstractResource implements Resourc
     }
 
     /**
-     * GET RelSet {"start": 1}
-     * GET RelSet {"end": 2}
-     * GET RelSet {"start": 1, "end": 2}
-     * GET RelSet {"start": 1, "type": "KNOWS"}
-     * GET RelSet {"type": "KNOWS", "end": 2}
-     * GET RelSet {"start": 1, "type": "KNOWS", "end": 2}
+     * GET RelSet {"start": …}
+     * GET RelSet {"end": …}
+     * GET RelSet {"start": …, "end": …}
+     * GET RelSet {"start": …, "type": …}
+     * GET RelSet {"end": …, "type": …}
+     * GET RelSet {"start": …, "end": …, "type": …}
      *
      */
     @Override
@@ -41,7 +41,7 @@ public class RelationshipSetResource extends AbstractResource implements Resourc
     }
 
     /**
-     * PATCH RelSet {"start":1, "type": "KNOWS", "end": 2}
+     * PATCH RelSet {"start": …, "end": …, "type": …}
      *
      * Ensure at least one relationship exists with the specified criteria.
      *
@@ -56,12 +56,12 @@ public class RelationshipSetResource extends AbstractResource implements Resourc
     }
 
     /**
-     * DELETE RelSet {"start": 1}
-     * DELETE RelSet {"end": 2}
-     * DELETE RelSet {"start": 1, "end": 2}
-     * DELETE RelSet {"start": 1, "type": "KNOWS"}
-     * DELETE RelSet {"type": "KNOWS", "end": 2}
-     * DELETE RelSet {"start": 1, "type": "KNOWS", "end": 2}
+     * DELETE RelSet {"start": …}
+     * DELETE RelSet {"end": …}
+     * DELETE RelSet {"start": …, "end": …}
+     * DELETE RelSet {"start": …, "type": …}
+     * DELETE RelSet {"end": …, "type": …}
+     * DELETE RelSet {"start": …, "end": …, "type": …}
      *
      */
     @Override

@@ -5,12 +5,8 @@ import org.zerograph.api.GraphInterface;
 import org.zerograph.except.GraphAlreadyStartedException;
 import org.zerograph.except.GraphNotStartedException;
 import org.zerograph.zapp.api.ResponderInterface;
-import org.zerograph.zapp.resources.CypherResource;
-import org.zerograph.zapp.resources.GraphResource;
-import org.zerograph.zapp.resources.NodeResource;
-import org.zerograph.zapp.resources.NodeSetResource;
-import org.zerograph.zapp.resources.RelationshipResource;
-import org.zerograph.zapp.resources.RelationshipSetResource;
+import org.zerograph.zapp.resources.*;
+import org.zerograph.zapp.resources.RelResource;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -95,8 +91,8 @@ public class Graph extends Service implements GraphInterface {
         resourceSet.add(new CypherResource(responder));
         resourceSet.add(new NodeResource(responder));
         resourceSet.add(new NodeSetResource(responder));
-        resourceSet.add(new RelationshipResource(responder));
-        resourceSet.add(new RelationshipSetResource(responder));
+        resourceSet.add(new RelResource(responder));
+        resourceSet.add(new RelSetResource(responder));
         return resourceSet;
     }
 

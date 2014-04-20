@@ -13,11 +13,11 @@ import org.zerograph.zapp.except.ServerError;
 
 import java.util.Map;
 
-public class RelationshipResource extends AbstractResource implements ResourceInterface {
+public class RelResource extends AbstractResource implements ResourceInterface {
 
     final private static String NAME = "Rel";
 
-    public RelationshipResource(ResponderInterface responder) {
+    public RelResource(ResponderInterface responder) {
         super(responder);
     }
 
@@ -26,7 +26,7 @@ public class RelationshipResource extends AbstractResource implements ResourceIn
     }
 
     /**
-     * GET rel {rel_id}
+     * GET Rel {"id": …}
      *
      * Fetch a single relationship by ID.
      */
@@ -43,7 +43,7 @@ public class RelationshipResource extends AbstractResource implements ResourceIn
     }
 
     /**
-     * SET rel {rel_id} {properties}
+     * SET Rel {"id": …, "properties": …}
      *
      * Replace all properties on a relationship identified by ID.
      * This will not create a relationship with the given ID if one does not
@@ -63,7 +63,7 @@ public class RelationshipResource extends AbstractResource implements ResourceIn
     }
 
     /**
-     * PATCH Rel {rel_id} {properties}
+     * PATCH Rel {"id": …, "properties": …}
      *
      * Add new properties to a relationship identified by ID.
      * This will not create a relationship with the given ID if one does not
@@ -84,7 +84,7 @@ public class RelationshipResource extends AbstractResource implements ResourceIn
     }
 
     /**
-     * CREATE Rel {start_node} {end_node} {type} {properties}
+     * CREATE Rel {"start": …, "end": …, "type": …, "properties": …}
      *
      * Create a new relationship.
      */
@@ -100,7 +100,7 @@ public class RelationshipResource extends AbstractResource implements ResourceIn
     }
 
     /**
-     * DELETE rel {rel_id}
+     * DELETE Rel {"id": …}
      *
      * Delete a relationship identified by ID.
      */

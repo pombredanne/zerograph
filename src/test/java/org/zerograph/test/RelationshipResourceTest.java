@@ -5,21 +5,21 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.zerograph.test.helpers.QuickMap;
-import org.zerograph.zapp.resources.RelationshipResource;
+import org.zerograph.zapp.resources.RelResource;
 import org.zerograph.zapp.Request;
 import org.zerograph.zapp.except.ClientError;
 import org.zerograph.zapp.except.ServerError;
 
 public class RelationshipResourceTest extends ResourceTest {
 
-    protected RelationshipResource resource;
+    protected RelResource resource;
 
     protected Node alice;
     protected Node bob;
 
     @Before
     public void createResource() {
-        resource = new RelationshipResource(responseCollector);
+        resource = new RelResource(responseCollector);
         alice = createNode(ALICE);
         bob = createNode(BOB);
     }

@@ -3,16 +3,13 @@ package org.zerograph.yaml;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.zerograph.Graph;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.zerograph.util.Toolbox.labelNameSet;
 import static org.zerograph.util.Toolbox.propertyMap;
@@ -83,6 +80,8 @@ public class YAML {
             return dump((Node) data);
         } else if (data instanceof Relationship) {
             return dump((Relationship) data);
+        } else if (data instanceof Path) {
+            return dump((Path) data);
         } else if (data instanceof Graph) {
             return dump((Graph) data);
         } else {
@@ -166,19 +165,76 @@ public class YAML {
     public static String dump(Node data) {
         LinkedHashMap<String, Object> attributes = new LinkedHashMap<>(3);
         attributes.put("id", data.getId());
-        attributes.put("labels", labelNameSet(data.getLabels()));
-        attributes.put("properties", propertyMap(data));
+        Set<String> labels = labelNameSet(data.getLabels());
+        if (labels.size() > 0) {
+            attributes.put("labels", labels);
+        }
+        Map<String, Object> properties = propertyMap(data);
+        if (properties.size() > 0) {
+            attributes.put("properties", properties);
+        }
         return "!Node " + dump(attributes);
     }
 
     public static String dump(Relationship data) {
-        LinkedHashMap<String, Object> attributes = new LinkedHashMap<>(5);
+        StringBuilder builder = new StringBuilder();
+        builder.append("!Path [");
+        builder.append(dump(data.getStartNode()));
+        builder.append(',');
+        builder.append(dumpRel(data));
+        builder.append(',');
+        builder.append(dump(data.getEndNode()));
+        builder.append(']');
+        return builder.toString();
+    }
+
+    public static String dump(Path data) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("!Path ");
+        Node node = null;
+        char link = '[';
+        for (PropertyContainer entity : data) {
+            builder.append(link);
+            if (entity instanceof Node) {
+                node = (Node) entity;
+                builder.append(dump(node));
+            } else if (entity instanceof Relationship) {
+                Relationship rel = (Relationship) entity;
+                if (node != null) {
+                    long nodeID = node.getId();
+                    if (rel.getStartNode().getId() != nodeID && rel.getEndNode().getId() == nodeID) {
+                        builder.append(dumpRev(rel));
+                    } else {
+                        builder.append(dumpRel(rel));
+                    }
+                }
+            }
+            link = ',';
+        }
+        builder.append(']');
+        return builder.toString();
+    }
+
+    private static String dumpRel(Relationship data) {
+        LinkedHashMap<String, Object> attributes = new LinkedHashMap<>(3);
         attributes.put("id", data.getId());
-        attributes.put("start", data.getStartNode());
-        attributes.put("end", data.getEndNode());
         attributes.put("type", data.getType().name());
-        attributes.put("properties", propertyMap(data));
+        Map<String, Object> properties = propertyMap(data);
+        if (properties.size() > 0) {
+            attributes.put("properties", properties);
+        }
         return "!Rel " + dump(attributes);
+    }
+
+    private static String dumpRev(Relationship data) {
+        LinkedHashMap<String, Object> attributes = new LinkedHashMap<>(3);
+        attributes.put("id", data.getId());
+        attributes.put("type", data.getType().name());
+        Map<String, Object> properties = propertyMap(data);
+        if (properties.size() > 0) {
+            attributes.put("properties", properties);
+        }
+        return "!Rev " + dump(attributes);
     }
 
 }

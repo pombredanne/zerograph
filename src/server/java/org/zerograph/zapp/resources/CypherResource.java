@@ -29,7 +29,7 @@ public class CypherResource extends AbstractResource implements ResourceInterfac
     }
 
     /**
-     * EXECUTE cypher {query} [{params}]
+     * EXECUTE Cypher {"query": …, "params": …}
      *
      */
     @Override

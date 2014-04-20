@@ -25,8 +25,8 @@ public class NodeSetResource extends AbstractResource implements ResourceInterfa
     }
 
     /**
-     * GET NodeSet {"label": ?}
-     * GET NodeSet {"label": ?, "key": ?, "value": ?}
+     * GET NodeSet {"label": …}
+     * GET NodeSet {"label": …, "key": …, "value": …}
      *
      * Fetch all nodes that have the specified label and, optionally, property.
      *
@@ -44,7 +44,7 @@ public class NodeSetResource extends AbstractResource implements ResourceInterfa
     }
 
     /**
-     * PATCH NodeSet {"label": ?, "key": ?, "value": ?}
+     * PATCH NodeSet {"label": …, "key": …, "value": …}
      *
      * Ensure at least one node exists with the specified criteria.
      *
@@ -62,7 +62,8 @@ public class NodeSetResource extends AbstractResource implements ResourceInterfa
     }
 
     /**
-     * DELETE NodeSet {"label": ?, "key": ?, "value": ?}
+     * DELETE NodeSet {"label": …}
+     * DELETE NodeSet {"label": …, "key": …, "value": …}
      *
      */
     @Override
