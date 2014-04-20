@@ -2,7 +2,7 @@ from unittest import main, TestCase
 
 import yaml
 
-from zerograph import Node, Pointer
+from zerograph import Batch, Node, Pointer
 
 from ..helpers import ZerographTestCase
 
@@ -153,6 +153,35 @@ class NodeExistsTestCase(ZerographTestCase):
         result = batch.submit()
         node = next(result)
         assert not node.exists
+
+
+class NodePullTestCase(ZerographTestCase):
+
+    def test_remote_node_changes_can_be_pulled(self):
+        batch = self.graph.batch()
+        batch.create_node({"Person"}, {"name": "Alice"})
+        result = batch.submit()
+        remote = next(result)
+        local = Node()
+        local.bind(self.graph, remote.bound_id)
+        local.pull()
+        assert local.labels == remote.labels
+        assert local.properties == remote.properties
+
+
+class NodePushTestCase(ZerographTestCase):
+
+    def test_local_node_changes_can_be_pushed(self):
+        batch = self.graph.batch()
+        batch.create_node()
+        result = batch.submit()
+        remote = next(result)
+        local = Node("Person", name="Alice")
+        local.bind(self.graph, remote.bound_id)
+        local.push()
+        remote = Batch.single(self.graph, Batch.get_node, local.bound_id)
+        assert remote.labels == local.labels
+        assert remote.properties == local.properties
 
 
 if __name__ == "__main__":

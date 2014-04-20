@@ -235,10 +235,10 @@ class Batch(object):
         return self.append(GET, "Node", id=id)
 
     def set_node(self, id, labels, properties):
-        return self.append(SET, "Node", id=id, labels=labels, properties=properties)
+        return self.append(SET, "Node", id=id, labels=list(labels or []), properties=dict(properties or {}))
 
     def patch_node(self, id, labels, properties):
-        return self.append(PATCH, "Node", id=id, labels=labels, properties=properties)
+        return self.append(PATCH, "Node", id=id, labels=list(labels or []), properties=dict(properties or {}))
 
     def create_node(self, labels=None, properties=None):
         return self.append(CREATE, "Node", labels=list(labels or []), properties=dict(properties or {}))
@@ -269,10 +269,10 @@ class Batch(object):
         return self.append(GET, "Rel", id=id)
 
     def set_rel(self, id, properties):
-        return self.append(SET, "Rel", id=id, properties=properties)
+        return self.append(SET, "Rel", id=id, properties=dict(properties or {}))
 
     def patch_rel(self, id, properties):
-        return self.append(PATCH, "Rel", id=id, properties=properties)
+        return self.append(PATCH, "Rel", id=id, properties=dict(properties or {}))
 
     def create_rel(self, start, end, type, properties=None):
         return self.append(CREATE, "Rel", start=start, end=end, type=type, properties=dict(properties or {}))
@@ -671,7 +671,7 @@ class Node(Bindable, PropertyContainer, yaml.YAMLObject):
 
     def push(self):
         Bindable.push(self)
-        remote = Batch.single(self.bound_graph, Batch.set_node, self.bound_id, self.__labels, self.properties)
+        Batch.single(self.bound_graph, Batch.set_node, self.bound_id, self.__labels, self.properties)
 
     def to_cypher(self):
         s = []
