@@ -2,7 +2,9 @@ from unittest import main, TestCase
 
 import yaml
 
-from zerograph import Node
+from zerograph import Node, Pointer
+
+from ..helpers import ZerographTestCase
 
 
 class NodeFromYamlTestCase(TestCase):
@@ -95,6 +97,62 @@ class NodeRepresentationTestCase(TestCase):
         node = Node("Human", "Female", name="Alice", age=33)
         string = repr(node)
         assert string == '(:Female:Human {"age":33,"name":"Alice"})'
+
+
+class NodeEqualityTestCase(TestCase):
+
+    def test_equal_nodes(self):
+        node_1 = Node("Person", name="Alice")
+        node_2 = Node("Person", name="Alice")
+        assert node_1 == node_2
+
+    def test_unequal_nodes(self):
+        node_1 = Node("Person", name="Alice")
+        node_2 = Node("Person", name="Bob")
+        assert node_1 != node_2
+
+
+class NodeLabelsTestCase(TestCase):
+
+    def test_single_node_label(self):
+        node = Node("Person", name="Alice")
+        assert node.labels == {"Person"}
+
+    def test_multiple_node_labels(self):
+        node = Node("Human", "Female", name="Alice")
+        assert node.labels == {"Human", "Female"}
+
+    def test_duplicate_node_labels(self):
+        node = Node("Human", "Human", name="Alice")
+        assert node.labels == {"Human"}
+
+    def test_adding_node_label(self):
+        node = Node("Person", name="Alice")
+        node.labels.add("Employee")
+        assert node.labels == {"Person", "Employee"}
+
+    def test_remove_node_label(self):
+        node = Node("Human", "Female", name="Alice")
+        node.labels.remove("Female")
+        assert node.labels == {"Human"}
+
+
+class NodeExistsTestCase(ZerographTestCase):
+
+    def test_node_exists(self):
+        batch = self.graph.batch()
+        batch.create_node()
+        result = batch.submit()
+        node = next(result)
+        assert node.exists
+
+    def test_node_does_not_exist(self):
+        batch = self.graph.batch()
+        batch.create_node()
+        batch.delete_node(Pointer(0))
+        result = batch.submit()
+        node = next(result)
+        assert not node.exists
 
 
 if __name__ == "__main__":

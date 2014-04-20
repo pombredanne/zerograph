@@ -656,7 +656,7 @@ class Node(Bindable, PropertyContainer, yaml.YAMLObject):
     def exists(self):
         Bindable.pull(self)
         try:
-            self.bound_graph.get_node(self.bound_id)
+            Batch.single(self.bound_graph, Batch.get_node, self.bound_id)
         except Error:  # TODO: NotExistsError
             return False
         else:
@@ -664,15 +664,14 @@ class Node(Bindable, PropertyContainer, yaml.YAMLObject):
 
     def pull(self):
         Bindable.pull(self)
-        remote = self.bound_graph.get_node(self.bound_id)
+        remote = Batch.single(self.bound_graph, Batch.get_node, self.bound_id)
         self.__labels = set(remote.labels)
         self.properties.clear()
         self.properties.update(remote.properties)
 
     def push(self):
         Bindable.push(self)
-        self.bound_graph.set_node(self.bound_id,
-                                  list(self.__labels), self.properties)
+        remote = Batch.single(self.bound_graph, Batch.set_node, self.bound_id, self.__labels, self.properties)
 
     def to_cypher(self):
         s = []

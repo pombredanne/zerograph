@@ -34,7 +34,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
      */
     @Override
     public PropertyContainer get(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
-        long id = request.getArgumentAsLong("id");
+        long id = resolveNode(database, request.getArgument("id")).getId();
         try {
             Node node = database.getNode(id);
             responder.sendBody(node);
@@ -53,7 +53,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
      */
     @Override
     public PropertyContainer set(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
-        long id = request.getArgumentAsLong("id");
+        long id = resolveNode(database, request.getArgument("id")).getId();
         List labelNames = request.getArgumentAsList("labels");
         Map<String, Object> properties = request.getArgumentAsMap("properties");
         try {
@@ -77,7 +77,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
      */
     @Override
     public PropertyContainer patch(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
-        long id = request.getArgumentAsLong("id");
+        long id = resolveNode(database, request.getArgument("id")).getId();
         List labelNames = request.getArgumentAsList("labels", new ArrayList());
         Map<String, Object> properties = request.getArgumentAsMap("properties", new HashMap<String, Object>());
         try {
@@ -110,7 +110,7 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
      */
     @Override
     public PropertyContainer delete(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
-        long id = request.getArgumentAsLong("id");
+        long id = resolveNode(database, request.getArgument("id")).getId();
         try {
             database.deleteNode(id);
             return null;
