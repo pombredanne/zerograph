@@ -88,7 +88,7 @@ class Response(object):
                 more = frame.more
         if full:
             for document in yaml.load_all(full, Loader=GraphLoader):
-                yield Response(document)
+                yield Response(document or {})
         else:
             yield Response({})
 
@@ -628,18 +628,7 @@ class Node(Bindable, PropertyContainer, yaml.YAMLObject):
         self.__labels = set(labels or [])
 
     def __repr__(self):
-        s = []
-        if self.bound:
-            s.append(str(self.bound_id))
-        for label in sorted(self.__labels):
-            s.append(":")
-            s.append(label)
-        if self.properties:
-            if s:
-                s.append(" ")
-            s.append(self.properties.to_json())
-        s = ["("] + s + [")"]
-        return "".join(s)
+        return self.to_cypher()
 
     def __eq__(self, other):
         return (PropertyContainer.__eq__(self, other) and
@@ -758,6 +747,54 @@ class Rel(Bindable, PropertyContainer, yaml.YAMLObject):
         self.__reverse = False
 
     def __repr__(self):
+        return self.to_cypher()
+
+    @property
+    def type(self):
+        return self.__type
+
+    @property
+    def reverse(self):
+        return self.__reverse
+
+    @property
+    def exists(self):
+        Bindable.pull(self)
+        try:
+            Batch.single(self.bound_graph, Batch.get_rel, self.bound_id)
+        except Error:  # TODO: NotExistsError
+            return False
+        else:
+            return True
+
+    def pull(self):
+        Bindable.pull(self)
+        remote_path = Batch.single(self.bound_graph, Batch.get_rel, self.bound_id)
+        remote_rel = remote_path.rels[0]
+        self.__type = remote_rel.type
+        self.properties.clear()
+        self.properties.update(remote_rel.properties)
+
+    def push(self):
+        Bindable.push(self)
+        Batch.single(self.bound_graph, Batch.set_rel, self.bound_id, self.properties)
+
+    def to_cypher(self):
+        s = []
+        if self.bound:
+            s.append(str(self.bound_id))
+        s.append(":")
+        s.append(self.__type)
+        if self.properties:
+            s.append(" ")
+            s.append(self.properties.to_cypher())
+        if self.__reverse:
+            s = ["<-["] + s + ["]-"]
+        else:
+            s = ["-["] + s + ["]->"]
+        return "".join(s)
+
+    def to_geoff(self):
         s = []
         if self.bound:
             s.append(str(self.bound_id))
@@ -772,33 +809,18 @@ class Rel(Bindable, PropertyContainer, yaml.YAMLObject):
             s = ["-["] + s + ["]->"]
         return "".join(s)
 
-    @property
-    def type(self):
-        return self.__type
-
-    @property
-    def reverse(self):
-        return self.__reverse
-
-    @property
-    def exists(self):
-        Bindable.pull(self)
-        try:
-            self.bound_graph.get_rel(self.bound_id)
-        except Error:  # TODO: NotExistsError
-            return False
-        else:
-            return True
-
-    def pull(self):
-        Bindable.pull(self)
-        remote = self.bound_graph.get_rel(self.bound_id)
-        self.properties.clear()
-        self.properties.update(remote.properties)
-
-    def push(self):
-        Bindable.push(self)
-        self.bound_graph.set_rel(self.bound_id, self.properties)
+    def to_yaml(self):
+        s = []
+        if self.bound:
+            s.append('"id":')
+            s.append(str(self.bound_id))
+            s.append(",")
+        s.append('"type":')
+        s.append(json.dumps(list(self.__type)))
+        s.append(',"properties":')
+        s.append(self.properties.to_json())
+        s = [self.yaml_tag, " ", "{"] + s + ["}"]
+        return "".join(s)
 
 
 class Rev(Rel):
@@ -837,11 +859,7 @@ class Path(yaml.YAMLObject):
                              "graphs")
 
     def __repr__(self):
-        s = [repr(self.__nodes[0])]
-        for i, rel in enumerate(self.__rels):
-            s.append(repr(rel))
-            s.append(repr(self.__nodes[i + 1]))
-        return "".join(s)
+        return self.to_cypher()
 
     def __getitem__(self, index):
         try:
@@ -885,4 +903,22 @@ class Path(yaml.YAMLObject):
         return self.__rels
 
     # TODO - push and pull any that are bound
+
+    def to_cypher(self):
+        s = [self.__nodes[0].to_cypher()]
+        for i, rel in enumerate(self.__rels):
+            s.append(rel.to_cypher())
+            s.append(self.__nodes[i + 1].to_cypher())
+        return "".join(s)
+
+    def to_geoff(self):
+        s = [self.__nodes[0].to_geoff()]
+        for i, rel in enumerate(self.__rels):
+            s.append(rel.to_geoff())
+            s.append(self.__nodes[i + 1].to_geoff())
+        return "".join(s)
+
+    def to_yaml(self):
+        # TODO
+        pass
 

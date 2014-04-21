@@ -83,20 +83,20 @@ class NodeRepresentationTestCase(TestCase):
         string = repr(node)
         assert string == '()'
 
-    def test_can_construct_node_with_labels(self):
+    def test_can_represent_node_with_labels(self):
         node = Node("Human", "Female")
         string = repr(node)
         assert string == '(:Female:Human)'
 
-    def test_can_construct_node_with_properties(self):
+    def test_can_represent_node_with_properties(self):
         node = Node(name="Alice", age=33)
         string = repr(node)
-        assert string == '({"age":33,"name":"Alice"})'
+        assert string == '({age:33,name:"Alice"})'
 
-    def test_can_construct_node_with_labels_and_properties(self):
+    def test_can_represent_node_with_labels_and_properties(self):
         node = Node("Human", "Female", name="Alice", age=33)
         string = repr(node)
-        assert string == '(:Female:Human {"age":33,"name":"Alice"})'
+        assert string == '(:Female:Human {age:33,name:"Alice"})'
 
 
 class NodeEqualityTestCase(TestCase):
