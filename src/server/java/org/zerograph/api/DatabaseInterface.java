@@ -5,7 +5,6 @@ import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
-import org.zerograph.IterableResult;
 
 import java.util.List;
 import java.util.Map;

@@ -1,10 +1,8 @@
-package org.zerograph.zapp.api;
+package org.zerograph.api;
 
 import org.neo4j.graphdb.PropertyContainer;
-import org.zerograph.api.DatabaseInterface;
-import org.zerograph.zapp.api.RequestInterface;
-import org.zerograph.zapp.except.ClientError;
-import org.zerograph.zapp.except.ServerError;
+import org.zerograph.except.ClientError;
+import org.zerograph.except.ServerError;
 
 public interface ResourceInterface {
 

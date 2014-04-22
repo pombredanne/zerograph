@@ -1,15 +1,15 @@
-package org.zerograph.zapp.resources;
+package org.zerograph.resources;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.zerograph.api.DatabaseInterface;
-import org.zerograph.zapp.api.ResourceInterface;
-import org.zerograph.zapp.api.RequestInterface;
-import org.zerograph.zapp.api.ResponderInterface;
-import org.zerograph.zapp.except.ClientError;
-import org.zerograph.zapp.except.ServerError;
+import org.zerograph.api.ResourceInterface;
+import org.zerograph.api.RequestInterface;
+import org.zerograph.api.ResponderInterface;
+import org.zerograph.except.ClientError;
+import org.zerograph.except.ServerError;
 
 import java.util.Map;
 

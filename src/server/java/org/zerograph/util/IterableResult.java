@@ -1,5 +1,6 @@
-package org.zerograph;
+package org.zerograph.util;
 
+import org.zerograph.Statistics;
 import org.zerograph.api.IterableResultInterface;
 
 import java.util.Iterator;

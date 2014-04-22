@@ -1,12 +1,12 @@
-package org.zerograph.zapp;
+package org.zerograph;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
 import org.codehaus.jackson.type.TypeReference;
 import org.neo4j.graphdb.PropertyContainer;
-import org.zerograph.zapp.api.RequestInterface;
-import org.zerograph.zapp.except.ClientError;
-import org.zerograph.zapp.except.MalformedRequest;
+import org.zerograph.api.RequestInterface;
+import org.zerograph.except.ClientError;
+import org.zerograph.except.MalformedRequest;
 
 import java.io.IOException;
 import java.util.HashMap;

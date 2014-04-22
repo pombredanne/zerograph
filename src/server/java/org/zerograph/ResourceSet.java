@@ -1,6 +1,6 @@
 package org.zerograph;
 
-import org.zerograph.zapp.api.ResourceInterface;
+import org.zerograph.api.ResourceInterface;
 
 import java.util.HashMap;
 

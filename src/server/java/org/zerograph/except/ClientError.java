@@ -1,4 +1,4 @@
-package org.zerograph.zapp.except;
+package org.zerograph.except;
 
 public class ClientError extends Exception {
 

@@ -4,7 +4,7 @@ import org.neo4j.graphdb.Relationship;
 
 import java.util.Map;
 
-public interface RelationshipTemplateInterface {
+public interface RelTemplateInterface {
 
     public String getType();
 
@@ -12,6 +12,6 @@ public interface RelationshipTemplateInterface {
 
     public boolean equals(Relationship rel);
 
-    public boolean equals(RelationshipTemplateInterface rel);
+    public boolean equals(RelTemplateInterface rel);
 
 }

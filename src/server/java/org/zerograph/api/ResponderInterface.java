@@ -1,8 +1,8 @@
-package org.zerograph.zapp.api;
+package org.zerograph.api;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.zerograph.zapp.except.MalformedResponse;
+import org.zerograph.except.MalformedResponse;
 
 import java.util.Map;
 

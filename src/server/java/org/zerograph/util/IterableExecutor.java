@@ -1,7 +1,8 @@
-package org.zerograph;
+package org.zerograph.util;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.zerograph.Statistics;
 
 import java.util.Iterator;
 import java.util.Map;

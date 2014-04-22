@@ -1,4 +1,4 @@
-package org.zerograph.yaml;
+package org.zerograph.util;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;

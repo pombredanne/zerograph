@@ -2,7 +2,7 @@ package org.zerograph.test.yaml;
 
 import org.junit.Test;
 import org.zerograph.test.helpers.FakeNode;
-import org.zerograph.yaml.YAML;
+import org.zerograph.util.YAML;
 
 import java.io.IOException;
 import java.util.ArrayList;

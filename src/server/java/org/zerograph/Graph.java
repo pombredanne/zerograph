@@ -4,9 +4,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.zerograph.api.GraphInterface;
 import org.zerograph.except.GraphAlreadyStartedException;
 import org.zerograph.except.GraphNotStartedException;
-import org.zerograph.zapp.api.ResponderInterface;
-import org.zerograph.zapp.resources.*;
-import org.zerograph.zapp.resources.RelResource;
+import org.zerograph.api.ResponderInterface;
+import org.zerograph.resources.*;
+import org.zerograph.resources.RelResource;
 
 import java.util.ArrayList;
 import java.util.HashMap;

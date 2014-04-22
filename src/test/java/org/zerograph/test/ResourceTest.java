@@ -11,11 +11,11 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.zerograph.api.NodeTemplateInterface;
-import org.zerograph.api.RelationshipTemplateInterface;
+import org.zerograph.api.RelTemplateInterface;
 import org.zerograph.Database;
 import org.zerograph.test.helpers.ResponseCollector;
 import org.zerograph.test.helpers.TestNodeTemplate;
-import org.zerograph.test.helpers.TestRelationshipTemplate;
+import org.zerograph.test.helpers.TestRelTemplate;
 
 import java.util.Collection;
 import java.util.Map;
@@ -27,9 +27,9 @@ public abstract class ResourceTest {
     final public static NodeTemplateInterface EMPLOYEE = TestNodeTemplate.getEmployee();
     final public static NodeTemplateInterface ALICE_THE_EMPLOYEE = TestNodeTemplate.getAliceTheEmployee();
 
-    final public static RelationshipTemplateInterface KNOWS_SINCE_1999 = TestRelationshipTemplate.getKnowsSince1999();
-    final public static RelationshipTemplateInterface KNOWS_FROM_WORK = TestRelationshipTemplate.getKnowsFromWork();
-    final public static RelationshipTemplateInterface KNOWS_SINCE_1999_FROM_WORK = TestRelationshipTemplate.getKnowsSince1999FromWork();
+    final public static RelTemplateInterface KNOWS_SINCE_1999 = TestRelTemplate.getKnowsSince1999();
+    final public static RelTemplateInterface KNOWS_FROM_WORK = TestRelTemplate.getKnowsFromWork();
+    final public static RelTemplateInterface KNOWS_SINCE_1999_FROM_WORK = TestRelTemplate.getKnowsSince1999FromWork();
 
     protected GraphDatabaseService database;
     protected ResponseCollector responseCollector;
@@ -62,7 +62,7 @@ public abstract class ResourceTest {
         return created;
     }
 
-    protected Relationship createRel(NodeTemplateInterface start, RelationshipTemplateInterface rel, NodeTemplateInterface end) {
+    protected Relationship createRel(NodeTemplateInterface start, RelTemplateInterface rel, NodeTemplateInterface end) {
         Node startNode = createNode(start);
         Node endNode = createNode(end);
         Relationship created = startNode.createRelationshipTo(endNode, DynamicRelationshipType.withName(rel.getType()));

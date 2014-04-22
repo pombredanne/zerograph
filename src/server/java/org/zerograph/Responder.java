@@ -1,10 +1,10 @@
-package org.zerograph.zapp;
+package org.zerograph;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.zerograph.yaml.YAML;
-import org.zerograph.zapp.api.ResponderInterface;
-import org.zerograph.zapp.except.MalformedResponse;
+import org.zerograph.util.YAML;
+import org.zerograph.api.ResponderInterface;
+import org.zerograph.except.MalformedResponse;
 import org.zeromq.ZMQ;
 
 import java.util.Map;

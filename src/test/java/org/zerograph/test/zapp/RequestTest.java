@@ -1,9 +1,9 @@
 package org.zerograph.test.zapp;
 
 import org.junit.Test;
-import org.zerograph.zapp.except.ClientError;
-import org.zerograph.zapp.except.MalformedRequest;
-import org.zerograph.zapp.Request;
+import org.zerograph.except.ClientError;
+import org.zerograph.except.MalformedRequest;
+import org.zerograph.Request;
 
 import java.util.HashMap;
 

@@ -17,10 +17,11 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.tooling.GlobalGraphOperations;
 import org.zerograph.api.DatabaseInterface;
+import org.zerograph.util.IterableExecutor;
+import org.zerograph.util.IterableResult;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 

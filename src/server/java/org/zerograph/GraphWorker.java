@@ -3,9 +3,8 @@ package org.zerograph;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
-import org.zerograph.zapp.Request;
-import org.zerograph.zapp.except.ClientError;
-import org.zerograph.zapp.except.ServerError;
+import org.zerograph.except.ClientError;
+import org.zerograph.except.ServerError;
 import org.zeromq.ZMQException;
 
 import java.util.ArrayList;
