@@ -486,6 +486,9 @@ class Bindable(object):
     def push(self):
         self.__assert_bound()
 
+    def delete(self):
+        self.__assert_bound()
+
 
 class PropertySet(dict):
     """ A dict subclass that equates None with a non-existent key.
@@ -662,6 +665,10 @@ class Node(Bindable, PropertyContainer, yaml.YAMLObject):
         Bindable.push(self)
         Batch.single(self.bound_graph, Batch.set_node, self.bound_id, self.__labels, self.properties)
 
+    def delete(self):
+        Bindable.delete(self)
+        Batch.single(self.bound_graph, Batch.delete_node, self.bound_id)
+
     def to_cypher(self):
         s = []
         if self.bound:
@@ -778,6 +785,10 @@ class Rel(Bindable, PropertyContainer, yaml.YAMLObject):
     def push(self):
         Bindable.push(self)
         Batch.single(self.bound_graph, Batch.set_rel, self.bound_id, self.properties)
+
+    def delete(self):
+        Bindable.delete(self)
+        Batch.single(self.bound_graph, Batch.delete_rel, self.bound_id)
 
     def to_cypher(self):
         s = []
@@ -902,7 +913,24 @@ class Path(yaml.YAMLObject):
     def rels(self):
         return self.__rels
 
-    # TODO - push and pull any that are bound
+    def pull(self):
+        # TODO - get_path
+        pass
+
+    def push(self):
+        # TODO - set_path
+        pass
+    
+    def delete(self):
+        # TODO - delete_path
+        batch = Batch(self.bound_graph)
+        for rel in self.__rels:
+            if rel.bound:
+                batch.delete_rel(rel.bound_id)
+        for node in self.__nodes:
+            if node.bound:
+                batch.delete_node(node.bound_id)
+        batch.submit()
 
     def to_cypher(self):
         s = [self.__nodes[0].to_cypher()]
