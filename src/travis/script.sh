@@ -25,7 +25,9 @@ function test_server {
     cd $HOME
     ./gradlew assemble
     ./gradlew check
+    STATUS=$?
     echo ""
+    return $STATUS
 }
 
 function test_python_client {
@@ -35,9 +37,22 @@ function test_python_client {
     cd $PYTHON
     open_test_database 47471
     py.test test
+    STATUS=$?
     drop_test_database 47471
     echo ""
+    return $STATUS
 }
 
 test_server
+STATUS=$?
+if [ $STATUS != 0 ]
+then
+    exit $STATUS
+fi
+
 test_python_client
+STATUS=$?
+if [ $STATUS != 0 ]
+then
+    exit $STATUS
+fi
