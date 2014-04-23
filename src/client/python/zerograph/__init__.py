@@ -77,7 +77,7 @@ class Response(object):
         class GraphLoader(yaml.Loader):
             __graph__ = graph
 
-        full = ""
+        full = []
         more = True
         while more:
             try:
@@ -86,45 +86,52 @@ class Response(object):
                 raise TimeoutError("Timeout occurred while trying to receive "
                                    "data")
             else:
-                full += frame.bytes.decode("utf-8")
+                full.append(frame.bytes.decode("utf-8"))
                 more = frame.more
         if full:
-            for document in yaml.load_all(full, Loader=GraphLoader):
+            for document in yaml.load_all("".join(full), Loader=GraphLoader):
                 yield Response(document or {})
         else:
             yield Response({})
 
     def __init__(self, document):
-        self.__head = document.get("head")
-        self.__body = document.get("body")
-        self.__foot = document.get("foot")
+        self.__document = document
+        self.__head = None
+        self.__body = None
+        self.__foot = None
         if "error" in document:
             raise Error(document["error"])
 
     def __repr__(self):
         s = ["Response"]
-        if self.__head:
-            s.append("head={0}".format(repr(self.__head)))
-        if self.__body:
-            s.append("body={0}".format(repr(self.__body)))
-        if self.__foot:
-            s.append("foot={0}".format(repr(self.__foot)))
+        if self.head:
+            s.append("head={0}".format(repr(self.head)))
+        if self.body:
+            s.append("body={0}".format(repr(self.body)))
+        if self.foot:
+            s.append("foot={0}".format(repr(self.foot)))
         return "<" + " ".join(s) + ">"
 
     @property
     def head(self):
+        if self.__head is None:
+            self.__head = self.__document.get("head")
         return self.__head
 
     @property
     def body(self):
+        if self.__body is None:
+            self.__body = self.__document.get("body")
         return self.__body
 
     @property
     def foot(self):
+        if self.__foot is None:
+            self.__foot = self.__document.get("foot")
         return self.__foot
 
     def to_table(self):
-        return Table(self.__head["columns"], self.__body)
+        return Table(self.head["columns"], self.body)
 
 
 class Table(object):
