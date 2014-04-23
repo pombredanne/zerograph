@@ -34,7 +34,7 @@ function test_python_client {
     echo "#############################"
     cd $PYTHON
     open_test_database 47471
-    nosetests $PYTHON $TEST/python
+    py.test test
     drop_test_database 47471
     echo ""
 }

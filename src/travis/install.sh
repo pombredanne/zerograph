@@ -12,5 +12,3 @@ sudo apt-get install -y build-essential
 
 cd $PYTHON
 sudo pip install -r $PYTHON/requirements.txt
-
-sudo pip install nose
