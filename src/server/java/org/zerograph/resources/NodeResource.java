@@ -96,8 +96,8 @@ public class NodeResource extends AbstractResource implements ResourceInterface 
      */
     @Override
     public PropertyContainer create(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
-        List labelNames = request.getArgumentAsList("labels");
-        Map<String, Object> properties = request.getArgumentAsMap("properties");
+        List labelNames = request.getArgumentAsList("labels", new ArrayList());
+        Map<String, Object> properties = request.getArgumentAsMap("properties", new HashMap<String, Object>());
         Node node = database.createNode(labelNames, properties);
         responder.sendBody(node);
         return node;

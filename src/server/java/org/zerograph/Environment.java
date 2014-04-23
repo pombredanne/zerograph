@@ -2,6 +2,7 @@ package org.zerograph;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.zerograph.util.Log;
 import org.zerograph.util.Toolbox;
 
 import java.io.File;
@@ -51,7 +52,7 @@ public class Environment {
         File directory = new File(path);
         if (!directory.isDirectory()) {
             if (!directory.mkdirs()) {
-                System.err.println("Cannot create directory " + directory);
+                Log.write("Cannot create directory " + directory);
                 System.exit(1);  // TODO: throw exception instead
             }
         }
@@ -86,9 +87,13 @@ public class Environment {
 
     public synchronized void dropDatabase(String host, int port) {
         if (databases.containsKey(port)) {
+            Log.write("Shutting down database " + host + ":" + port);
+            databases.get(port).shutdown();
             GraphDirectory directory = new GraphDirectory(host, port);
+            Log.write("Deleting database directory " + host + ":" + port);
             Toolbox.delete(directory.getFile());
             databases.remove(port);
+            Log.write("Database deleted");
         } else {
             throw new IllegalArgumentException("No such database");
         }

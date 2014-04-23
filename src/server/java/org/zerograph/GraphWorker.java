@@ -5,6 +5,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.zerograph.except.ClientError;
 import org.zerograph.except.ServerError;
+import org.zerograph.util.Log;
 import org.zeromq.ZMQException;
 
 import java.util.ArrayList;
@@ -33,7 +34,7 @@ public class GraphWorker extends Worker<Graph> {
                     String frame = socket.recvStr();
                     for (String line : frame.split("\\r|\\n|\\r\\n")) {
                         if (line.length() > 0) {
-                            System.out.println("<<< " + line);
+                            Log.write(line, Log.RECEIVE);
                             requests.add(Request.parse(line));
                         }
                     }
@@ -41,7 +42,7 @@ public class GraphWorker extends Worker<Graph> {
                 }
                 // action requests
                 ArrayList<PropertyContainer> outputValues = new ArrayList<>(requests.size());
-                System.out.println("--- Beginning transaction for graph " + service.getPort() + " in worker " + this.getUUID().toString() + " ---");
+                Log.write("Beginning transaction");
                 try (Transaction tx = database.beginTx()) {
                     Database context = new Database(database, tx);  // TODO: construct higher up and just set tx here
                     for (Request request : requests) {
@@ -50,7 +51,7 @@ public class GraphWorker extends Worker<Graph> {
                     }
                     tx.success();
                 }
-                System.out.println("--- Successfully completed transaction in worker " + this.getUUID().toString() + " ---");
+                Log.write("Successfully completed transaction");
             } catch (ZMQException ex) {
                 int errorCode = ex.getErrorCode();
                 if (errorCode == 156384765) {
@@ -64,7 +65,6 @@ public class GraphWorker extends Worker<Graph> {
                 responder.sendError(ex);
             }
             responder.endResponseBatch();
-            System.out.println();
         }
         responder.close();
     }

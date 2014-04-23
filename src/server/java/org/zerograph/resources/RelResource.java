@@ -38,7 +38,7 @@ public class RelResource extends AbstractResource implements ResourceInterface {
             responder.sendBody(rel);
             return rel;
         } catch (NotFoundException ex) {
-            throw new ClientError("Relationship " + id + " not found");
+            throw new ClientError("Relationship " + id + " not found!");
         }
     }
 

@@ -1,5 +1,7 @@
 package org.zerograph;
 
+import org.zerograph.util.Log;
+
 import java.io.File;
 import java.util.HashSet;
 
@@ -10,12 +12,13 @@ public class Zerograph {
     final private HashSet<Graph> graphs;
 
     public Zerograph() {
-        System.out.println("Starting Zerograph");
+        Thread.currentThread().setName("-----/-------");
+        Log.write("Starting Zerograph");
         this.graphs = new HashSet<>();
     }
 
     public synchronized void detectGraphs() {
-        System.out.println("Detecting graphs");
+        Log.write("Detecting graphs");
         HashSet<Integer> ports = new HashSet<>();
         ports.add(ZEROGRAPH_PORT);
         for (File directory : GraphDirectory.getAllExisting()) {
@@ -35,6 +38,7 @@ public class Zerograph {
     public synchronized void start() {
         for (Graph graph : graphs) {
             Thread thread = new Thread(graph);
+            thread.setName(graph.getPort() + "/-------");
             thread.start();
         }
     }

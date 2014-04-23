@@ -4,7 +4,7 @@ import yaml
 
 from zerograph import Batch, Node, Pointer
 
-from ..helpers import ZerographTestCase
+from .helpers import ZerographTestCase
 
 
 class NodeFromYamlTestCase(TestCase):

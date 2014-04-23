@@ -53,16 +53,16 @@ public abstract class AbstractResource implements ResourceInterface {
             try {
                 return context.getNode((Integer) value);
             } catch (NotFoundException ex) {
-                throw new ClientError("Relationship " + value + " not found");
+                throw new ClientError("Node " + value + " not found");
             }
         } else if (value instanceof Long) {
             try {
                 return context.getNode((Long) value);
             } catch (NotFoundException ex) {
-                throw new ClientError("Relationship " + value + " not found");
+                throw new ClientError("Node " + value + " not found");
             }
         } else {
-            throw new ClientError("Cannot resolve relationship " + value);
+            throw new ClientError("Cannot resolve node " + value);
         }
     }
 

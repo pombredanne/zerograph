@@ -12,6 +12,7 @@ import org.zerograph.api.RequestInterface;
 import org.zerograph.api.ResponderInterface;
 import org.zerograph.except.ClientError;
 import org.zerograph.except.ServerError;
+import org.zerograph.util.Log;
 
 public class GraphResource extends AbstractResource implements ResourceInterface {
 
@@ -68,7 +69,8 @@ public class GraphResource extends AbstractResource implements ResourceInterface
         String host = request.getArgumentAsString("host");
         int port = request.getArgumentAsInteger("port");
         try {
-            Graph.close(host, port, true);
+            Log.write("About to drop database");
+            Graph.drop(host, port);
         } catch (GraphNotStartedException ex) {
             throw new ClientError("No graph on port " + port);
         }

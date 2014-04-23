@@ -167,7 +167,7 @@ class Shell(object):
             print()
 
 
-if __name__ == "__main__":
+def main():
     shell = Shell(Graph.open(HOST))
     shell.welcome()
     shell.repl()

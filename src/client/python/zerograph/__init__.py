@@ -63,7 +63,9 @@ class Request(object):
         return self.__arguments.get(name)
 
     def send(self, socket, more=False):
-        line = " ".join((self.__method, self.__resource, json.dumps(self.__arguments, separators=",:", ensure_ascii=True, cls=ZerographEncoder)))
+        line = " ".join((self.__method, self.__resource,
+                         json.dumps(self.__arguments, separators=",:",
+                                    ensure_ascii=True, cls=ZerographEncoder)))
         socket.send(line.encode("utf-8"), zmq.SNDMORE if more else 0)
 
 
@@ -136,10 +138,14 @@ class Table(object):
         for row in self.__rows:
             for i, value in enumerate(row):
                 column_widths[i] = max(column_widths[i], len(str(value)))
-        out = [" " + " | ".join(column.ljust(column_widths[i])
-                                for i, column in enumerate(self.__columns)) + " "]
-        out += ["-" + "-+-".join("-" * column_widths[i]
-                                 for i, column in enumerate(self.__columns)) + "-"]
+        out = [" " + " | ".join(
+            column.ljust(column_widths[i])
+            for i, column in enumerate(self.__columns)
+        ) + " "]
+        out += ["-" + "-+-".join(
+            "-" * column_widths[i]
+            for i, column in enumerate(self.__columns)
+        ) + "-"]
         for row in self.__rows:
             out.append(" " + " | ".join(str(value).ljust(column_widths[i])
                                         for i, value in enumerate(row)) + " ")
@@ -211,11 +217,13 @@ class Batch(object):
         if param_set_count == 0:
             return self.append(EXECUTE, "Cypher", query=query)
         elif param_set_count == 1:
-            return self.append(EXECUTE, "Cypher", query=query, params=dict(param_sets[0]))
+            return self.append(EXECUTE, "Cypher", query=query,
+                               params=dict(param_sets[0]))
         else:
             pointers = []
             for param_set in param_sets:
-                pointers.append(self.append(EXECUTE, "Cypher", query=query, params=dict(param_set)))
+                pointers.append(self.append(EXECUTE, "Cypher", query=query,
+                                            params=dict(param_set)))
             return pointers
 
     ### Graph ###
@@ -235,13 +243,16 @@ class Batch(object):
         return self.append(GET, "Node", id=id)
 
     def set_node(self, id, labels, properties):
-        return self.append(SET, "Node", id=id, labels=list(labels or []), properties=dict(properties or {}))
+        return self.append(SET, "Node", id=id, labels=list(labels or []),
+                           properties=dict(properties or {}))
 
     def patch_node(self, id, labels, properties):
-        return self.append(PATCH, "Node", id=id, labels=list(labels or []), properties=dict(properties or {}))
+        return self.append(PATCH, "Node", id=id, labels=list(labels or []),
+                           properties=dict(properties or {}))
 
     def create_node(self, labels=None, properties=None):
-        return self.append(CREATE, "Node", labels=list(labels or []), properties=dict(properties or {}))
+        return self.append(CREATE, "Node", labels=list(labels or []),
+                           properties=dict(properties or {}))
 
     def delete_node(self, id):
         return self.append(DELETE, "Node", id=id)
@@ -252,16 +263,19 @@ class Batch(object):
         if key is None:
             return self.append(GET, "NodeSet", label=label)
         else:
-            return self.append(GET, "NodeSet", label=label, key=key, value=value)
+            return self.append(GET, "NodeSet", label=label, key=key,
+                               value=value)
 
     def patch_node_set(self, label, key, value):
-        return self.append(PATCH, "NodeSet", label=label, key=key, value=value)
+        return self.append(PATCH, "NodeSet", label=label, key=key,
+                           value=value)
 
     def delete_node_set(self, label, key, value):
         if key is None:
             return self.append(DELETE, "NodeSet", label=label)
         else:
-            return self.append(DELETE, "NodeSet", label=label, key=key, value=value)
+            return self.append(DELETE, "NodeSet", label=label, key=key,
+                               value=value)
 
     ### Rel ###
 
@@ -269,13 +283,16 @@ class Batch(object):
         return self.append(GET, "Rel", id=id)
 
     def set_rel(self, id, properties):
-        return self.append(SET, "Rel", id=id, properties=dict(properties or {}))
+        return self.append(SET, "Rel", id=id,
+                           properties=dict(properties or {}))
 
     def patch_rel(self, id, properties):
-        return self.append(PATCH, "Rel", id=id, properties=dict(properties or {}))
+        return self.append(PATCH, "Rel", id=id,
+                           properties=dict(properties or {}))
 
     def create_rel(self, start, end, type, properties=None):
-        return self.append(CREATE, "Rel", start=start, end=end, type=type, properties=dict(properties or {}))
+        return self.append(CREATE, "Rel", start=start, end=end, type=type,
+                           properties=dict(properties or {}))
 
     def delete_rel(self, id):
         return self.append(DELETE, "Rel", id=id)
@@ -345,7 +362,8 @@ class Graph(yaml.YAMLObject):
                 graph = cls(host, port)
             else:
                 zerograph = cls.open(host)
-                graph = Batch.single(zerograph, Batch.patch_graph, zerograph.host, port)
+                graph = Batch.single(zerograph, Batch.patch_graph,
+                                     zerograph.host, port)
             cls.__services[host_port] = graph
             return graph
 
@@ -392,19 +410,20 @@ class Graph(yaml.YAMLObject):
     @property
     def order(self):
         # TODO: count all nodes
-        pass
+        return None
 
     @property
     def size(self):
         # TODO: count all rels
-        pass
+        return None
 
     def drop(self):
         if self.__port == self.ZEROGRAPH_PORT:
             raise ValueError("Cannot drop zerograph")
         else:
             zerograph = Graph.open(self.__host)
-            return Batch.single(zerograph, Batch.delete_graph, self.__host, self.__port)
+            return Batch.single(zerograph, Batch.delete_graph, self.__host,
+                                self.__port)
         # TODO: mark as dropped and disallow any further actions? (maybe)
 
     def batch(self):
@@ -415,7 +434,8 @@ class Graph(yaml.YAMLObject):
         if param_set_count == 0:
             return Batch.single(self, Batch.execute_cypher, query)
         elif param_set_count == 1:
-            return Batch.single(self, Batch.execute_cypher, query, param_sets[0])
+            return Batch.single(self, Batch.execute_cypher, query,
+                                param_sets[0])
         else:
             batch = Batch(self)
             for param_set in param_sets:
@@ -437,7 +457,8 @@ class Graph(yaml.YAMLObject):
             elif isinstance(entity, Path):
                 pass  # TODO
             else:
-                raise ValueError("Cannot create a {}".format(entity.__class__.__name__))
+                raise ValueError("Cannot create a "
+                                 "{}".format(entity.__class__.__name__))
         return batch.submit()
 
     def delete(self, *entities):
@@ -445,7 +466,7 @@ class Graph(yaml.YAMLObject):
         pass
 
     def find(self, label, key=None, value=None):
-        return Batch.single(self, Batch.match_nodes, label, key, value)
+        return Batch.single(self, Batch.get_node_set, label, key, value)
 
 
 class Bindable(object):
@@ -663,7 +684,8 @@ class Node(Bindable, PropertyContainer, yaml.YAMLObject):
 
     def push(self):
         Bindable.push(self)
-        Batch.single(self.bound_graph, Batch.set_node, self.bound_id, self.__labels, self.properties)
+        Batch.single(self.bound_graph, Batch.set_node, self.bound_id,
+                     self.__labels, self.properties)
 
     def delete(self):
         Bindable.delete(self)
@@ -696,19 +718,6 @@ class Node(Bindable, PropertyContainer, yaml.YAMLObject):
                 s.append(" ")
             s.append(self.properties.to_json())
         s = ["("] + s + [")"]
-        return "".join(s)
-
-    def to_yaml(self):
-        s = []
-        if self.bound:
-            s.append('"id":')
-            s.append(str(self.bound_id))
-            s.append(",")
-        s.append('"labels":')
-        s.append(json.dumps(list(self.__labels), separators=",:"))
-        s.append(',"properties":')
-        s.append(self.properties.to_json())
-        s = [self.yaml_tag, " ", "{"] + s + ["}"]
         return "".join(s)
 
 
@@ -776,7 +785,8 @@ class Rel(Bindable, PropertyContainer, yaml.YAMLObject):
 
     def pull(self):
         Bindable.pull(self)
-        remote_path = Batch.single(self.bound_graph, Batch.get_rel, self.bound_id)
+        remote_path = Batch.single(self.bound_graph, Batch.get_rel,
+                                   self.bound_id)
         remote_rel = remote_path.rels[0]
         self.__type = remote_rel.type
         self.properties.clear()
@@ -784,7 +794,8 @@ class Rel(Bindable, PropertyContainer, yaml.YAMLObject):
 
     def push(self):
         Bindable.push(self)
-        Batch.single(self.bound_graph, Batch.set_rel, self.bound_id, self.properties)
+        Batch.single(self.bound_graph, Batch.set_rel, self.bound_id,
+                     self.properties)
 
     def delete(self):
         Bindable.delete(self)
@@ -818,19 +829,6 @@ class Rel(Bindable, PropertyContainer, yaml.YAMLObject):
             s = ["<-["] + s + ["]-"]
         else:
             s = ["-["] + s + ["]->"]
-        return "".join(s)
-
-    def to_yaml(self):
-        s = []
-        if self.bound:
-            s.append('"id":')
-            s.append(str(self.bound_id))
-            s.append(",")
-        s.append('"type":')
-        s.append(json.dumps(list(self.__type)))
-        s.append(',"properties":')
-        s.append(self.properties.to_json())
-        s = [self.yaml_tag, " ", "{"] + s + ["}"]
         return "".join(s)
 
 
@@ -874,7 +872,8 @@ class Path(yaml.YAMLObject):
 
     def __getitem__(self, index):
         try:
-            return Path(self.__nodes[index], self.__rels[index], self.__nodes[index + 1])
+            return Path(self.__nodes[index], self.__rels[index],
+                        self.__nodes[index + 1])
         except IndexError:
             raise IndexError("Path segment index out of range")
 
@@ -923,14 +922,7 @@ class Path(yaml.YAMLObject):
     
     def delete(self):
         # TODO - delete_path
-        batch = Batch(self.bound_graph)
-        for rel in self.__rels:
-            if rel.bound:
-                batch.delete_rel(rel.bound_id)
-        for node in self.__nodes:
-            if node.bound:
-                batch.delete_node(node.bound_id)
-        batch.submit()
+        pass
 
     def to_cypher(self):
         s = [self.__nodes[0].to_cypher()]
@@ -945,8 +937,3 @@ class Path(yaml.YAMLObject):
             s.append(rel.to_geoff())
             s.append(self.__nodes[i + 1].to_geoff())
         return "".join(s)
-
-    def to_yaml(self):
-        # TODO
-        pass
-

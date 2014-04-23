@@ -1,6 +1,7 @@
 package org.zerograph;
 
 import org.zerograph.api.ServiceInterface;
+import org.zerograph.util.Log;
 import org.zeromq.ZMQ;
 import zmq.ZError;
 
@@ -59,8 +60,8 @@ public abstract class Service implements Runnable, ServiceInterface {
         start();
     }
 
-    public void start() {
-        System.out.println("Starting service on " + this.port);
+    public synchronized void start() {
+        Log.write("Starting service on " + this.port);
         this.context = ZMQ.context(1);
         this.internal = context.socket(ZMQ.DEALER);
         this.internal.bind(getInternalAddress());
@@ -80,11 +81,11 @@ public abstract class Service implements Runnable, ServiceInterface {
     }
 
     public void stop() {
-        System.out.println("Stopping service on " + this.port);
+        Log.write("Stopping service on " + this.port);
         external.close();
         internal.close();
         context.term();
-        System.out.println("Stopped service on " + this.port);
+        Log.write("Stopped service on " + this.port);
     }
 
 }

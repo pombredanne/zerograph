@@ -2,6 +2,7 @@ package org.zerograph;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.zerograph.util.Log;
 import org.zerograph.util.YAML;
 import org.zerograph.api.ResponderInterface;
 import org.zerograph.except.MalformedResponse;
@@ -134,7 +135,7 @@ public class Responder implements ResponderInterface {
     }
 
     private void sendMore(String data) {
-        System.out.println(">>> " + data);
+        Log.write(data, Log.SEND);
         socket.sendMore(data + "\n");
     }
 

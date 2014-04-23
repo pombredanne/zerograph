@@ -7,6 +7,7 @@ import org.zerograph.except.GraphNotStartedException;
 import org.zerograph.api.ResponderInterface;
 import org.zerograph.resources.*;
 import org.zerograph.resources.RelResource;
+import org.zerograph.util.Log;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,6 +35,7 @@ public class Graph extends Service implements GraphInterface {
         } else {
             Graph graph = new Graph(host, port);
             Thread thread = new Thread(graph);
+            thread.setName(port + "/-------");
             try {
                 thread.start();
             } catch (Exception ex) {
@@ -44,15 +46,13 @@ public class Graph extends Service implements GraphInterface {
         }
     }
 
-    public static synchronized void close(String host, int port, boolean drop) throws GraphNotStartedException {
+    public static synchronized void drop(String host, int port) throws GraphNotStartedException {
         String key = Graph.key(host, port);
         if (instances.containsKey(key)) {
             Graph graph = instances.remove(key);
+            Log.write("Stopping graph");
             graph.stop();
-            graph.getDatabase().shutdown();
-            if (drop) {
-                Environment.getInstance().dropDatabase(host, port);
-            }
+            Environment.getInstance().dropDatabase(host, port);
         } else {
             throw new GraphNotStartedException(host, port);
         }
@@ -73,11 +73,12 @@ public class Graph extends Service implements GraphInterface {
 
     @Override
     public void startWorkers() {
-        System.out.println("Starting workers");
+        Log.write("Starting workers");
         for(int i = 0; i < WORKER_COUNT; i++) {
             GraphWorker worker = new GraphWorker(this);
             Thread thread = new Thread(worker);
-            thread.setName(getPort() + "/" + worker.getUUID());
+            String uuid = worker.getUUID().toString();
+            thread.setName(getPort() + "/" + uuid.substring(uuid.length() - 7));
             workers.add(worker);
             threads.add(thread);
             thread.start();

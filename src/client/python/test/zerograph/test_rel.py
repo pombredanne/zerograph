@@ -4,7 +4,7 @@ import yaml
 
 from zerograph import Batch, Rel
 
-from ..helpers import ZerographTestCase
+from .helpers import ZerographTestCase
 
 
 class RelFromYamlTestCase(TestCase):

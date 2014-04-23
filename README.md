@@ -37,7 +37,7 @@ client application to manage retries.
 To run the test shell (Python 3 preferred):
 
 ```
-$ bin/zerograph-shell
+$ bin/zerograph shell
 
 Zerøgraph Shell v0
 (C) Copyright 2014, Nigel Small <nigel@nigelsmall.com>
