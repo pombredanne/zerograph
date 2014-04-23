@@ -8,7 +8,7 @@ SRC=$HOME/src
 TEST=$SRC/test
 PYTHON=$SRC/client/python
 
-sudo apt-get install -y build-essential
+sudo apt-get install -y build-essential python-nose python3-nose
 
 cd $PYTHON
 sudo pip install -r $PYTHON/requirements.txt

@@ -36,7 +36,7 @@ function test_python_client {
     echo "#############################"
     cd $PYTHON
     open_test_database 47471
-    py.test test
+    nosetests test
     STATUS=$?
     drop_test_database 47471
     echo ""
