@@ -345,6 +345,9 @@ class Pointer(object):
 
 
 class Graph(yaml.YAMLObject):
+    """ A `Graph` instance holds a connection to a remote graph database
+    service.
+    """
     yaml_tag = '!Graph'
 
     ZEROGRAPH_PORT = 47470
@@ -361,6 +364,9 @@ class Graph(yaml.YAMLObject):
 
     @classmethod
     def open(cls, host="localhost", port=ZEROGRAPH_PORT):
+        """ Open a connection to a remote graph, creating a database on that
+        port if none is available.
+        """
         host_port = (host, port)
         try:
             return cls.__services[host_port]
@@ -393,10 +399,14 @@ class Graph(yaml.YAMLObject):
 
     @property
     def host(self):
+        """ The remote host name for this graph database service.
+        """
         return self.__host
 
     @property
     def port(self):
+        """ The remote port number for this graph database service.
+        """
         return self.__port
 
     @property
@@ -409,6 +419,9 @@ class Graph(yaml.YAMLObject):
 
     @property
     def zerograph(self):
+        """ The graph database service running on port 47470 associated with
+        this graph.
+        """
         if self.__port == self.ZEROGRAPH_PORT:
             return self
         else:
@@ -425,6 +438,9 @@ class Graph(yaml.YAMLObject):
         return None
 
     def drop(self):
+        """ Stop this graph database service and destroy the database behind
+        it.
+        """
         if self.__port == self.ZEROGRAPH_PORT:
             raise ValueError("Cannot drop zerograph")
         else:
@@ -434,9 +450,14 @@ class Graph(yaml.YAMLObject):
         # TODO: mark as dropped and disallow any further actions? (maybe)
 
     def batch(self):
+        """ Create a new batch for executing actions against this graph.
+        """
         return Batch(self)
 
     def execute(self, query, *param_sets):
+        """ Execute a Cypher query, optionally multiple times with several
+        parameter sets.
+        """
         param_set_count = len(param_sets)
         if param_set_count == 0:
             return Batch.single(self, Batch.execute_cypher, query)
@@ -451,9 +472,13 @@ class Graph(yaml.YAMLObject):
             return list(results)
 
     def node(self, node_id):
+        """ Fetch a :class:`Node` by internal node ID.
+        """
         return Batch.single(self, Batch.get_node, node_id)
 
     def path(self, rel_id):
+        """ Fetch a :class:`Path` by internal relationship ID.
+        """
         return Batch.single(self, Batch.get_rel, rel_id)
 
     def create(self, *entities):
@@ -670,6 +695,8 @@ class Node(Bindable, PropertyContainer, yaml.YAMLObject):
 
     @property
     def labels(self):
+        """ The set of text labels applied to this Node.
+        """
         return self.__labels
 
     @property
