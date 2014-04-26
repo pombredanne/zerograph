@@ -48,3 +48,6 @@ Batches
 
 .. autoclass:: Pointer
    :members:
+
+.. autoclass:: BatchPull
+   :members:

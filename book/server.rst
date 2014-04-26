@@ -2,42 +2,31 @@
 Server
 ======
 
-The default service (graph zero) listens on port 47470. Graph services may be
-opened on other ports as required and dropped when no longer needed. On
-startup, all configured graph services will be started on their respective
-ports.
+The Zerograph server can operate a number of concurrent graph database services
+across a range of ports but the default service listens on port 47470. This
+service must be maintained to keep any others alive although others may be
+spawned and dropped as required. On server startup, all pre-existing services
+will be restarted on their respective ports.
 
-One big benefit on the ZeroMQ infrastructure is a reduced impact to client
+To run the server::
+
+    $ gradle run
+
+If running as root, the databases created will be stored in ``/var/zerograph``
+by default. For other users, the ``$HOME/.zerograph`` directory will be used.
+These defaults can be overridden using the ``ZEROGRAPH_HOME`` environment
+variable.
+
+A big benefit of the ZeroMQ infrastructure is a reduced impact to client
 applications when server disruption occurs. When a client submits a request,
 the server may or may not be available. If unavailable, the request will be
 queued automatically until the server once again becomes available at which
 point it will be processed as usual. No extra logic is required within the
 client application to manage retries.
 
-To run the server::
-
-    $ gradle run
-
-
-Architecture
-============
-
-...
-
-
-Storage
-=======
-
-If running as root, the databases will be stored in ``/var/zerograph`` by
-default. For other users, the ``$HOME/.zerograph`` directory will be used.
-These defaults can be overridden using the ``ZEROGRAPH_HOME`` environment
-variable.
-
-
-Protocol
-========
-
-...
+The Zerograph Application/Presentation Protocol (ZAPP) is used for all
+communication between the client and the server. Details of this protocol can
+be seen in the `protocol specification document`_.
 
 
 Resources
@@ -184,3 +173,6 @@ variables.
 .. function:: GET Zerograph {}
 
    Fetch details of the Zerograph server application.
+
+
+.. _protocol specification document: zapp.html

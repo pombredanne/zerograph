@@ -49,6 +49,7 @@ In Depth
 
    server
    python_client
+   protocol_1
 
 
 .. _Neo4j: http://www.neo4j.org/
