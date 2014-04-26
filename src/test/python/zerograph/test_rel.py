@@ -92,7 +92,7 @@ class RelTypeTestCase(TestCase):
 class RelExistsTestCase(ZerographTestCase):
 
     def test_rel_exists(self):
-        batch = self.graph.batch()
+        batch = Batch(self.graph)
         a = batch.create_node()
         b = batch.create_node()
         ab = batch.create_rel(a, b, "KNOWS")
@@ -104,7 +104,7 @@ class RelExistsTestCase(ZerographTestCase):
         assert alice_bob_rel.exists
 
     def test_node_does_not_exist(self):
-        batch = self.graph.batch()
+        batch = Batch(self.graph)
         a = batch.create_node()
         b = batch.create_node()
         ab = batch.create_rel(a, b, "KNOWS")
@@ -120,7 +120,7 @@ class RelExistsTestCase(ZerographTestCase):
 class RelPullTestCase(ZerographTestCase):
 
     def test_remote_rel_changes_can_be_pulled(self):
-        batch = self.graph.batch()
+        batch = Batch(self.graph)
         a = batch.create_node()
         b = batch.create_node()
         ab = batch.create_rel(a, b, "KNOWS")
@@ -128,18 +128,17 @@ class RelPullTestCase(ZerographTestCase):
         alice = next(result)
         bob = next(result)
         alice_bob = next(result)
-        alice_bob_rel = alice_bob.rels[0]
         local = Rel("KNOWS")
-        local.bind(self.graph, alice_bob_rel.bound_id)
+        local.bind(self.graph, id=alice_bob.bound_id)
         local.pull()
-        assert local.type == alice_bob_rel.type
-        assert local.properties == alice_bob_rel.properties
+        assert local.type == alice_bob.type
+        assert local.properties == alice_bob.properties
 
 
 class RelPushTestCase(ZerographTestCase):
 
     def test_local_rel_changes_can_be_pushed(self):
-        batch = self.graph.batch()
+        batch = Batch(self.graph)
         a = batch.create_node()
         b = batch.create_node()
         ab = batch.create_rel(a, b, "KNOWS")
@@ -147,14 +146,12 @@ class RelPushTestCase(ZerographTestCase):
         alice = next(result)
         bob = next(result)
         alice_bob = next(result)
-        alice_bob_rel = alice_bob.rels[0]
         local = Rel("KNOWS", since=1999)
-        local.bind(self.graph, alice_bob_rel.bound_id)
+        local.bind(self.graph, id=alice_bob.bound_id)
         local.push()
-        remote_path = Batch.single(self.graph, Batch.get_rel, local.bound_id)
-        remote_rel = remote_path.rels[0]
-        assert remote_rel.type == local.type
-        assert remote_rel.properties == local.properties
+        remote = Batch.single(self.graph, Batch.get_rel, local.bound_id)
+        assert remote.type == local.type
+        assert remote.properties == local.properties
 
 
 if __name__ == "__main__":

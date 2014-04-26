@@ -16,13 +16,12 @@ HOST = "localhost"
 
 WELCOME = """\
 
-\x1b[37;1mZerø\x1b[32;1mgraph\x1b[0m Shell v0
+Zerograph Shell v1β
 (C) Copyright 2014, Nigel Small <nigel@nigelsmall.com>
 
 Execute Cypher statements or meta-commands (prefixed with "!"). Multiple Cypher
 statements can be separated by a semicolon and will be executed within the
-same batched transaction. Type !HELP for help or type !EOF or press Ctrl+D to
-exit the shell.
+same batched transaction. Type !HELP for help or type !EOF to exit the shell.
 
 """
 
@@ -71,10 +70,10 @@ class Shell(object):
 
     @property
     def prompt(self):
-        return "\x1b[32;1m(Z) \x1b[34;1m{0}:{1}>\x1b[0m ".format(self.graph.host, self.graph.port)
+        return "[Z] {0}:{1}> ".format(self.graph.host, self.graph.port)
 
     def print_error(self, message):
-        print("\x1b[33m{0}\x1b[0m".format(message))
+        print(message)
 
     def meta(self, line):
         command, args = line[1:].partition(" ")[0::2]
@@ -138,17 +137,17 @@ class Shell(object):
                 print(result)
 
     def execute_query(self, query, param_sets):
-        batch = self.graph.create_batch()
+        batch = Batch(self.graph)
         for params in param_sets:
-            batch.execute(query, params)
+            batch.execute_cypher(query, params)
         self._submit(batch)
 
     def execute_queries(self, line):
-        batch = self.graph.create_batch()
+        batch = Batch(self.graph)
         for query in line.split(";"):
             query = query.strip()
             if query:
-                batch.execute(query.strip())
+                batch.execute_cypher(query.strip())
         self._submit(batch)
 
     def repl(self):
@@ -157,6 +156,8 @@ class Shell(object):
                 line = get_input(self.prompt)
                 if line.startswith("!"):
                     self.meta(line)
+                elif all(map(lambda ch: ch.isdigit(), line.strip())):
+                    print(self.graph.node(int(line.strip())))
                 else:
                     self.execute_queries(line)
             except EOFError:

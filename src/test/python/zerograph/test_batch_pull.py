@@ -17,8 +17,8 @@ class BatchPullTestCase(ZerographTestCase):
         # Check the name properties of the local objects
         assert a["name"] == "Alice"
         assert b["name"] == "Bob"
-        assert ab.rel.type == "KNOWS"
-        assert ab.rel["since"] is None
+        assert ab.type == "KNOWS"
+        assert ab["since"] is None
         # Update the remote copies
         self.graph.execute("""\
         MATCH (a:Person {name:'Alice'})-[ab:KNOWS]->(b:Person {name:'Bob'})
@@ -29,8 +29,8 @@ class BatchPullTestCase(ZerographTestCase):
         # Check the local copies haven't changed
         assert a["name"] == "Alice"
         assert b["name"] == "Bob"
-        assert ab.rel.type == "KNOWS"
-        assert ab.rel["since"] is None
+        assert ab.type == "KNOWS"
+        assert ab["since"] is None
         # Batch pull the remote changes
         batch = BatchPull(self.graph)
         batch.add(a)
@@ -40,7 +40,7 @@ class BatchPullTestCase(ZerographTestCase):
         # Check the local copies have been updated
         assert a["name"] == "Alice Smith"
         assert b["name"] == "Bob Jones"
-        assert ab.rel["since"] == 1999
+        assert ab["since"] == 1999
 
 
 if __name__ == "__main__":

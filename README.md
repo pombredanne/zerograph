@@ -34,20 +34,19 @@ client application to manage retries.
 
 ## Shell
 
-To run the test shell (Python 3 preferred):
+To run the test shell:
 
 ```
 $ bin/zerograph shell
 
-Zerøgraph Shell v0
+Zerograph Shell v1β
 (C) Copyright 2014, Nigel Small <nigel@nigelsmall.com>
 
 Execute Cypher statements or meta-commands (prefixed with "!"). Multiple Cypher
 statements can be separated by a semicolon and will be executed within the
-same batched transaction. Type !HELP for help or type !EOF or press Ctrl+D to
-exit the shell.
+same batched transaction. Type !HELP for help or type !EOF to exit the shell.
 
-(Z) localhost:47470> !help
+[Z] localhost:47470> !help
 !HELP           display this help
 !EOF            exit the shell
 
@@ -61,13 +60,12 @@ exit the shell.
 !DELETE <resource> [<json_object_data>]
 !EXECUTE <resource> [<json_object_data>]
 
-(Z) localhost:47470> create (a:Person {name:'Alice'}) return a
+[Z] localhost:47470> create (a:Person {name:'Alice'}) return a
 a
 -----------------------------------
 (123456:Person {"name": "Alice"})
 (1 row)
 
 
-(Z) localhost:47470> !eof
-⌁
+[Z] localhost:47470> ⌁
 ```

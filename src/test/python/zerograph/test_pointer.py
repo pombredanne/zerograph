@@ -1,6 +1,6 @@
 import unittest
 
-from zerograph import Node, Table
+from zerograph import Batch
 
 from .helpers import ZerographTestCase
 
@@ -8,7 +8,7 @@ from .helpers import ZerographTestCase
 class PointersTestCase(ZerographTestCase):
 
     def test_can_use_pointers(self):
-        batch = self.graph.batch()
+        batch = Batch(self.graph)
         a = batch.create_node()
         b = batch.create_node()
         batch.create_rel(a, b, "KNOWS")

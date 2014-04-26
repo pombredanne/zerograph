@@ -21,10 +21,10 @@ DELETE = "DELETE"
 EXECUTE = "EXECUTE"
 
 
-def assert_bound(entity):
-    if not isinstance(entity, Bindable):
-        raise ValueError("Entity is not bindable")
-    entity.assert_bound()
+def assert_bound(obj):
+    if not isinstance(obj, Bindable):
+        raise ValueError("Object is not bindable")
+    obj.assert_bound()
 
 
 def is_safe_char(x):
@@ -494,11 +494,6 @@ class Graph(yaml.YAMLObject):
                                 self.__port)
         # TODO: mark as dropped and disallow any further actions? (maybe)
 
-    def batch(self):
-        """ Create a new batch for executing actions against this graph.
-        """
-        return Batch(self)
-
     def clear(self):
         # TODO
         pass
@@ -526,7 +521,7 @@ class Graph(yaml.YAMLObject):
             cached.replace(*node.labels, **node.properties)
             return cached
         except KeyError:
-            node.bind(self, node_id)
+            node.bind(self, id=node_id)
             self.__nodes[node_id] = node
             return node
 
@@ -536,7 +531,7 @@ class Graph(yaml.YAMLObject):
             cached.replace(rel.type, **rel.properties)
             return cached
         except KeyError:
-            rel.bind(self, rel_id)
+            rel.bind(self, id=rel_id)
             self.__rels[rel_id] = rel
             return rel
 
@@ -598,32 +593,25 @@ class Graph(yaml.YAMLObject):
 
 
 class Bindable(object):
-    """ Mixin for objects that can be bound to remote graph database entities.
+    """ Mixin for objects that can be bound to a remote graph.
     """
 
     def __init__(self):
         self.__graph = None
-        self.__id = None
 
     @property
     def bound_graph(self):
         return self.__graph
 
     @property
-    def bound_id(self):
-        return self.__id
-
-    @property
     def bound(self):
         return self.__graph is not None
 
-    def bind(self, graph, id_):
+    def bind(self, graph, **kwargs):
         self.__graph = graph
-        self.__id = id_
 
     def unbind(self):
         self.__graph = None
-        self.__id = None
 
     def assert_bound(self):
         if not self.bound:
@@ -635,8 +623,27 @@ class Bindable(object):
     def push(self):
         pass
 
-    def delete(self):
-        pass
+
+class Entity(Bindable):
+    """ Mixin for objects that can be bound to single entities within a remote
+    graph database.
+    """
+
+    def __init__(self):
+        Bindable.__init__(self)
+        self.__id = None
+
+    @property
+    def bound_id(self):
+        return self.__id
+
+    def bind(self, graph, **kwargs):
+        Bindable.bind(self, graph)
+        self.__id = kwargs["id"]
+
+    def unbind(self):
+        Bindable.unbind(self)
+        self.__id = None
 
 
 class PropertySet(dict):
@@ -714,7 +721,7 @@ class PropertySet(dict):
 
 
 class PropertyContainer(object):
-    """ Base class for entities that contain properties.
+    """ Base class for objects that contain a set of properties.
     """
 
     def __init__(self, **properties):
@@ -746,7 +753,7 @@ class PropertyContainer(object):
         self.properties.update(properties)
 
 
-class Node(Bindable, PropertyContainer, yaml.YAMLObject):
+class Node(Entity, PropertyContainer, yaml.YAMLObject):
     """ A local representation of a Neo4j graph node that may be bound to a
     node in a remote graph database.
     """
@@ -782,7 +789,7 @@ class Node(Bindable, PropertyContainer, yaml.YAMLObject):
         return cls(*labels, **properties)
     
     def __init__(self, *labels, **properties):
-        Bindable.__init__(self)
+        Entity.__init__(self)
         PropertyContainer.__init__(self, **properties)
         self.__labels = set(labels)
 
@@ -800,7 +807,8 @@ class Node(Bindable, PropertyContainer, yaml.YAMLObject):
         return self.__labels
 
     def replace(self, *labels, **properties):
-        """ Replace the labels and properties on this Node with those provided.
+        """ Replace the labels and properties on this ``Node`` with those
+        provided.
         """
         self.__labels = set(labels)
         PropertyContainer.replace(self, **properties)
@@ -863,7 +871,7 @@ class Node(Bindable, PropertyContainer, yaml.YAMLObject):
         return "".join(s)
 
 
-class Rel(Bindable, PropertyContainer, yaml.YAMLObject):
+class Rel(Entity, PropertyContainer, yaml.YAMLObject):
     """ A local representation of the type and properties of a Neo4j graph
     relationship that may be bound to a relationship in a remote graph
     database. A ``Rel`` does not hold information on its start or end nodes,
@@ -901,7 +909,7 @@ class Rel(Bindable, PropertyContainer, yaml.YAMLObject):
         return cls(*type_, **properties)
     
     def __init__(self, *type_, **properties):
-        Bindable.__init__(self)
+        Entity.__init__(self)
         PropertyContainer.__init__(self, **properties)
         if len(type_) == 0:
             raise ValueError("A relationship type is required")
@@ -926,7 +934,7 @@ class Rel(Bindable, PropertyContainer, yaml.YAMLObject):
         self.__type = name
 
     def replace(self, *type_, **properties):
-        """ Replace the properties on this Node with those provided.
+        """ Replace the properties on this ``Rel`` with those provided.
         """
         if len(type_) == 0:
             raise ValueError("A relationship type is required")
@@ -1003,9 +1011,15 @@ class Path(Bindable, yaml.YAMLObject):
     @classmethod
     def from_yaml(cls, loader, node):
         sequence = loader.construct_sequence(node, deep=True)
-        inst = cls(*sequence)
-        return inst
-            
+        count = len(sequence)
+        if count == 3:
+            if isinstance(sequence[1], Rev):
+                return Relationship(*reversed(sequence))
+            else:
+                return Relationship(*sequence)
+        else:
+            return Path(*sequence)
+
     def __init__(self, node, *rels_and_nodes):
         Bindable.__init__(self)
         if len(rels_and_nodes) % 2 != 0:
@@ -1016,20 +1030,18 @@ class Path(Bindable, yaml.YAMLObject):
         self.__rels = tuple(map(Rel.cast, rels_and_nodes[0::2]))
         # Derive bindings (if any).
         bound_graphs = set()
-        bound_ids = []
         for entity in round_robin(self.__nodes, self.__rels):
             if entity.bound:
                 bound_graphs.add(entity.bound_graph)
-            bound_ids.append(entity.bound_id)
         # Check everything belongs to the same graph (if any).
         if len(bound_graphs) > 1:
             raise ValueError("Bound path entities cannot span multiple "
                              "graphs")
         # If all is valid, assign attributes.
         try:
-            Bindable.bind(self, bound_graphs.pop(), tuple(bound_ids))
+            Bindable.bind(self, bound_graphs.pop())
         except KeyError:
-            Bindable.bind(self, None, tuple(bound_ids))
+            Bindable.bind(self, None)
 
     def __repr__(self):
         return self.to_cypher()
@@ -1039,14 +1051,14 @@ class Path(Bindable, yaml.YAMLObject):
 
     def __getitem__(self, index):
         try:
-            return Path(self.__nodes[index], self.__rels[index],
-                        self.__nodes[index + 1])
+            return Relationship(self.__nodes[index], self.__rels[index],
+                                self.__nodes[index + 1])
         except IndexError:
-            raise IndexError("Path segment index out of range")
+            raise IndexError("Index out of range")
 
     def __iter__(self):
         for i, rel in enumerate(self.__rels):
-            yield Path(self.__nodes[i], rel, self.__nodes[i + 1])
+            yield Relationship(self.__nodes[i], rel, self.__nodes[i + 1])
 
     def __len__(self):
         return self.size
@@ -1087,25 +1099,7 @@ class Path(Bindable, yaml.YAMLObject):
         """
         return self.__rels
 
-    @property
-    def rel(self):
-        """ The first :class:`Rel` in this path, if any.
-        """
-        try:
-            return self.__rels[0]
-        except IndexError:
-            return None
-
-    @property
-    def last_rel(self):
-        """ The last :class:`Rel` in this path, if any.
-        """
-        try:
-            return self.__rels[-1]
-        except IndexError:
-            return None
-
-    def bind(self, graph, id_):
+    def bind(self, graph, **kwargs):
         raise TypeError("Cannot directly bind a path")  # TODO - change error type
 
     def unbind(self):
@@ -1136,6 +1130,43 @@ class Path(Bindable, yaml.YAMLObject):
             s.append(rel.to_geoff())
             s.append(self.__nodes[i + 1].to_geoff())
         return "".join(s)
+
+
+class Relationship(Path):
+
+    def __init__(self, start_node, rel, end_node):
+        Path.__init__(self, start_node, rel, end_node)
+        self.__rel = self.rels[0]
+
+    def __getitem__(self, key):
+        return self.__rel.properties.__getitem__(key)
+
+    def __setitem__(self, key, value):
+        return self.__rel.properties.__setitem__(key, value)
+
+    def __delitem__(self, key):
+        return self.__rel.properties.__delitem__(key)
+
+    @property
+    def bound_id(self):
+        return self.__rel.bound_id
+
+    @property
+    def type(self):
+        return self.__rel.type
+
+    @property
+    def properties(self):
+        return self.__rel.properties
+
+    def replace(self, **properties):
+        """ Replace the properties on this Relationship with those provided.
+        """
+        self.__rel.replace(**properties)
+
+    @property
+    def exists(self):
+        return self.__rel.exists
 
 
 class BatchPull(object):

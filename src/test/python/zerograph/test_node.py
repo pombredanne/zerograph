@@ -140,14 +140,14 @@ class NodeLabelsTestCase(TestCase):
 class NodeExistsTestCase(ZerographTestCase):
 
     def test_node_exists(self):
-        batch = self.graph.batch()
+        batch = Batch(self.graph)
         batch.create_node()
         result = batch.submit()
         node = next(result)
         assert node.exists
 
     def test_node_does_not_exist(self):
-        batch = self.graph.batch()
+        batch = Batch(self.graph)
         batch.create_node()
         batch.delete_node(Pointer(0))
         result = batch.submit()
@@ -158,12 +158,12 @@ class NodeExistsTestCase(ZerographTestCase):
 class NodePullTestCase(ZerographTestCase):
 
     def test_remote_node_changes_can_be_pulled(self):
-        batch = self.graph.batch()
+        batch = Batch(self.graph)
         batch.create_node({"Person"}, {"name": "Alice"})
         result = batch.submit()
         remote = next(result)
         local = Node()
-        local.bind(self.graph, remote.bound_id)
+        local.bind(self.graph, id=remote.bound_id)
         local.pull()
         assert local.labels == remote.labels
         assert local.properties == remote.properties
@@ -172,12 +172,12 @@ class NodePullTestCase(ZerographTestCase):
 class NodePushTestCase(ZerographTestCase):
 
     def test_local_node_changes_can_be_pushed(self):
-        batch = self.graph.batch()
+        batch = Batch(self.graph)
         batch.create_node()
         result = batch.submit()
         remote = next(result)
         local = Node("Person", name="Alice")
-        local.bind(self.graph, remote.bound_id)
+        local.bind(self.graph, id=remote.bound_id)
         local.push()
         remote = Batch.single(self.graph, Batch.get_node, local.bound_id)
         assert remote.labels == local.labels
