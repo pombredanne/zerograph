@@ -163,7 +163,7 @@ class NodePullTestCase(ZerographTestCase):
         result = batch.submit()
         remote = next(result)
         local = Node()
-        local.bind(self.graph, id=remote.bound_id)
+        local.bind(self.graph, id=remote._id)
         local.pull()
         assert local.labels == remote.labels
         assert local.properties == remote.properties
@@ -177,9 +177,9 @@ class NodePushTestCase(ZerographTestCase):
         result = batch.submit()
         remote = next(result)
         local = Node("Person", name="Alice")
-        local.bind(self.graph, id=remote.bound_id)
+        local.bind(self.graph, id=remote._id)
         local.push()
-        remote = Batch.single(self.graph, Batch.get_node, local.bound_id)
+        remote = Batch.single(self.graph, Batch.get_node, local._id)
         assert remote.labels == local.labels
         assert remote.properties == local.properties
 

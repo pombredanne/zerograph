@@ -539,8 +539,7 @@ class Graph(yaml.YAMLObject):
             return rel
 
     def node(self, node_id):
-        """ Fetch a :class:`Node` by internal node ID, preferring a cached copy
-        if one is available.
+        """ Fetch a :class:`Node` by internal ID.
         """
         try:
             return self.__nodes[node_id]
@@ -550,9 +549,8 @@ class Graph(yaml.YAMLObject):
             # `bind_node`, above.
             return Batch.single(self, Batch.get_node, node_id)
 
-    def rel(self, rel_id):
-        """ Fetch a :class:`Rel` by internal relationship ID, preferring a
-        cached copy if one is available.
+    def relationship(self, rel_id):
+        """ Fetch a :class:`Relationship` by internal ID.
         """
         try:
             return self.__rels[rel_id]
@@ -560,8 +558,7 @@ class Graph(yaml.YAMLObject):
             # If we need to fetch a copy because no cached copy exists, this
             # will get inserted into the cache when the rel is bound in
             # `bind_rel`, above.
-            path = Batch.single(self, Batch.get_rel, rel_id)
-            return path.rel
+            return Batch.single(self, Batch.get_rel, rel_id)
 
     def pull(self, *entities):
         """ Update multiple local entities from remote entities.
@@ -603,11 +600,15 @@ class Bindable(object):
         self.__graph = None
 
     @property
-    def bound_graph(self):
+    def graph(self):
+        """ Returns the :class:`Graph` to which this is bound.
+        """
         return self.__graph
 
     @property
     def bound(self):
+        """ Returns :const:`True` if bound to a remote graph database.
+        """
         return self.__graph is not None
 
     def bind(self, graph, **kwargs):
@@ -637,7 +638,9 @@ class Entity(Bindable):
         self.__id = None
 
     @property
-    def bound_id(self):
+    def _id(self):
+        """ The internal ID of the remote entity to which this is bound.
+        """
         return self.__id
 
     def bind(self, graph, **kwargs):
@@ -747,6 +750,8 @@ class PropertyContainer(object):
 
     @property
     def properties(self):
+        """ The set of properties attached to this object.
+        """
         return self.__properties
 
     def replace(self, **properties):
@@ -818,9 +823,12 @@ class Node(Entity, PropertyContainer, yaml.YAMLObject):
 
     @property
     def exists(self):
+        """ Returns :const:`True` if the entity to which this is bound exists
+        in the remote graph database.
+        """
         self.assert_bound()
         try:
-            Batch.single(self.bound_graph, Batch.get_node, self.bound_id)
+            Batch.single(self.graph, Batch.get_node, self._id)
         except Error:  # TODO: NotExistsError
             return False
         else:
@@ -830,14 +838,14 @@ class Node(Entity, PropertyContainer, yaml.YAMLObject):
         """ Update local node from remote node.
         """
         self.assert_bound()
-        remote = Batch.single(self.bound_graph, Batch.get_node, self.bound_id)
+        remote = Batch.single(self.graph, Batch.get_node, self._id)
         self.replace(*remote.labels, **remote.properties)
 
     def push(self):
         """ Update remote node from local node.
         """
         self.assert_bound()
-        Batch.single(self.bound_graph, Batch.set_node, self.bound_id,
+        Batch.single(self.graph, Batch.set_node, self._id,
                      self.__labels, self.properties)
 
     def to_cypher(self):
@@ -846,7 +854,7 @@ class Node(Entity, PropertyContainer, yaml.YAMLObject):
         s = []
         if self.bound:
             s.append("_")
-            s.append(str(self.bound_id))
+            s.append(str(self._id))
         for label in sorted(self.__labels):
             s.append(":")
             s.append(label)
@@ -862,7 +870,7 @@ class Node(Entity, PropertyContainer, yaml.YAMLObject):
         """
         s = []
         if self.bound:
-            s.append(str(self.bound_id))
+            s.append(str(self._id))
         for label in sorted(self.__labels):
             s.append(":")
             s.append(label)
@@ -950,7 +958,7 @@ class Rel(Entity, PropertyContainer, yaml.YAMLObject):
     def exists(self):
         self.assert_bound()
         try:
-            Batch.single(self.bound_graph, Batch.get_rel, self.bound_id)
+            Batch.single(self.graph, Batch.get_rel, self._id)
         except Error:  # TODO: NotExistsError
             return False
         else:
@@ -958,21 +966,21 @@ class Rel(Entity, PropertyContainer, yaml.YAMLObject):
 
     def pull(self):
         self.assert_bound()
-        remote_path = Batch.single(self.bound_graph, Batch.get_rel,
-                                   self.bound_id)
+        remote_path = Batch.single(self.graph, Batch.get_rel,
+                                   self._id)
         remote_rel = remote_path.rels[0]
         self.replace(remote_rel.type, **remote_rel.properties)
 
     def push(self):
         self.assert_bound()
-        Batch.single(self.bound_graph, Batch.set_rel, self.bound_id,
+        Batch.single(self.graph, Batch.set_rel, self._id,
                      self.properties)
 
     def to_cypher(self):
         s = []
         if self.bound:
             s.append("_")
-            s.append(str(self.bound_id))
+            s.append(str(self._id))
         s.append(":")
         s.append(self.__type)
         if self.properties:
@@ -987,7 +995,7 @@ class Rel(Entity, PropertyContainer, yaml.YAMLObject):
     def to_geoff(self):
         s = []
         if self.bound:
-            s.append(str(self.bound_id))
+            s.append(str(self._id))
         s.append(":")
         s.append(self.__type)
         if self.properties:
@@ -1034,17 +1042,17 @@ class Path(Bindable, yaml.YAMLObject):
         self.__nodes += tuple(map(Node.cast, rels_and_nodes[1::2]))
         self.__rels = tuple(map(Rel.cast, rels_and_nodes[0::2]))
         # Derive bindings (if any).
-        bound_graphs = set()
+        graphs = set()
         for entity in round_robin(self.__nodes, self.__rels):
             if entity.bound:
-                bound_graphs.add(entity.bound_graph)
+                graphs.add(entity.graph)
         # Check everything belongs to the same graph (if any).
-        if len(bound_graphs) > 1:
+        if len(graphs) > 1:
             raise ValueError("Bound path entities cannot span multiple "
                              "graphs")
         # If all is valid, assign attributes.
         try:
-            Bindable.bind(self, bound_graphs.pop())
+            Bindable.bind(self, graphs.pop())
         except KeyError:
             Bindable.bind(self, None)
 
@@ -1112,13 +1120,13 @@ class Path(Bindable, yaml.YAMLObject):
 
     def pull(self):
         self.assert_bound()
-        batch = BatchPull(self.bound_graph)
+        batch = BatchPull(self.graph)
         batch.add(self)
         batch.submit()
 
     def push(self):
         self.assert_bound()
-        batch = BatchPush(self.bound_graph)
+        batch = BatchPush(self.graph)
         batch.add(self)
         batch.submit()
 
@@ -1156,8 +1164,8 @@ class Relationship(Path):
         return self.__rel.properties.__delitem__(key)
 
     @property
-    def bound_id(self):
-        return self.__rel.bound_id
+    def _id(self):
+        return self.__rel._id
 
     @property
     def type(self):
@@ -1185,7 +1193,7 @@ class BatchPull(object):
         self.__rels = {}
 
     def __assert_familiar(self, entity):
-        if entity.bound_graph != self.__graph:
+        if entity.graph != self.__graph:
             raise ValueError("Entities are from different graphs")
 
     def add(self, entity):
@@ -1194,14 +1202,14 @@ class BatchPull(object):
         assert_bound(entity)
         self.__assert_familiar(entity)
         if isinstance(entity, Node):
-            self.__nodes.setdefault(entity.bound_id, []).append(entity)
+            self.__nodes.setdefault(entity._id, []).append(entity)
         elif isinstance(entity, Rel):
-            self.__rels.setdefault(entity.bound_id, []).append(entity)
+            self.__rels.setdefault(entity._id, []).append(entity)
         elif isinstance(entity, Path):
             for node in entity.nodes:
-                self.__nodes.setdefault(node.bound_id, []).append(entity)
+                self.__nodes.setdefault(node._id, []).append(entity)
             for rel in entity.rels:
-                self.__rels.setdefault(rel.bound_id, []).append(entity)
+                self.__rels.setdefault(rel._id, []).append(entity)
         else:
             raise TypeError("Unexpected entity type")
 
@@ -1211,18 +1219,18 @@ class BatchPull(object):
         assert_bound(entity)
         self.__assert_familiar(entity)
         if isinstance(entity, Node):
-            self.__nodes[entity.bound_id].remove(entity)
+            self.__nodes[entity._id].remove(entity)
         elif isinstance(entity, Rel):
-            self.__rels[entity.bound_id].remove(entity)
+            self.__rels[entity._id].remove(entity)
         elif isinstance(entity, Path):
             for node in entity.nodes:
                 try:
-                    self.__nodes[node.bound_id].remove(entity)
+                    self.__nodes[node._id].remove(entity)
                 except ValueError:
                     pass
             for rel in entity.rels:
                 try:
-                    self.__rels[rel.bound_id].remove(entity)
+                    self.__rels[rel._id].remove(entity)
                 except ValueError:
                     pass
         else:
@@ -1239,23 +1247,23 @@ class BatchPull(object):
         results = batch.submit()
         for entity in results:
             if isinstance(entity, Node):
-                id_ = entity.bound_id
+                id_ = entity._id
                 for node_or_path in self.__nodes[id_]:
                     if isinstance(node_or_path, Node):
                         node_or_path.replace(*entity.labels, **entity.properties)
                     elif isinstance(node_or_path, Path):
                         for node in node_or_path.nodes:
-                            if node.bound_id == id_:
+                            if node._id == id_:
                                 node.replace(*entity.labels, **entity.properties)
             elif isinstance(entity, Path):
                 path_rel = entity.rels[0]
-                id_ = path_rel.bound_id
+                id_ = path_rel._id
                 for rel_or_path in self.__rels[id_]:
                     if isinstance(rel_or_path, Rel):
                         rel_or_path.replace(path_rel.type, **path_rel.properties)
                     elif isinstance(rel_or_path, Path):
                         for rel in rel_or_path.rels:
-                            if rel.bound_id == id_:
+                            if rel._id == id_:
                                 rel.replace(path_rel.type, **path_rel.properties)
             else:
                 raise TypeError("Unexpected entity type")
@@ -1269,25 +1277,23 @@ class BatchPush(object):
         self.__rels = {}
 
     def __assert_familiar(self, entity):
-        if entity.bound_graph != self.__graph:
+        if entity.graph != self.__graph:
             raise ValueError("Entities are from different graphs")
 
     def add(self, entity):
-        """ Add an entity to the set of entities to be pushed. If `replace` is
-        :const:`True` and the entity (or sub-entity of a :class:`Path` is
-        already listed, that entity will be replaced.
+        """ Add an entity to the set of entities to be pushed.
         """
         assert_bound(entity)
         self.__assert_familiar(entity)
         if isinstance(entity, Node):
-            self.__nodes[entity.bound_id] = entity
+            self.__nodes[entity._id] = entity
         elif isinstance(entity, Rel):
-            self.__rels[entity.bound_id] = entity
+            self.__rels[entity._id] = entity
         elif isinstance(entity, Path):
             for node in entity.nodes:
-                self.__nodes[node.bound_id] = node
+                self.__nodes[node._id] = node
             for rel in entity.rels:
-                self.__rels[rel.bound_id] = rel
+                self.__rels[rel._id] = rel
         else:
             raise TypeError("Unexpected entity type")
 
@@ -1297,18 +1303,18 @@ class BatchPush(object):
         assert_bound(entity)
         self.__assert_familiar(entity)
         if isinstance(entity, Node):
-            del self.__nodes[entity.bound_id]
+            del self.__nodes[entity._id]
         elif isinstance(entity, Rel):
-            del self.__rels[entity.bound_id]
+            del self.__rels[entity._id]
         elif isinstance(entity, Path):
             for node in entity.nodes:
                 try:
-                    del self.__nodes[node.bound_id]
+                    del self.__nodes[node._id]
                 except KeyError:
                     pass
             for rel in entity.rels:
                 try:
-                    del self.__rels[rel.bound_id]
+                    del self.__rels[rel._id]
                 except KeyError:
                     pass
         else:

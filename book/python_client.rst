@@ -18,23 +18,29 @@ supplied to this method, defaults of ``'localhost'`` and ``47470`` are assumed.
 
 
 .. autoclass:: Graph
-   :members:
+   :members: open, drop, host, port, zerograph, order, size, clear, execute,
+             node, relationship, pull, push, create, delete
 
 
-Nodes, Rels & Paths
-===================
+Nodes, Rels, Paths & more
+=========================
 
 Graph database entities are primarily represented using the :class:`Node`,
 :class:`Rel` and :class:`Path` classes.
 
 .. autoclass:: Node
-   :members:
+   :members: labels, replace, exists, pull, push, to_cypher, to_geoff,
+   :inherited-members: properties, bound, graph, _id
+   :no-members: to_yaml
 
-.. autoclass:: Rel
-   :members:
+.. autoclass:: Rel(type, **properties)
+   :members: type
+   :inherited-members: replace
+   :no-members: to_yaml
 
-.. autoclass:: Rev
+.. autoclass:: Rev(type, **properties)
    :members:
+   :no-members: to_yaml
 
 .. autoclass:: Path
    :members:

@@ -29,9 +29,9 @@ class BatchPushTestCase(ZerographTestCase):
         batch.add(ab)
         batch.submit()
         # Fetch the remote copies
-        a2 = self.graph.node(a.bound_id)
-        b2 = self.graph.node(b.bound_id)
-        ab2 = self.graph.rel(ab.bound_id)
+        a2 = self.graph.node(a._id)
+        b2 = self.graph.node(b._id)
+        ab2 = self.graph.relationship(ab._id)
         # Check the remote copies match the local ones
         assert a2 == a
         assert b2 == b

@@ -113,7 +113,7 @@ class RelExistsTestCase(ZerographTestCase):
         bob = next(result)
         alice_bob = next(result)
         alice_bob_rel = alice_bob.rels[0]
-        Batch.single(self.graph, Batch.delete_rel, alice_bob_rel.bound_id)
+        Batch.single(self.graph, Batch.delete_rel, alice_bob_rel._id)
         assert not alice_bob_rel.exists
 
 
@@ -129,7 +129,7 @@ class RelPullTestCase(ZerographTestCase):
         bob = next(result)
         alice_bob = next(result)
         local = Rel("KNOWS")
-        local.bind(self.graph, id=alice_bob.bound_id)
+        local.bind(self.graph, id=alice_bob._id)
         local.pull()
         assert local.type == alice_bob.type
         assert local.properties == alice_bob.properties
@@ -147,9 +147,9 @@ class RelPushTestCase(ZerographTestCase):
         bob = next(result)
         alice_bob = next(result)
         local = Rel("KNOWS", since=1999)
-        local.bind(self.graph, id=alice_bob.bound_id)
+        local.bind(self.graph, id=alice_bob._id)
         local.push()
-        remote = Batch.single(self.graph, Batch.get_rel, local.bound_id)
+        remote = Batch.single(self.graph, Batch.get_rel, local._id)
         assert remote.type == local.type
         assert remote.properties == local.properties
 
