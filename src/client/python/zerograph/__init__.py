@@ -483,6 +483,10 @@ class Graph(yaml.YAMLObject):
         """
         return Batch(self)
 
+    def clear(self):
+        # TODO
+        pass
+
     def execute(self, query, *param_sets):
         """ Execute a Cypher query, optionally multiple times with several
         parameter sets.
@@ -761,20 +765,30 @@ class Node(Bindable, PropertyContainer, yaml.YAMLObject):
             return True
 
     def pull(self):
+        """ Update local node from remote node.
+        """
         self.assert_bound()
         remote = Batch.single(self.bound_graph, Batch.get_node, self.bound_id)
         self.replace(*remote.labels, **remote.properties)
 
     def push(self):
+        """ Update remote node from local node.
+        """
         self.assert_bound()
         Batch.single(self.bound_graph, Batch.set_node, self.bound_id,
                      self.__labels, self.properties)
+
+    def create(self):
+        # TODO
+        pass
 
     def delete(self):
         self.assert_bound()
         Batch.single(self.bound_graph, Batch.delete_node, self.bound_id)
 
     def to_cypher(self):
+        """ Return a Cypher representation of this node.
+        """
         s = []
         if self.bound:
             s.append("_")
@@ -790,6 +804,8 @@ class Node(Bindable, PropertyContainer, yaml.YAMLObject):
         return "".join(s)
 
     def to_geoff(self):
+        """ Return a Geoff representation of this node.
+        """
         s = []
         if self.bound:
             s.append(str(self.bound_id))
@@ -1016,6 +1032,24 @@ class Path(Bindable, yaml.YAMLObject):
     def rels(self):
         return self.__rels
 
+    @property
+    def rel(self):
+        """ The first :class:`Rel` in this path, if any.
+        """
+        try:
+            return self.__rels[0]
+        except IndexError:
+            return None
+
+    @property
+    def last_rel(self):
+        """ The last :class:`Rel` in this path, if any.
+        """
+        try:
+            return self.__rels[-1]
+        except IndexError:
+            return None
+
     def bind(self, graph, id_):
         raise TypeError("Cannot directly bind a path")  # TODO - change error type
 
@@ -1029,11 +1063,15 @@ class Path(Bindable, yaml.YAMLObject):
         batch.submit()
 
     def push(self):
-        # TODO - set_path
+        # TODO
         pass
-    
+
+    def create(self):
+        # TODO
+        pass
+
     def delete(self):
-        # TODO - delete_path
+        # TODO
         pass
 
     def to_cypher(self):
