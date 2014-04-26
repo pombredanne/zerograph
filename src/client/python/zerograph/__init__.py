@@ -821,6 +821,11 @@ class Node(Bindable, PropertyContainer, yaml.YAMLObject):
 
 
 class Rel(Bindable, PropertyContainer, yaml.YAMLObject):
+    """ A local representation of the type and properties of a Neo4j graph
+    relationship that may be bound to a relationship in a remote graph
+    database. A ``Rel`` does not hold information on its start or end nodes,
+    a :class:`Path` instance should be used for that instead.
+    """
     yaml_tag = "!Rel"
     
     @classmethod
@@ -953,11 +958,6 @@ class Path(Bindable, yaml.YAMLObject):
 
     @classmethod
     def from_yaml(cls, loader, node):
-        """ Hydrate Path from YAML.
-        
-        !Path [!Node {}, !Rel {"type":"KNOWS"}, !Node {}]
-        
-        """
         sequence = loader.construct_sequence(node, deep=True)
         inst = cls(*sequence)
         return inst
@@ -1018,18 +1018,26 @@ class Path(Bindable, yaml.YAMLObject):
 
     @property
     def start_node(self):
+        """ The first :class:`Node` in this path.
+        """
         return self.__nodes[0]
 
     @property
     def end_node(self):
+        """ The last :class:`Node` in this path.
+        """
         return self.__nodes[-1]
 
     @property
     def nodes(self):
+        """ Tuple of all ``Nodes`` in this path.
+        """
         return self.__nodes
 
     @property
     def rels(self):
+        """ Tuple of all ``Rels`` in this path.
+        """
         return self.__rels
 
     @property
