@@ -10,7 +10,7 @@ def main():
         Graph.open(port=port)
     elif command == "drop":
         port = int(sys.argv[2])
-        Graph.open(port=port).drop()
+        Graph.drop(port=port)
     elif command == "shell":
         from .shell import main
         main()

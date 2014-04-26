@@ -81,11 +81,11 @@ public abstract class Service implements Runnable, ServiceInterface {
     }
 
     public void stop() {
-        Log.write("Stopping service on " + this.port);
+        Log.write("Stopping service on port " + this.port);
         external.close();
         internal.close();
         context.term();
-        Log.write("Stopped service on " + this.port);
+        Log.write("Stopped service on port " + this.port);
     }
 
 }

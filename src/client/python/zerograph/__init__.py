@@ -257,6 +257,8 @@ class Batch(object):
             else:
                 value = result.body
             values.append(value)
+        while len(values) < self.__count:
+            values.append(None)
         self.__count = 0
         return iter(values)
 
@@ -425,6 +427,19 @@ class Graph(yaml.YAMLObject):
             cls.__services[host_port] = graph
             return graph
 
+    @classmethod
+    def drop(cls, host, port):
+        """ Close the graph database service on the host and port specified and
+        destroy the database behind it.
+        """
+        host_port = (host, port)
+        if port == cls.ZEROGRAPH_PORT:
+            raise ValueError("Cannot drop zerograph")
+        else:
+            zerograph = cls.open(host)
+            Batch.single(zerograph, Batch.delete_graph, zerograph.host, port)
+            del cls.__services[host_port]
+
     def __init__(self, host, port):
         self.__host = host
         self.__port = port
@@ -481,18 +496,6 @@ class Graph(yaml.YAMLObject):
     def size(self):
         # TODO: count all rels
         return None
-
-    def drop(self):
-        """ Stop this graph database service and destroy the database behind
-        it.
-        """
-        if self.__port == self.ZEROGRAPH_PORT:
-            raise ValueError("Cannot drop zerograph")
-        else:
-            zerograph = Graph.open(self.__host)
-            return Batch.single(zerograph, Batch.delete_graph, self.__host,
-                                self.__port)
-        # TODO: mark as dropped and disallow any further actions? (maybe)
 
     def clear(self):
         # TODO
@@ -1006,7 +1009,7 @@ class Rev(Rel):
 
 
 class Path(Bindable, yaml.YAMLObject):
-    """ An alternating chain of :class:`Node`s and :class:`Rel`s.
+    """ An alternating chain of :class:`Node` and :class:`Rel` objects.
     """
     yaml_tag = '!Path'
 
@@ -1135,8 +1138,8 @@ class Path(Bindable, yaml.YAMLObject):
 
 
 class Relationship(Path):
-    """ A :class:`Path` segment consisting of two :class:`Node`s and one
-    :class:`Rel`. This is analogous to a Neo4j Relationship.
+    """ A :class:`Path` segment consisting of two :class:`Node` objects and one
+    :class:`Rel` object; this is analogous to a Neo4j Relationship.
     """
 
     def __init__(self, start_node, rel, end_node):

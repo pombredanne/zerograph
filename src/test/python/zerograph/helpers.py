@@ -15,4 +15,5 @@ class ZerographTestCase(TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        #Graph.drop(cls.host, cls.port)
         pass

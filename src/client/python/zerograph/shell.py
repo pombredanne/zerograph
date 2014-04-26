@@ -85,12 +85,13 @@ class Shell(object):
         elif command == "OPEN":
             port = int(args.partition(" ")[0])
             self.__graph = Graph.open(HOST, port)
+            print("Opened graph on port {0}".format(port))
         elif command == "DROP":
             port = int(args.partition(" ")[0])
             if port == 47470:
                 self.print_error("Cannot drop zerograph on port 47470")
             else:
-                Graph.open(HOST, port).drop()
+                Graph.drop(HOST, port)
                 print("Dropped graph on port {0}".format(port))
         elif command == "RECORD":
             name, query = args.partition(" ")[0::2]
