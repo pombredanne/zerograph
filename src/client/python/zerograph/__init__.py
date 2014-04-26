@@ -875,7 +875,7 @@ class Rel(Entity, PropertyContainer, yaml.YAMLObject):
     """ A local representation of the type and properties of a Neo4j graph
     relationship that may be bound to a relationship in a remote graph
     database. A ``Rel`` does not hold information on its start or end nodes,
-    a :class:`Path` instance should be used for that instead.
+    a :class:`Relationship` is used for that instead.
     """
     yaml_tag = "!Rel"
     
@@ -1006,6 +1006,8 @@ class Rev(Rel):
 
 
 class Path(Bindable, yaml.YAMLObject):
+    """ An alternating chain of :class:`Node`s and :class:`Rel`s.
+    """
     yaml_tag = '!Path'
 
     @classmethod
@@ -1133,6 +1135,9 @@ class Path(Bindable, yaml.YAMLObject):
 
 
 class Relationship(Path):
+    """ A :class:`Path` segment consisting of two :class:`Node`s and one
+    :class:`Rel`. This is analogous to a Neo4j Relationship.
+    """
 
     def __init__(self, start_node, rel, end_node):
         Path.__init__(self, start_node, rel, end_node)

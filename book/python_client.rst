@@ -39,6 +39,9 @@ Graph database entities are primarily represented using the :class:`Node`,
 .. autoclass:: Path
    :members:
 
+.. autoclass:: Relationship
+   :members:
+
 
 Batches
 =======
@@ -50,4 +53,7 @@ Batches
    :members:
 
 .. autoclass:: BatchPull
+   :members:
+
+.. autoclass:: BatchPush
    :members:

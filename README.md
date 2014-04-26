@@ -2,37 +2,13 @@
 
 # Zerograph
 
-## Server
+## Quick Start
 
 To run the server:
 
 ```bash
 $ gradle run
 ```
-
-### Storage
-
-If running as root, the databases will be stored in ``/var/zerograph`` by
-default. For other users, the ``$HOME/.zerograph`` directory will be used.
-These defaults can be overridden using the ``ZEROGRAPH_HOME`` environment
-variable.
-
-### Service
-
-The default service (graph zero) listens on port 47470. Graph services may be
-opened on other ports as required and dropped when no longer needed. On
-startup, all configured graph services will be started on their respective
-ports.
-
-One big benefit on the ZeroMQ infrastructure is a reduced impact to client
-applications when server disruption occurs. When a client submits a request,
-the server may or may not be available. If unavailable, the request will be
-queued automatically until the server once again becomes available at which
-point it will be processed as usual. No extra logic is required within the
-client application to manage retries.
-
-
-## Shell
 
 To run the test shell:
 
