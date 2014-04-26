@@ -3,6 +3,7 @@
 from itertools import cycle, islice
 import json
 import logging
+from weakref import WeakValueDictionary
 
 import yaml
 import zmq
@@ -192,6 +193,15 @@ class Table(object):
             out += "\n({0} rows)\n".format(len(self.__rows))
         return out
 
+    def __len__(self):
+        return len(self.__rows)
+
+    def __getitem__(self, index):
+        return self.__rows[index]
+
+    def __iter__(self):
+        return iter(self.__rows)
+
     @property
     def columns(self):
         return self.__columns
@@ -233,7 +243,10 @@ class Batch(object):
         return pointer
 
     def submit(self):
+        # Maybe stream this properly one day if we can have one socket
+        # per batch :-/
         self.__socket.send(b"")  # to close multipart message
+        values = []
         for result in Response.receive(self.__graph):
             # interpret the result type (should this be explicit?)
             if isinstance(result.body, list):
@@ -243,8 +256,9 @@ class Batch(object):
                     value = iter(result.body)
             else:
                 value = result.body
-            yield value
+            values.append(value)
         self.__count = 0
+        return iter(values)
 
     ### Cypher ###
 
@@ -382,6 +396,8 @@ class Graph(yaml.YAMLObject):
     ZEROGRAPH_PORT = 47470
 
     __services = {}
+    __nodes = WeakValueDictionary()
+    __rels = WeakValueDictionary()
 
     @classmethod
     def from_yaml(cls, loader, node):
@@ -504,15 +520,50 @@ class Graph(yaml.YAMLObject):
             results = batch.submit()
             return list(results)
 
-    def node(self, node_id):
-        """ Fetch a :class:`Node` by internal node ID.
-        """
-        return Batch.single(self, Batch.get_node, node_id)
+    def bind_node(self, node_id, node):
+        try:
+            cached = self.__nodes[node_id]
+            cached.replace(*node.labels, **node.properties)
+            return cached
+        except KeyError:
+            node.bind(self, node_id)
+            self.__nodes[node_id] = node
+            return node
 
-    def path(self, rel_id):
-        """ Fetch a :class:`Path` by internal relationship ID.
+    def bind_rel(self, rel_id, rel):
+        try:
+            cached = self.__rels[rel_id]
+            cached.replace(rel.type, **rel.properties)
+            return cached
+        except KeyError:
+            rel.bind(self, rel_id)
+            self.__rels[rel_id] = rel
+            return rel
+
+    def node(self, node_id):
+        """ Fetch a :class:`Node` by internal node ID, preferring a cached copy
+        if one is available.
         """
-        return Batch.single(self, Batch.get_rel, rel_id)
+        try:
+            return self.__nodes[node_id]
+        except KeyError:
+            # If we need to fetch a copy because no cached copy exists, this
+            # will get inserted into the cache when the node is bound in
+            # `bind_node`, above.
+            return Batch.single(self, Batch.get_node, node_id)
+
+    def rel(self, rel_id):
+        """ Fetch a :class:`Rel` by internal relationship ID, preferring a
+        cached copy if one is available.
+        """
+        try:
+            return self.__rels[rel_id]
+        except KeyError:
+            # If we need to fetch a copy because no cached copy exists, this
+            # will get inserted into the cache when the rel is bound in
+            # `bind_rel`, above.
+            path = Batch.single(self, Batch.get_rel, rel_id)
+            return path.rel
 
     def pull(self, *entities):
         """ Update multiple local entities from remote entities.
@@ -525,8 +576,10 @@ class Graph(yaml.YAMLObject):
     def push(self, *entities):
         """ Update multiple remote entities from local entities.
         """
-        # TODO
-        pass
+        batch = BatchPush(self)
+        for entity in entities:
+            batch.add(entity)
+        batch.submit()
 
     def create(self, *entities):
         """ Create multiple remote entities.
@@ -706,9 +759,10 @@ class Node(Bindable, PropertyContainer, yaml.YAMLObject):
         properties = mapping.get("properties") or {}
         inst = cls(*labels, **properties)
         id_ = mapping.get("id")
-        if id_ is not None:
-            inst.bind(loader.__graph__, id_)
-        return inst
+        if id_ is None:
+            return inst
+        else:
+            return loader.__graph__.bind_node(id_, inst)
 
     @classmethod
     def cast(cls, x):
@@ -736,11 +790,8 @@ class Node(Bindable, PropertyContainer, yaml.YAMLObject):
         return self.to_cypher()
 
     def __eq__(self, other):
-        return (PropertyContainer.__eq__(self, other) and
-                self.labels == other.labels)
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
+        return (self.labels == other.labels and
+                PropertyContainer.__eq__(self, other))
 
     @property
     def labels(self):
@@ -777,14 +828,6 @@ class Node(Bindable, PropertyContainer, yaml.YAMLObject):
         self.assert_bound()
         Batch.single(self.bound_graph, Batch.set_node, self.bound_id,
                      self.__labels, self.properties)
-
-    def create(self):
-        # TODO
-        pass
-
-    def delete(self):
-        self.assert_bound()
-        Batch.single(self.bound_graph, Batch.delete_node, self.bound_id)
 
     def to_cypher(self):
         """ Return a Cypher representation of this node.
@@ -835,9 +878,10 @@ class Rel(Bindable, PropertyContainer, yaml.YAMLObject):
         properties = mapping.get("properties") or {}
         inst = cls(type_, **properties)
         id_ = mapping.get("id")
-        if id_ is not None:
-            inst.bind(loader.__graph__, id_)
-        return inst
+        if id_ is None:
+            return inst
+        else:
+            return loader.__graph__.bind_rel(id_, inst)
 
     @classmethod
     def cast(cls, x):
@@ -868,6 +912,10 @@ class Rel(Bindable, PropertyContainer, yaml.YAMLObject):
 
     def __repr__(self):
         return self.to_cypher()
+
+    def __eq__(self, other):
+        return (self.type == other.type and
+                PropertyContainer.__eq__(self, other))
 
     @property
     def type(self):
@@ -908,10 +956,6 @@ class Rel(Bindable, PropertyContainer, yaml.YAMLObject):
         self.assert_bound()
         Batch.single(self.bound_graph, Batch.set_rel, self.bound_id,
                      self.properties)
-
-    def delete(self):
-        self.assert_bound()
-        Batch.single(self.bound_graph, Batch.delete_rel, self.bound_id)
 
     def to_cypher(self):
         s = []
@@ -989,6 +1033,9 @@ class Path(Bindable, yaml.YAMLObject):
 
     def __repr__(self):
         return self.to_cypher()
+
+    def __eq__(self, other):
+        return self.nodes == other.nodes and self.rels == other.rels
 
     def __getitem__(self, index):
         try:
@@ -1071,16 +1118,10 @@ class Path(Bindable, yaml.YAMLObject):
         batch.submit()
 
     def push(self):
-        # TODO
-        pass
-
-    def create(self):
-        # TODO
-        pass
-
-    def delete(self):
-        # TODO
-        pass
+        self.assert_bound()
+        batch = BatchPush(self.bound_graph)
+        batch.add(self)
+        batch.submit()
 
     def to_cypher(self):
         s = [self.__nodes[0].to_cypher()]
@@ -1136,14 +1177,20 @@ class BatchPull(object):
             self.__rels[entity.bound_id].remove(entity)
         elif isinstance(entity, Path):
             for node in entity.nodes:
-                self.__nodes[node.bound_id].remove(entity)
+                try:
+                    self.__nodes[node.bound_id].remove(entity)
+                except ValueError:
+                    pass
             for rel in entity.rels:
-                self.__rels[rel.bound_id].remove(entity)
+                try:
+                    self.__rels[rel.bound_id].remove(entity)
+                except ValueError:
+                    pass
         else:
             raise TypeError("Unexpected entity type")
 
     def submit(self):
-        """ Submit the batch and update all local entities.
+        """ Submit the batch to update all local entities.
         """
         batch = Batch(self.__graph)
         for id_ in self.__nodes.keys():
@@ -1173,3 +1220,67 @@ class BatchPull(object):
                                 rel.replace(path_rel.type, **path_rel.properties)
             else:
                 raise TypeError("Unexpected entity type")
+
+
+class BatchPush(object):
+
+    def __init__(self, graph):
+        self.__graph = graph
+        self.__nodes = {}
+        self.__rels = {}
+
+    def __assert_familiar(self, entity):
+        if entity.bound_graph != self.__graph:
+            raise ValueError("Entities are from different graphs")
+
+    def add(self, entity):
+        """ Add an entity to the set of entities to be pushed. If `replace` is
+        :const:`True` and the entity (or sub-entity of a :class:`Path` is
+        already listed, that entity will be replaced.
+        """
+        assert_bound(entity)
+        self.__assert_familiar(entity)
+        if isinstance(entity, Node):
+            self.__nodes[entity.bound_id] = entity
+        elif isinstance(entity, Rel):
+            self.__rels[entity.bound_id] = entity
+        elif isinstance(entity, Path):
+            for node in entity.nodes:
+                self.__nodes[node.bound_id] = node
+            for rel in entity.rels:
+                self.__rels[rel.bound_id] = rel
+        else:
+            raise TypeError("Unexpected entity type")
+
+    def remove(self, entity):
+        """ Remove an entity from the set of entities to be pushed.
+        """
+        assert_bound(entity)
+        self.__assert_familiar(entity)
+        if isinstance(entity, Node):
+            del self.__nodes[entity.bound_id]
+        elif isinstance(entity, Rel):
+            del self.__rels[entity.bound_id]
+        elif isinstance(entity, Path):
+            for node in entity.nodes:
+                try:
+                    del self.__nodes[node.bound_id]
+                except KeyError:
+                    pass
+            for rel in entity.rels:
+                try:
+                    del self.__rels[rel.bound_id]
+                except KeyError:
+                    pass
+        else:
+            raise TypeError("Unexpected entity type")
+
+    def submit(self):
+        """ Submit the batch to update all remote entities.
+        """
+        batch = Batch(self.__graph)
+        for id_, node in self.__nodes.items():
+            batch.set_node(id_, node.labels, node.properties)
+        for id_, rel in self.__rels.items():
+            batch.set_rel(id_, rel.properties)
+        batch.submit()
