@@ -489,16 +489,16 @@ class Graph(yaml.YAMLObject):
 
     @property
     def order(self):
-        # TODO: count all nodes
+        # TODO: count all nodes (V1)
         return None
 
     @property
     def size(self):
-        # TODO: count all rels
+        # TODO: count all rels (V1)
         return None
 
     def clear(self):
-        # TODO
+        # TODO (V1)
         pass
 
     def execute(self, query, *param_sets):
@@ -579,8 +579,10 @@ class Graph(yaml.YAMLObject):
     def create(self, *entities):
         """ Create multiple remote entities.
         """
-        # TODO
-        pass
+        batch = BatchCreate(self)
+        for entity in entities:
+            batch.add(entity)
+        return batch.submit()
 
     def delete(self, *entities):
         """ Delete multiple remote entities.
@@ -687,7 +689,7 @@ class PropertySet(dict):
     def __nonzero__(self):
         return dict.__len__(self) > 0
 
-    def to_cypher(self):
+    def to_cypher(self, **kwargs):
         s = []
         for key in sorted(self.keys()):
             if s:
@@ -802,11 +804,20 @@ class Node(Entity, PropertyContainer, yaml.YAMLObject):
         self.__labels = set(labels)
 
     def __repr__(self):
-        return self.to_cypher()
+        return self.to_geoff()
 
     def __eq__(self, other):
         return (self.labels == other.labels and
                 PropertyContainer.__eq__(self, other))
+
+    @property
+    def cypher_id(self):
+        """ A unique ID used in Cypher queries.
+        """
+        if self.bound:
+            return "BN{0}".format(self._id)
+        else:
+            return "N{0}".format(id(self))
 
     @property
     def labels(self):
@@ -829,7 +840,7 @@ class Node(Entity, PropertyContainer, yaml.YAMLObject):
         self.assert_bound()
         try:
             Batch.single(self.graph, Batch.get_node, self._id)
-        except Error:  # TODO: NotExistsError
+        except Error:  # TODO: NotExistsError (V1)
             return False
         else:
             return True
@@ -848,20 +859,19 @@ class Node(Entity, PropertyContainer, yaml.YAMLObject):
         Batch.single(self.graph, Batch.set_node, self._id,
                      self.__labels, self.properties)
 
-    def to_cypher(self):
+    def to_cypher(self, **kwargs):
         """ Return a Cypher representation of this node.
         """
-        s = []
-        if self.bound:
-            s.append("_")
-            s.append(str(self._id))
-        for label in sorted(self.__labels):
-            s.append(":")
-            s.append(label)
-        if self.properties:
-            if s:
-                s.append(" ")
-            s.append(self.properties.to_cypher())
+        s = [self.cypher_id]
+        if kwargs.get("labels"):
+            for label in sorted(self.__labels):
+                s.append(":")
+                s.append(label)
+        if kwargs.get("properties"):
+            if self.properties:
+                if s:
+                    s.append(" ")
+                s.append(self.properties.to_cypher(**kwargs))
         s = ["("] + s + [")"]
         return "".join(s)
 
@@ -930,11 +940,20 @@ class Rel(Entity, PropertyContainer, yaml.YAMLObject):
         self.__reverse = False
 
     def __repr__(self):
-        return self.to_cypher()
+        return self.to_geoff()
 
     def __eq__(self, other):
         return (self.type == other.type and
                 PropertyContainer.__eq__(self, other))
+
+    @property
+    def cypher_id(self):
+        """ A unique ID used in Cypher queries.
+        """
+        if self.bound:
+            return "BR{0}".format(self._id)
+        else:
+            return "R{0}".format(id(self))
 
     @property
     def type(self):
@@ -959,7 +978,7 @@ class Rel(Entity, PropertyContainer, yaml.YAMLObject):
         self.assert_bound()
         try:
             Batch.single(self.graph, Batch.get_rel, self._id)
-        except Error:  # TODO: NotExistsError
+        except Error:  # TODO: NotExistsError (V1)
             return False
         else:
             return True
@@ -976,16 +995,15 @@ class Rel(Entity, PropertyContainer, yaml.YAMLObject):
         Batch.single(self.graph, Batch.set_rel, self._id,
                      self.properties)
 
-    def to_cypher(self):
-        s = []
-        if self.bound:
-            s.append("_")
-            s.append(str(self._id))
-        s.append(":")
-        s.append(self.__type)
-        if self.properties:
-            s.append(" ")
-            s.append(self.properties.to_cypher())
+    def to_cypher(self, **kwargs):
+        s = [self.cypher_id]
+        if kwargs.get("type", not self.bound):
+            s.append(":")
+            s.append(self.__type)
+        if kwargs.get("properties"):
+            if self.properties:
+                s.append(" ")
+                s.append(self.properties.to_cypher(**kwargs))
         if self.__reverse:
             s = ["<-["] + s + ["]-"]
         else:
@@ -1057,17 +1075,13 @@ class Path(Bindable, yaml.YAMLObject):
             Bindable.bind(self, None)
 
     def __repr__(self):
-        return self.to_cypher()
+        return self.to_geoff()
 
     def __eq__(self, other):
         return self.nodes == other.nodes and self.rels == other.rels
 
     def __getitem__(self, index):
-        try:
-            return Relationship(self.__nodes[index], self.__rels[index],
-                                self.__nodes[index + 1])
-        except IndexError:
-            raise IndexError("Index out of range")
+        return self.relationship(index)
 
     def __iter__(self):
         for i, rel in enumerate(self.__rels):
@@ -1077,7 +1091,7 @@ class Path(Bindable, yaml.YAMLObject):
         return self.size
 
     def __reversed__(self):
-        # TODO
+        # TODO (V1)
         pass
 
     @property
@@ -1112,6 +1126,13 @@ class Path(Bindable, yaml.YAMLObject):
         """
         return self.__rels
 
+    def relationship(self, index):
+        try:
+            return Relationship(self.__nodes[index], self.__rels[index],
+                                self.__nodes[index + 1])
+        except IndexError:
+            raise IndexError("Index out of range")
+
     def bind(self, graph, **kwargs):
         raise TypeError("Cannot directly bind a path")  # TODO - change error type
 
@@ -1130,11 +1151,11 @@ class Path(Bindable, yaml.YAMLObject):
         batch.add(self)
         batch.submit()
 
-    def to_cypher(self):
-        s = [self.__nodes[0].to_cypher()]
+    def to_cypher(self, **kwargs):
+        s = [self.__nodes[0].to_cypher(**kwargs)]
         for i, rel in enumerate(self.__rels):
-            s.append(rel.to_cypher())
-            s.append(self.__nodes[i + 1].to_cypher())
+            s.append(rel.to_cypher(**kwargs))
+            s.append(self.__nodes[i + 1].to_cypher(**kwargs))
         return "".join(s)
 
     def to_geoff(self):
@@ -1162,6 +1183,16 @@ class Relationship(Path):
 
     def __delitem__(self, key):
         return self.__rel.properties.__delitem__(key)
+
+    @property
+    def bound(self):
+        return self.__rel.bound
+
+    @property
+    def cypher_id(self):
+        """ A unique ID used in Cypher queries.
+        """
+        return self.__rel.cypher_id
 
     @property
     def _id(self):
@@ -1329,3 +1360,121 @@ class BatchPush(object):
         for id_, rel in self.__rels.items():
             batch.set_rel(id_, rel.properties)
         batch.submit()
+
+
+class BatchCreate(object):
+
+    def __init__(self, graph):
+        self.__graph = graph
+        self.__entities = []
+
+    def __assert_familiar(self, entity):
+        if entity.graph is not None and entity.graph != self.__graph:
+            raise ValueError("Entities are from different graphs")
+
+    def add(self, entity):
+        """ Add an entity to the set of entities to be created.
+        """
+        self.__assert_familiar(entity)
+        if isinstance(entity, (Node, Path)):
+            self.__entities.append(entity)
+        else:
+            raise TypeError("Unexpected entity type")
+
+    def remove(self, entity):
+        """ Remove an entity from the set of entities to be created.
+        """
+        self.__assert_familiar(entity)
+        if isinstance(entity, (Node, Path)):
+            self.__entities.remove(entity)
+        else:
+            raise TypeError("Unexpected entity type")
+
+    @staticmethod
+    def __create_node_as_path(node):
+        clauses = []
+        params = {}
+        cypher_id = node.cypher_id
+        param_id = cypher_id + "P"
+        if node.bound:
+            clauses.append("START {0}=node({1})".format(cypher_id, node._id))
+            clauses.append("MATCH p=({0})".format(cypher_id))
+        else:
+            clauses.append("CREATE p=({0})".format(cypher_id))
+        if node.labels:
+            clauses.append("SET {0}:{1}".format(cypher_id, ":".join(node.labels)))
+        if node.properties:
+            clauses.append("SET {0}={{{1}}}".format(cypher_id, param_id))
+            params[param_id] = node.properties
+        clauses.append("RETURN p")
+        return " ".join(clauses), params
+
+    @staticmethod
+    def __create_relationship_as_path(relationship):
+        # TODO: refactor this monstrosity
+        clauses = []
+        params = {}
+
+        start_node = relationship.start_node
+        end_node = relationship.end_node
+        cypher_id = relationship.cypher_id
+        param_id = cypher_id + "P"
+
+        if relationship.bound:
+            clauses.append("START {0}=rel({1})".format(cypher_id, relationship._id))
+            clauses.append("MATCH p=({0})-[{1}]->({2})".format(start_node.cypher_id, cypher_id, end_node.cypher_id))
+        elif start_node.bound and end_node.bound:
+            clauses.append("START {0}=node({1}),{2}=node({3})".format(start_node.cypher_id, start_node._id, end_node.cypher_id, end_node._id))
+            clauses.append("CREATE p=({0})-[:`{1}`]->({2})".format(start_node.cypher_id, relationship.type.replace("`", "``"), end_node.cypher_id))
+        elif start_node.bound:
+            clauses.append("START {0}=node({1})".format(start_node.cypher_id, start_node._id))
+            clauses.append("CREATE p=({0})-[:`{1}`]->({2})".format(start_node.cypher_id, relationship.type.replace("`", "``"), end_node.cypher_id))
+        elif end_node.bound:
+            clauses.append("START {0}=node({1})".format(end_node.cypher_id, end_node._id))
+            clauses.append("CREATE p=({0})-[:`{1}`]->({2})".format(start_node.cypher_id, relationship.type.replace("`", "``"), end_node.cypher_id))
+        else:
+            clauses.append("CREATE p=({0})-[:`{1}`]->({2})".format(start_node.cypher_id, relationship.type.replace("`", "``"), end_node.cypher_id))
+
+        if start_node.labels:
+            clauses.append("SET {0}:{1}".format(start_node.cypher_id, ":".join(start_node.labels)))
+        if start_node.properties:
+            clauses.append("SET {0}={{{0}P}}".format(start_node.cypher_id, param_id))
+            params["{0}P".format(start_node.cypher_id)] = start_node.properties
+
+        if end_node.labels:
+            clauses.append("SET {0}:{1}".format(end_node.cypher_id, ":".join(end_node.labels)))
+        if end_node.properties:
+            clauses.append("SET {0}={{{0}P}}".format(end_node.cypher_id, param_id))
+            params["{0}P".format(end_node.cypher_id)] = end_node.properties
+
+        if relationship.properties:
+            clauses.append("SET {0}={{{1}}}".format(cypher_id, param_id))
+            params[param_id] = relationship.properties
+
+        clauses.append("RETURN p")
+        return " ".join(clauses), params
+
+    def submit(self):
+        """ Submit the batch to create or update the remote entities.
+        """
+        batch = Batch(self.__graph)
+        for entity in self.__entities:
+            if isinstance(entity, Node):
+                if entity.bound:
+                    batch.set_node(entity._id, entity.labels, entity.properties)
+                else:
+                    batch.create_node(entity.labels, entity.properties)
+            elif isinstance(entity, Path):
+                if len(entity) == 0:
+                    query, params = self.__create_node_as_path(entity.start_node)
+                    batch.execute_cypher(query, params)
+                elif len(entity) == 1:
+                    query, params = self.__create_relationship_as_path(entity.relationship(0))
+                    batch.execute_cypher(query, params)
+                else:
+                    raise ValueError("Long paths not yet supported")
+        for result in batch.submit():
+            if isinstance(result, Table):
+                yield result[0][0]
+            else:
+                yield result

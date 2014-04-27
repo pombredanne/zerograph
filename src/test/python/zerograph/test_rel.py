@@ -66,7 +66,7 @@ class RelRepresentationTestCase(TestCase):
     def test_can_represent_rel_with_type_and_properties(self):
         rel = Rel("KNOWS", since=1999)
         string = repr(rel)
-        assert string == '-[:KNOWS {since:1999}]->'
+        assert string == '-[:KNOWS {"since":1999}]->'
 
 
 class RelEqualityTestCase(TestCase):

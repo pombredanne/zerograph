@@ -91,12 +91,12 @@ class NodeRepresentationTestCase(TestCase):
     def test_can_represent_node_with_properties(self):
         node = Node(name="Alice", age=33)
         string = repr(node)
-        assert string == '({age:33,name:"Alice"})'
+        assert string == '({"age":33,"name":"Alice"})'
 
     def test_can_represent_node_with_labels_and_properties(self):
         node = Node("Human", "Female", name="Alice", age=33)
         string = repr(node)
-        assert string == '(:Female:Human {age:33,name:"Alice"})'
+        assert string == '(:Female:Human {"age":33,"name":"Alice"})'
 
 
 class NodeEqualityTestCase(TestCase):

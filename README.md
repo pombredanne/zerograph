@@ -39,7 +39,7 @@ same batched transaction. Type !HELP for help or type !EOF to exit the shell.
 [Z] localhost:47470> create (a:Person {name:'Alice'}) return a
 a
 -----------------------------------
-(123456:Person {"name": "Alice"})
+(1:Person {"name":"Alice"})
 (1 row)
 
 

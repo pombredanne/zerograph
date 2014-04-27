@@ -13,9 +13,16 @@ supplied to this method, defaults of ``'localhost'`` and ``47470`` are assumed.
 
 ::
 
-    from zerograph import Graph
-    graph = Graph.open()
-
+    >>> from zerograph import *
+    >>> graph = Graph.open()
+    >>> alice, bob = graph.create(Node(name="Alice"), Node(name="Bob"))
+    >>> alice
+    (118643 {"name":"Alice"})
+    >>> bob
+    (118644 {"name":"Bob"})
+    >>> alice_bob, = graph.create(Path(alice, "KNOWS", bob))
+    >>> alice_bob
+    (118643 {"name":"Alice"})-[161512:KNOWS]->(118644 {"name":"Bob"})
 
 .. autoclass:: Graph
    :members: open, drop, host, port, zerograph, order, size, clear, execute,
