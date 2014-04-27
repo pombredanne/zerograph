@@ -103,10 +103,13 @@ html_theme = 'alabaster'
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    'logo': 'Zerograph.200x50.png',
+    'logo': 'Z.png',
+    'logo_name': True,
     'github_user': 'zerograph',
     'github_repo': 'zerograph',
     'link': '#0D884C',
+    'gittip_user': 'nigelsmall',
+    'travis_button': True,
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -145,6 +148,7 @@ html_static_path = ['_static']
 html_sidebars = {
     '**': [
         'about.html', 'navigation.html', 'searchbox.html', 'donate.html',
+        'powered_by_neo4j.html'
     ]
 }
 

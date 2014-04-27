@@ -20,7 +20,7 @@ supplied to this method, defaults of ``'localhost'`` and ``47470`` are assumed.
     (118643 {"name":"Alice"})
     >>> bob
     (118644 {"name":"Bob"})
-    >>> alice_bob, = graph.create(Path(alice, "KNOWS", bob))
+    >>> alice_bob, = graph.create(Relationship(alice, "KNOWS", bob))
     >>> alice_bob
     (118643 {"name":"Alice"})-[161512:KNOWS]->(118644 {"name":"Bob"})
 
