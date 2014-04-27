@@ -26,19 +26,19 @@ Execute a Cypher Query
 ----------------------
 ::
 
-    $ bin/zerograph-shell
-    Zerøgraph Shell v0
+    $ bin/zerograph shell
+    
+    Zerograph Shell v1
     (C) Copyright 2014, Nigel Small <nigel@nigelsmall.com>
 
-    (Z) localhost:47470> create (a:Person {name:'Alice'}) return a
+    [Z] localhost:47470> create (a:Person {name:'Alice'}) return a
     a
     -----------------------------------
-    (_0:Person {name:"Alice"})
+    (0:Person {"name":"Alice"})
     (1 row)
 
 
-    (Z) localhost:47470> !eof
-    ⌁
+    [Z] localhost:47470> ⌁
 
 
 In Depth
