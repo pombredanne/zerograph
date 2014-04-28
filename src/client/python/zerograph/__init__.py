@@ -1462,13 +1462,16 @@ class BatchCreate(object):
     def submit(self):
         """ Submit the batch to create or update the remote entities.
         """
+        created = []
         batch = Batch(self.__graph)
         for node in self.__nodes:
+            created.append(node)
             if node.bound:
                 batch.set_node(node._id, node.labels, node.properties)
             else:
                 batch.create_node(node.labels, node.properties)
         for path in self.__paths:
+            created.append(path)
             if len(path) == 0:
                 query, params = self.__create_node_as_path(path.start_node)
                 batch.execute_cypher(query, params)
@@ -1477,10 +1480,17 @@ class BatchCreate(object):
                 batch.execute_cypher(query, params)
             else:
                 raise ValueError("Long paths not yet supported")
-        created = []
-        for result in batch.submit():
+        for i, result in enumerate(batch.submit()):
             if isinstance(result, Table):
-                created.append(result[0][0])
+                path = result[0][0]
+                for j, node in enumerate(path.nodes):
+                    created[i].nodes[j].bind(self.__graph, id=node._id)
+                    created[i].nodes[j].replace(*node.labels, **node.properties)
+                for j, rel in enumerate(path.rels):
+                    created[i].rels[j].bind(self.__graph, id=rel._id)
+                    created[i].rels[j].replace(rel.type, **rel.properties)
             else:
-                created.append(result)
+                node = result
+                created[i].bind(self.__graph, id=node._id)
+                created[i].replace(*node.labels, **node.properties)
         return created

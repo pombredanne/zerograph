@@ -117,7 +117,7 @@ class BatchCreateTestCase(ZerographTestCase):
         assert result_list[1] == ab
         assert all(map(lambda x: x.bound, result_list[1].nodes))
         assert all(map(lambda x: x.bound, result_list[1].rels))
-        assert result_list[0] is not result_list[1]
+        assert result_list[0] is result_list[1]
 
 
 if __name__ == "__main__":
