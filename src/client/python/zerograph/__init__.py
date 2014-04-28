@@ -1366,7 +1366,8 @@ class BatchCreate(object):
 
     def __init__(self, graph):
         self.__graph = graph
-        self.__entities = []
+        self.__nodes = []
+        self.__paths = []
 
     def __assert_familiar(self, entity):
         if entity.graph is not None and entity.graph != self.__graph:
@@ -1376,8 +1377,10 @@ class BatchCreate(object):
         """ Add an entity to the set of entities to be created.
         """
         self.__assert_familiar(entity)
-        if isinstance(entity, (Node, Path)):
-            self.__entities.append(entity)
+        if isinstance(entity, Node):
+            self.__nodes.append(entity)
+        elif isinstance(entity, Path):
+            self.__paths.append(entity)
         else:
             raise TypeError("Unexpected entity type")
 
@@ -1385,8 +1388,10 @@ class BatchCreate(object):
         """ Remove an entity from the set of entities to be created.
         """
         self.__assert_familiar(entity)
-        if isinstance(entity, (Node, Path)):
-            self.__entities.remove(entity)
+        if isinstance(entity, Node):
+            self.__nodes.remove(entity)
+        elif isinstance(entity, Path):
+            self.__paths.remove(entity)
         else:
             raise TypeError("Unexpected entity type")
 
@@ -1458,23 +1463,24 @@ class BatchCreate(object):
         """ Submit the batch to create or update the remote entities.
         """
         batch = Batch(self.__graph)
-        for entity in self.__entities:
-            if isinstance(entity, Node):
-                if entity.bound:
-                    batch.set_node(entity._id, entity.labels, entity.properties)
-                else:
-                    batch.create_node(entity.labels, entity.properties)
-            elif isinstance(entity, Path):
-                if len(entity) == 0:
-                    query, params = self.__create_node_as_path(entity.start_node)
-                    batch.execute_cypher(query, params)
-                elif len(entity) == 1:
-                    query, params = self.__create_relationship_as_path(entity.relationship(0))
-                    batch.execute_cypher(query, params)
-                else:
-                    raise ValueError("Long paths not yet supported")
+        for node in self.__nodes:
+            if node.bound:
+                batch.set_node(node._id, node.labels, node.properties)
+            else:
+                batch.create_node(node.labels, node.properties)
+        for path in self.__paths:
+            if len(path) == 0:
+                query, params = self.__create_node_as_path(path.start_node)
+                batch.execute_cypher(query, params)
+            elif len(path) == 1:
+                query, params = self.__create_relationship_as_path(path.relationship(0))
+                batch.execute_cypher(query, params)
+            else:
+                raise ValueError("Long paths not yet supported")
+        created = []
         for result in batch.submit():
             if isinstance(result, Table):
-                yield result[0][0]
+                created.append(result[0][0])
             else:
-                yield result
+                created.append(result)
+        return created
