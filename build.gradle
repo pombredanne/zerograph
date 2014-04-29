@@ -31,7 +31,7 @@ dependencies {
 }
 
 group = 'org.zerograph'
-version = '0'
+version = '1.beta'
 mainClassName = 'org.zerograph.Zerograph'
 jar {
     manifest {

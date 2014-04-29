@@ -13,7 +13,7 @@ public abstract class Service implements Runnable, ServiceInterface {
         return host + ":" + port;
     }
 
-    final public static int WORKER_COUNT = 13;
+    final public static int WORKER_COUNT = 4;
 
     final private String host;
     final private int port;

@@ -6,6 +6,10 @@ import logging
 from weakref import WeakValueDictionary
 
 import yaml
+try:
+    from yaml import CLoader as Loader
+except ImportError:
+    from yaml import Loader
 import zmq
 
 
@@ -104,7 +108,7 @@ class Response(object):
     @classmethod
     def receive(cls, graph):
 
-        class GraphLoader(yaml.Loader):
+        class GraphLoader(Loader):
             __graph__ = graph
 
         full = []
@@ -1494,3 +1498,8 @@ class BatchCreate(object):
                 created[i].bind(self.__graph, id=node._id)
                 created[i].replace(*node.labels, **node.properties)
         return created
+
+
+# Patch serialisable classes for the CLoader
+for cls in (Graph, Node, Rel, Rev, Path):
+    Loader.add_constructor(cls.yaml_tag, cls.from_yaml)
