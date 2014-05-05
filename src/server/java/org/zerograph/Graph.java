@@ -9,8 +9,11 @@ import org.zerograph.resources.*;
 import org.zerograph.resources.RelResource;
 import org.zerograph.util.Log;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * A Graph service represents a database exposed over a server port.
@@ -50,7 +53,6 @@ public class Graph extends Service implements GraphInterface {
         String key = Graph.key(host, port);
         if (instances.containsKey(key)) {
             Graph graph = instances.remove(key);
-            Log.write("Stopping graph");
             graph.stop();
             Environment.getInstance().dropDatabase(host, port);
         } else {
@@ -58,11 +60,17 @@ public class Graph extends Service implements GraphInterface {
         }
     }
 
+    public static synchronized Set<Graph> getAllRunning() {
+        HashSet<Graph> graphs = new HashSet<>(instances.size());
+        graphs.addAll(instances.values());
+        return graphs;
+    }
+
     final private GraphDatabaseService database;
 
     public Graph(String host, int port) {
         super(host, port);
-        this.database = getEnvironment().getOrCreateDatabase(host, port);
+        this.database = getEnvironment().openDatabase(host, port);
         this.workers = new ArrayList<>(WORKER_COUNT);
         this.threads = new ArrayList<>(WORKER_COUNT);
     }

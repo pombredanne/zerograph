@@ -59,22 +59,7 @@ public class Environment {
         return directory;
     }
 
-    public synchronized GraphDatabaseService getDatabase(String host, int port) {
-        if (databases.containsKey(port)) {
-            return databases.get(port);
-        } else {
-            GraphDirectory directory = new GraphDirectory(host, port);
-            if (directory.exists()) {
-                GraphDatabaseService database = factory.newEmbeddedDatabase(directory.getPath());
-                databases.put(port, database);
-                return database;
-            } else {
-                return null;
-            }
-        }
-    }
-
-    public synchronized GraphDatabaseService getOrCreateDatabase(String host, int port) {
+    public synchronized GraphDatabaseService openDatabase(String host, int port) {
         if (databases.containsKey(port)) {
             return databases.get(port);
         } else {

@@ -26,6 +26,7 @@ dependencies {
     compile "org.neo4j:neo4j:2.0.1"
     compile "org.zeromq:jeromq:0.3.2"
     compile "org.codehaus.jackson:jackson-mapper-asl:1.9.7"
+    compile "commons-daemon:commons-daemon:1.0.15"
     testCompile(group: 'org.neo4j', name: 'neo4j-kernel', version: '2.0.1', classifier: 'tests')
     testCompile 'junit:junit:4.11'
 }
