@@ -1,49 +1,61 @@
 package org.zerograph.resources;
 
-import org.zerograph.Request;
-import org.zerograph.Response;
+import org.neo4j.cypher.CypherException;
+import org.neo4j.cypher.javacompat.ExecutionResult;
+import org.neo4j.graphdb.PropertyContainer;
+import org.zerograph.api.DatabaseInterface;
+import org.zerograph.api.ResourceInterface;
+import org.zerograph.api.RequestInterface;
+import org.zerograph.api.ResponderInterface;
 import org.zerograph.except.ClientError;
 import org.zerograph.except.ServerError;
-import org.neo4j.cypher.CypherException;
-import org.neo4j.cypher.EntityNotFoundException;
-import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Transaction;
-import org.zeromq.ZMQ;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class CypherResource extends Resource {
+public class CypherResource extends AbstractResource implements ResourceInterface {
 
-    final public static String NAME = "cypher";
+    final private static String NAME = "Cypher";
 
-    public CypherResource(GraphDatabaseService database, ZMQ.Socket socket) {
-        super(database, socket);
+    public CypherResource(ResponderInterface responder) {
+        super(responder);
+    }
+
+    public String getName() {
+        return NAME;
     }
 
     /**
-     * POST cypher {query} [{params}]
+     * EXECUTE Cypher {"query": …, "params": …}
      *
-     * @param request
      */
     @Override
-    public PropertyContainer post(Transaction tx, Request request) throws ClientError, ServerError {
-        String query = request.getStringData(0);
+    public PropertyContainer execute(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
+        String query = request.getArgumentAsString("query");
+        Map<String, Object> params = request.getArgumentAsMap("params", null);
         try {
-            ExecutionResult result = execute(query);
+            ExecutionResult result;
+            if (params == null) {
+                result = database.execute(query);
+            } else {
+                result = database.execute(query, params);
+            }
+            HashMap<String, Object> meta = new HashMap<>();
             List<String> columns = result.columns();
-            sendContinue(columns.toArray(new Object[columns.size()]));
+            meta.put("columns", Arrays.asList(columns.toArray(new Object[columns.size()])));
+            responder.sendHead(meta);
             PropertyContainer firstEntity = null;
             int rowNumber = 0;
+            responder.startBodyList();
             for (Map<String, Object> row : result) {
                 ArrayList<Object> values = new ArrayList<>();
                 for (String column : columns) {
                     values.add(row.get(column));
                 }
-                sendContinue(values.toArray(new Object[values.size()]));
+                responder.sendBodyItem(Arrays.asList(values.toArray(new Object[values.size()])));
                 if (rowNumber == 0) {
                     Object firstValue = values.get(0);
                     if (firstValue instanceof PropertyContainer) {
@@ -52,13 +64,10 @@ public class CypherResource extends Resource {
                 }
                 rowNumber += 1;
             }
-            sendOK();
+            responder.endBodyList();
             return firstEntity;
-        } catch (EntityNotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, ex.getMessage()));
         } catch (CypherException ex) {
-            //ex.printStackTrace(System.err);
-            throw new ClientError(new Response(Response.BAD_REQUEST, ex.getMessage()));
+            throw new ClientError(ex.getMessage());
         }
     }
 

@@ -1,75 +1,74 @@
 package org.zerograph.resources;
 
-import org.zerograph.Request;
-import org.zerograph.Response;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.PropertyContainer;
+import org.zerograph.api.DatabaseInterface;
+import org.zerograph.api.ResourceInterface;
+import org.zerograph.api.RequestInterface;
+import org.zerograph.api.ResponderInterface;
 import org.zerograph.except.ClientError;
 import org.zerograph.except.ServerError;
-import org.neo4j.graphdb.*;
-import org.zeromq.ZMQ;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class NodeResource extends PropertyContainerResource {
+public class NodeResource extends AbstractResource implements ResourceInterface {
 
-    final public static String NAME = "node";
+    final private static String NAME = "Node";
 
-    final private HashMap<String, Label> labels;
+    public NodeResource(ResponderInterface responder) {
+        super(responder);
+    }
 
-    public NodeResource(GraphDatabaseService database, ZMQ.Socket socket) {
-        super(database, socket);
-        this.labels = new HashMap<>();
+    public String getName() {
+        return NAME;
     }
 
     /**
-     * GET node {node_id}
+     * GET Node {"id": …}
      *
      * Fetch a single node by ID.
      */
     @Override
-    public PropertyContainer get(Transaction tx, Request request) throws ClientError, ServerError {
-        long nodeID = request.getIntegerData(0);
+    public PropertyContainer get(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
+        long id = resolveNode(database, request.getArgument("id")).getId();
         try {
-            Node node = database().getNodeById(nodeID);
-            sendOK(node);
+            Node node = database.getNode(id);
+            responder.sendBody(node);
             return node;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, "Node " + nodeID + " not found"));
+            throw new ClientError("Node " + id + " not found");
         }
     }
 
     /**
-     * PUT node {node_id} {labels} {properties}
+     * SET Node {"id": …, "labels": …, "properties": …}
      *
      * Replace all labels and properties on a node identified by ID.
      * This will not create a node with the given ID if one does not
      * already exist.
      */
     @Override
-    public PropertyContainer put(Transaction tx, Request request) throws ClientError, ServerError {
-        long nodeID = request.getIntegerData(0);
-        List labelNames = request.getListData(1);
-        Map properties = request.getMapData(2);
+    public PropertyContainer set(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
+        long id = resolveNode(database, request.getArgument("id")).getId();
+        List labelNames = request.getArgumentAsList("labels");
+        Map<String, Object> properties = request.getArgumentAsMap("properties");
         try {
-            Node node = database().getNodeById(nodeID);
-            Lock writeLock = tx.acquireWriteLock(node);
-            Lock readLock = tx.acquireReadLock(node);
-            removeLabels(node);
-            removeProperties(node);
-            addLabels(node, labelNames);
-            addProperties(node, properties);
-            readLock.release();
-            writeLock.release();
-            sendOK(node);
+            Node node = database.putNode(id, labelNames, properties);
+            responder.sendBody(node);
             return node;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, "Node " + nodeID + " not found"));
+            throw new ClientError("Node " + id + " not found");
         }
     }
 
     /**
-     * PATCH node {node_id} {labels} {properties}
+     * PATCH Node {"id": …, "labels": …}
+     * PATCH Node {"id": …, "properties": …}
+     * PATCH Node {"id": …, "labels": …, "properties": …}
      *
      * Add new labels and properties to a node identified by ID.
      * This will not create a node with the given ID if one does not
@@ -77,84 +76,46 @@ public class NodeResource extends PropertyContainerResource {
      * maintained.
      */
     @Override
-    public PropertyContainer patch(Transaction tx, Request request) throws ClientError, ServerError {
-        long nodeID = request.getIntegerData(0);
-        List labelNames = request.getListData(1);
-        Map properties = request.getMapData(2);
+    public PropertyContainer patch(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
+        long id = resolveNode(database, request.getArgument("id")).getId();
+        List labelNames = request.getArgumentAsList("labels", new ArrayList());
+        Map<String, Object> properties = request.getArgumentAsMap("properties", new HashMap<String, Object>());
         try {
-            Node node = database().getNodeById(nodeID);
-            Lock writeLock = tx.acquireWriteLock(node);
-            Lock readLock = tx.acquireReadLock(node);
-            addLabels(node, labelNames);
-            addProperties(node, properties);
-            readLock.release();
-            writeLock.release();
-            sendOK(node);
+            Node node = database.patchNode(id, labelNames, properties);
+            responder.sendBody(node);
             return node;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, "Node " + nodeID + " not found"));
+            throw new ClientError("Node " + id + " not found");
         }
     }
 
     /**
-     * POST node {labels} {properties}
+     * CREATE Node {"labels": …, "properties": …}
      *
      * Create a new node with the given labels and properties.
      */
     @Override
-    public PropertyContainer post(Transaction tx, Request request) throws ClientError, ServerError {
-        List labelNames = request.getListData(0);
-        Map properties = request.getMapData(1);
-        Node node = database().createNode();
-        Lock writeLock = tx.acquireWriteLock(node);
-        Lock readLock = tx.acquireReadLock(node);
-        addLabels(node, labelNames);
-        addProperties(node, properties);
-        readLock.release();
-        writeLock.release();
-        sendCreated(node);
+    public PropertyContainer create(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
+        List labelNames = request.getArgumentAsList("labels", new ArrayList());
+        Map<String, Object> properties = request.getArgumentAsMap("properties", new HashMap<String, Object>());
+        Node node = database.createNode(labelNames, properties);
+        responder.sendBody(node);
         return node;
     }
 
     /**
-     * DELETE node {node_id}
+     * DELETE node {"id": …}
      *
      * Delete a node identified by ID.
      */
     @Override
-    public PropertyContainer delete(Transaction tx, Request request) throws ClientError, ServerError {
-        long nodeID = request.getIntegerData(0);
+    public PropertyContainer delete(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
+        long id = resolveNode(database, request.getArgument("id")).getId();
         try {
-            Node node = database().getNodeById(nodeID);
-            Lock writeLock = tx.acquireWriteLock(node);
-            node.delete();
-            writeLock.release();
-            sendNoContent();
+            database.deleteNode(id);
             return null;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, "Node " + nodeID + " not found"));
-        }
-    }
-
-    public void addLabels(Node node, List labelNames) {
-        for (Object labelName : labelNames) {
-            node.addLabel(getLabel(labelName.toString()));
-        }
-    }
-
-    public void removeLabels(Node node) {
-        for (Label label : node.getLabels()) {
-            node.removeLabel(label);
-        }
-    }
-
-    private Label getLabel(String name) {
-        if (labels.containsKey(name)) {
-            return labels.get(name);
-        } else {
-            Label label = DynamicLabel.label(name);
-            labels.put(name, label);
-            return label;
+            throw new ClientError("Node " + id + " not found");
         }
     }
 

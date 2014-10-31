@@ -13,3 +13,7 @@ build
 classes
 lib
 out
+venv
+
+_build
+dist

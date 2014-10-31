@@ -1,0 +1,9 @@
+language: java
+before_install:
+  - src/travis/before_install.sh
+install:
+  - src/travis/install.sh
+before_script:
+  - src/travis/before_script.sh
+script:
+  - src/travis/script.sh

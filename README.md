@@ -1,6 +1,8 @@
+[![Build Status](https://travis-ci.org/zerograph/zerograph.png)](https://travis-ci.org/zerograph/zerograph)
+
 # Zerograph
 
-## Server
+## Quick Start
 
 To run the server:
 
@@ -8,24 +10,38 @@ To run the server:
 $ gradle run
 ```
 
-### Storage
+To run the test shell:
 
-If running as root, the databases will be stored in ``/var/zerograph`` by
-default. For other users, the ``$HOME/.zerograph`` directory will be used.
-These defaults can be overridden using the ``ZG_STORAGE_PATH`` environment
-variable.
+```
+$ bin/zerograph shell
 
-### Service
+Zerograph Shell v1β
+(C) Copyright 2014, Nigel Small <nigel@nigelsmall.com>
 
-The default database instance listens on port 47474.
+Execute Cypher statements or meta-commands (prefixed with "!"). Multiple Cypher
+statements can be separated by a semicolon and will be executed within the
+same batched transaction. Type !HELP for help or type !EOF to exit the shell.
+
+[Z] localhost:47470> !help
+!HELP           display this help
+!EOF            exit the shell
+
+!OPEN <port>    open the graph on port <port>, creating it if it doesn't exist
+!DROP <port>    drop the graph on port <port> and delete the files from disk
+
+!GET <resource> [<json_object_data>]
+!SET <resource> [<json_object_data>]
+!PATCH <resource> [<json_object_data>]
+!CREATE <resource> [<json_object_data>]
+!DELETE <resource> [<json_object_data>]
+!EXECUTE <resource> [<json_object_data>]
+
+[Z] localhost:47470> create (a:Person {name:'Alice'}) return a
+a
+-----------------------------------
+(1:Person {"name":"Alice"})
+(1 row)
 
 
-## Client
-
-To run the Python test shell:
-
-```bash
-$ pip3 install pyzmq
-$ cd src/client/python
-$ python3 -m zerograph.repl
+[Z] localhost:47470> ⌁
 ```

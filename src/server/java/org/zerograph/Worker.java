@@ -1,113 +1,82 @@
 package org.zerograph;
 
-import org.zerograph.except.ClientError;
-import org.zerograph.resources.CypherResource;
-import org.zerograph.resources.NodeResource;
-import org.zerograph.resources.NodeSetResource;
-import org.zerograph.resources.RelResource;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
+import org.zerograph.api.DatabaseInterface;
+import org.zerograph.api.ServiceInterface;
+import org.zerograph.api.ResourceInterface;
+import org.zerograph.api.RequestInterface;
+import org.zerograph.api.ResponderInterface;
+import org.zerograph.except.ClientError;
+import org.zerograph.except.MethodNotAllowed;
+import org.zerograph.except.ServerError;
 import org.zeromq.ZMQ;
 
-import java.util.ArrayList;
 import java.util.UUID;
 
-public class Worker implements Runnable {
+public abstract class Worker<S extends ServiceInterface> implements Runnable {
 
-    final public static String ADDRESS = "inproc://workers";
+    final protected UUID uuid;
+    final protected ZMQ.Socket socket;
 
-    final private UUID uuid;
-    final private Environment env;
-    final private GraphDatabaseService database;
-    final private ZMQ.Socket external;
+    final protected S service;
+    final protected ResponderInterface responder;
+    final protected ResourceSet resourceSet;
 
-    final private CypherResource cypherResource;
-    final private NodeResource nodeResource;
-    final private NodeSetResource nodeSetResource;
-    final private RelResource relResource;
-
-    public Worker(Environment env, int port) {
+    public Worker(S service) {
         this.uuid = UUID.randomUUID();
-        this.env = env;
-        this.database = env.getDatabase(port);
-        this.external = env.getContext().socket(ZMQ.REP);
-        this.external.connect(ADDRESS);
-
-        this.cypherResource = new CypherResource(this.database, this.external);
-        this.nodeResource = new NodeResource(this.database, this.external);
-        this.nodeSetResource = new NodeSetResource(this.database, this.external);
-        this.relResource = new RelResource(this.database, this.external);
+        this.service = service;
+        this.socket = service.getContext().socket(ZMQ.REP);
+        this.socket.connect(this.service.getInternalAddress());
+        this.responder = new Responder(this.getSocket());
+        this.resourceSet = service.createResourceSet(responder);
     }
 
-    @Override
-    public void run() {
-        while (!Thread.currentThread().isInterrupted()) {
-            ArrayList<Request> requests = new ArrayList<>();
-            // parse requests
-            try {
-                boolean more = true;
-                while (more) {
-                    String frame = external.recvStr();
-                    for (String line : frame.split("\\r|\\n|\\r\\n")) {
-                        if (line.length() > 0) {
-                            System.out.println("<<< " + line);
-                            requests.add(new Request(line));
-                        }
-                    }
-                    more = external.hasReceiveMore();
-                }
-            } catch (ClientError ex) {
-                send(ex.getResponse());
-                continue;
+    public UUID getUUID() {
+        return uuid;
+    }
+
+    public S getService() {
+        return service;
+    }
+
+    public ZMQ.Socket getSocket() {
+        return this.socket;
+    }
+
+    protected PropertyContainer handle(RequestInterface request, DatabaseInterface database) throws ClientError, ServerError {
+        String requestedResource = request.getResource();
+        if (resourceSet.contains(requestedResource)) {
+            ResourceInterface resource = resourceSet.get(requestedResource);
+            PropertyContainer entity;
+            responder.beginResponse();
+            switch (request.getMethod().charAt(0)) {
+                case 'G':  // GET
+                    entity = resource.get(request, database);
+                    break;
+                case 'S':  // SET
+                    entity = resource.set(request, database);
+                    break;
+                case 'P':  // PATCH
+                    entity = resource.patch(request, database);
+                    break;
+                case 'C':  // CREATE
+                    entity = resource.create(request, database);
+                    break;
+                case 'D':  // DELETE
+                    entity = resource.delete(request, database);
+                    break;
+                case 'E':  // EXECUTE
+                case 'X':  // EXECUTE
+                    entity = resource.execute(request, database);
+                    break;
+                default:
+                    throw new MethodNotAllowed(request.getMethod() + " " + request.getResource());
             }
-            // handle requests
-            ArrayList<PropertyContainer> outputValues = new ArrayList<>(requests.size());
-            try {
-                System.out.println("--- Beginning transaction in worker " + this.uuid.toString() + " ---");
-                try (Transaction tx = database.beginTx()) {
-                    for (Request request : requests) {
-                        request.resolvePointers(outputValues);
-                        switch (request.getResource()) {
-                            case CypherResource.NAME:
-                                outputValues.add(cypherResource.handle(tx, request));
-                                break;
-                            case NodeResource.NAME:
-                                outputValues.add(nodeResource.handle(tx, request));
-                                break;
-                            case NodeSetResource.NAME:
-                                outputValues.add(nodeSetResource.handle(tx, request));
-                                break;
-                            case RelResource.NAME:
-                                outputValues.add(relResource.handle(tx, request));
-                                break;
-                            default:
-                                throw new ClientError(new Response(Response.NOT_FOUND, request.getResource()));
-                        }
-                    }
-                    tx.success();
-                }
-                send(new Response(Response.OK));
-                System.out.println("--- Successfully completed transaction in worker " + this.uuid.toString() + " ---");
-            } catch (IllegalArgumentException ex) {
-                send(new Response(Response.BAD_REQUEST, ex.getMessage()));
-            } catch (TransactionFailureException ex) {
-                send(new Response(Response.CONFLICT, ex.getMessage()));  // TODO - derive cause from nested Exceptions
-            } catch (ClientError ex) {
-                send(ex.getResponse());
-            } catch (Exception ex) {
-                send(new Response(Response.SERVER_ERROR, ex.getMessage()));
-            } finally {
-                System.out.println();
-            }
+            responder.endResponse();
+            return entity;
+        } else {
+            throw new ClientError("This service does not provide a resource called " + requestedResource);
         }
-    }
-
-    public boolean send(Response response) {
-        String string = response.toString();
-        System.out.println(">>> " + string);
-        return external.send(string);
     }
 
 }

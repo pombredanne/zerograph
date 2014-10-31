@@ -1,118 +1,82 @@
 package org.zerograph.resources;
 
-import org.zerograph.Request;
-import org.zerograph.Response;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
+import org.zerograph.api.DatabaseInterface;
+import org.zerograph.api.ResourceInterface;
+import org.zerograph.api.RequestInterface;
+import org.zerograph.api.ResponderInterface;
 import org.zerograph.except.ClientError;
 import org.zerograph.except.ServerError;
-import org.neo4j.cypher.CypherException;
-import org.neo4j.cypher.javacompat.ExecutionResult;
-import org.neo4j.graphdb.*;
-import org.zeromq.ZMQ;
 
 import java.util.HashMap;
-import java.util.Map;
 
-public class NodeSetResource extends Resource {
+public class NodeSetResource extends AbstractResource implements ResourceInterface {
 
-    final public static String NAME = "nodeset";
+    final private static String NAME = "NodeSet";
 
-    public NodeSetResource(GraphDatabaseService database, ZMQ.Socket socket) {
-        super(database, socket);
+    public NodeSetResource(ResponderInterface responder) {
+        super(responder);
+    }
+
+    public String getName() {
+        return NAME;
     }
 
     /**
-     * GET nodeset {label} {key} {value}
+     * GET NodeSet {"label": …}
+     * GET NodeSet {"label": …, "key": …, "value": …}
      *
-     * tx.find(label, key, value)
+     * Fetch all nodes that have the specified label and, optionally, property.
      *
-     * MATCH-RETURN
-     * No locking
-     *
-     * @param request
      */
     @Override
-    public PropertyContainer get(Transaction tx, Request request) throws ClientError, ServerError {
-        Label label = DynamicLabel.label(request.getStringData(0));
-        String key = request.getStringData(1);
-        Object value = request.getData(2);
-        HashMap<String, Integer> stats = new HashMap<>();
-        stats.put("nodes_matched", 0);
-        Node firstNode = null;
-        for (Node node : database().findNodesByLabelAndProperty(label, key, value)) {
-            sendContinue(node);
-            if (firstNode == null) {
-                firstNode = node;
-            }
-            stats.put("nodes_matched", stats.get("nodes_matched") + 1);
-        }
-        sendOK(stats);
-        return firstNode;
+    public PropertyContainer get(RequestInterface request, DatabaseInterface context) throws ClientError, ServerError {
+        String labelName = request.getArgumentAsString("label");
+        String key = request.getArgumentAsString("key", null);
+        Object value = request.getArgument("value", null);
+        HashMap<String, Object> stats = new HashMap<>();
+        Iterable<Node> result = context.matchNodeSet(labelName, key, value);
+        Node first = responder.sendNodes(result);
+        responder.sendFoot(stats);
+        return first;
     }
 
     /**
-     * PUT nodeset {label} {key} {value}
+     * PATCH NodeSet {"label": …, "key": …, "value": …}
      *
-     * tx.merge(label, key, value)
+     * Ensure at least one node exists with the specified criteria.
      *
-     * MERGE-RETURN
-     * No locking(?)
-     *
-     * @param request
      */
     @Override
-    public PropertyContainer put(Transaction tx, Request request) throws ClientError, ServerError {
-        String labelName = request.getStringData(0);
-        String key = request.getStringData(1);
-        Object value = request.getData(2);
-        try {
-            HashMap<String, Integer> stats = new HashMap<>();
-            String query = "MERGE (a:`" + labelName.replace("`", "``") +
-                    "` {`" + key.replace("`", "``") + "`:{value}}) RETURN a";
-            HashMap<String, Object> params = new HashMap<>(1);
-            params.put("value", value);
-            ExecutionResult result = execute(query, params);
-            Node firstNode = null;
-            for (Map<String, Object> row : result) {
-                Node node = (Node)row.get("a");
-                sendContinue(node);
-                if (firstNode == null) {
-                    firstNode = node;
-                }
-            }
-            int nodesCreated = result.getQueryStatistics().getNodesCreated();
-            stats.put("nodes_created", nodesCreated);
-            if (nodesCreated == 0) {
-                sendOK(stats);
-            } else {
-                sendCreated(stats);
-            }
-            return firstNode;
-        } catch (CypherException ex) {
-            throw new ServerError(new Response(Response.SERVER_ERROR, ex.getMessage()));
-        }
+    public PropertyContainer patch(RequestInterface request, DatabaseInterface context) throws ClientError, ServerError {
+        String labelName = request.getArgumentAsString("label");
+        String key = request.getArgumentAsString("key");
+        Object value = request.getArgument("value");
+        Iterable<Node> result = context.mergeNodeSet(labelName, key, value);
+        Node first = responder.sendNodes(result);
+        HashMap<String, Object> stats = new HashMap<>();
+        responder.sendFoot(stats);
+        return first;
     }
 
     /**
-     * DELETE nodeset {label} {key} {value}
+     * DELETE NodeSet {"label": …}
+     * DELETE NodeSet {"label": …, "key": …, "value": …}
      *
-     * tx.purge(label. key, value)
-     *
-     * MATCH-DELETE
-     *
-     * @param request
      */
     @Override
-    public PropertyContainer delete(Transaction tx, Request request) throws ClientError, ServerError {
-        Label label = DynamicLabel.label(request.getStringData(0));
-        String key = request.getStringData(1);
-        Object value = request.getData(2);
-        HashMap<String, Integer> stats = new HashMap<>();
-        stats.put("nodes_deleted", 0);
-        for (Node node : database().findNodesByLabelAndProperty(label, key, value)) {
-            node.delete();
-            stats.put("nodes_deleted", stats.get("nodes_deleted") + 1);
-        }
-        sendOK(stats);
+    public PropertyContainer delete(RequestInterface request, DatabaseInterface context) throws ClientError, ServerError {
+        String labelName = request.getArgumentAsString("label");
+        String key = request.getArgumentAsString("key");
+        Object value = request.getArgument("value");
+        HashMap<String, Object> stats = new HashMap<>();
+        //stats.put("nodes_deleted", 0);
+        context.purgeNodeSet(labelName, key, value);
+        responder.startBodyList();
+        responder.endBodyList();
+        //stats.put("nodes_deleted", stats.get("nodes_deleted") + 1);
+        responder.sendFoot(stats);
         return null;
     }
 

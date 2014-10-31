@@ -1,114 +1,347 @@
 package org.zerograph;
 
-import org.zerograph.except.ClientError;
-import org.zerograph.util.Data;
-import org.zerograph.util.Pointer;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.ObjectWriter;
+import org.codehaus.jackson.type.TypeReference;
 import org.neo4j.graphdb.PropertyContainer;
+import org.zerograph.api.RequestInterface;
+import org.zerograph.except.ClientError;
+import org.zerograph.except.MalformedRequest;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Request is tab-separated string of terms
- *
- * VERB resource [data [data ...]]
- *
- */
-public class Request {
+public class Request implements RequestInterface {
 
-    final private static ObjectMapper mapper = new ObjectMapper();
+    final private static TypeReference<Map<String, Object>> JSON_OBJECT = new TypeReference<Map<String, Object>>() {};
+    final private static ObjectMapper MAPPER = new ObjectMapper();
+    final private static ObjectWriter WRITER = MAPPER.writerWithType(JSON_OBJECT);
 
-    final private String string;
+    public static Request parse(String string) throws MalformedRequest {
+        String[] parts = string.split(" ", 3);
+        if (parts.length < 2) {
+            throw new MalformedRequest(string);
+        }
+        if (parts.length == 2) {
+            return new Request(parts[0], parts[1]);
+        } else {
+            try {
+                Map<String, Object> data = MAPPER.readValue(parts[2], JSON_OBJECT);
+                return new Request(parts[0], parts[1], data);
+            } catch (IOException e) {
+                throw new MalformedRequest(string);
+            }
+        }
+    }
+
     final private String method;
     final private String resource;
-    final private Object[] data;
+    final private Map<String, Object> arguments;
 
-    public Request(String string) throws ClientError {
-        this.string = string;
-        String[] parts = string.split("\t");
-        if (parts.length < 2) {
-            throw new ClientError(new Response(Response.BAD_REQUEST, string));
-        }
-        this.method = parts[0];
-        this.resource = parts[1];
-        int dataSize = parts.length - 2;
-        ArrayList<Object> data = new ArrayList<>(dataSize);
-        for (int i = 0; i < dataSize; i++) {
-            try {
-                data.add(Data.decode(parts[i + 2]));
-            } catch (IOException ex) {
-                throw new ClientError(new Response(Response.BAD_REQUEST, parts[i + 2]));
-            }
-        }
-        this.data = data.toArray(new Object[dataSize]);
+    public Request(String method, String resource, Map<String, Object> arguments) {
+        this.method = method;
+        this.resource = resource;
+        this.arguments = arguments;
     }
 
+    public Request(String method, String resource) {
+        this(method, resource, null);
+    }
+
+    @Override
     public String toString() {
-        return this.string;
-    }
-
-    public String getMethod() {
-        return this.method;
-    }
-
-    public String getResource() {
-        return this.resource;
-    }
-
-    public Object getData(int index) {
-        if (index >= 0 && index < this.data.length) {
-            return this.data[index];
-        } else {
-            throw new IndexOutOfBoundsException();
-        }
-    }
-
-    public Integer getIntegerData(int index) {
-        Object datum = getData(index);
-        if (datum instanceof Integer) {
-            return (Integer)datum;
-        } else {
-            throw new IllegalArgumentException("Integer data expected");
-        }
-    }
-
-    public String getStringData(int index) {
-        Object datum = getData(index);
-        if (datum instanceof String) {
-            return (String)datum;
-        } else {
-            throw new IllegalArgumentException("String data expected");
-        }
-    }
-
-    public List getListData(int index) {
-        Object datum = getData(index);
-        if (datum instanceof List) {
-            return (List)datum;
-        } else {
-            throw new IllegalArgumentException("List data expected");
-        }
-    }
-
-    public Map getMapData(int index) {
-        Object datum = getData(index);
-        if (datum instanceof Map) {
-            return (Map)datum;
-        } else {
-            throw new IllegalArgumentException("Map data expected");
-        }
-    }
-
-    public void resolvePointers(List<PropertyContainer> values) {
-        for (int i = 0; i < data.length; i++) {
-            if (data[i] instanceof Pointer) {
-                Pointer pointer = (Pointer)data[i];
-                data[i] = values.get(pointer.getAddress());
+        StringBuilder builder = new StringBuilder();
+        builder.append(method);
+        builder.append(' ');
+        builder.append(resource);
+        if (arguments != null) {
+            builder.append(' ');
+            try {
+                builder.append(WRITER.writeValueAsString(arguments));
+            } catch (IOException ex) {
+                throw new RuntimeException("Unable to serialise request", ex);
             }
         }
+        return builder.toString();
+    }
+
+    @Override
+    public String getMethod() {
+        return method;
+    }
+
+    @Override
+    public String getResource() {
+        return resource;
+    }
+
+    @Override
+    public Object getArgument(String name) throws ClientError {
+        if (arguments == null) {
+            throw new ClientError("Missing argument: " + name);
+        } else if (arguments.containsKey(name)) {
+            return arguments.get(name);
+        } else {
+            throw new ClientError("Missing argument: " + name);
+        }
+    }
+
+    @Override
+    public Boolean getArgumentAsBoolean(String name) throws ClientError {
+        if (arguments.containsKey(name)) {
+            Object value = arguments.get(name);
+            if (value == null) {
+                return null;
+            } else if (value instanceof Boolean) {
+                return ((Boolean) value);
+            } else {
+                throw new ClassCastException("Cannot cast argument \"" + name + "\" to Boolean");
+            }
+        } else {
+            throw new ClientError("Missing Boolean argument: " + name);
+        }
+    }
+
+    @Override
+    public Integer getArgumentAsInteger(String name) throws ClientError {
+        if (arguments.containsKey(name)) {
+            Object value = arguments.get(name);
+            if (value == null) {
+                return null;
+            } else if (value instanceof Number) {
+                return ((Number) value).intValue();
+            } else {
+                throw new ClassCastException("Cannot cast argument \"" + name + "\" to Integer");
+            }
+        } else {
+            throw new ClientError("Missing Integer argument: " + name);
+        }
+    }
+
+    @Override
+    public Long getArgumentAsLong(String name) throws ClientError {
+        if (arguments.containsKey(name)) {
+            Object value = arguments.get(name);
+            if (value == null) {
+                return null;
+            } else if (value instanceof Number) {
+                return ((Number) value).longValue();
+            } else {
+                throw new ClassCastException("Cannot cast argument \"" + name + "\" to Long");
+            }
+        } else {
+            throw new ClientError("Missing Long argument: " + name);
+        }
+    }
+
+    @Override
+    public Double getArgumentAsDouble(String name) throws ClientError {
+        if (arguments.containsKey(name)) {
+            Object value = arguments.get(name);
+            if (value == null) {
+                return null;
+            } else if (value instanceof Number) {
+                return ((Number) value).doubleValue();
+            } else {
+                throw new ClassCastException("Cannot cast argument \"" + name + "\" to Double");
+            }
+        } else {
+            throw new ClientError("Missing Double argument: " + name);
+        }
+    }
+
+    @Override
+    public String getArgumentAsString(String name) throws ClientError {
+        if (arguments.containsKey(name)) {
+            Object value = arguments.get(name);
+            if (value == null) {
+                return null;
+            } else {
+                return value.toString();
+            }
+        } else {
+            throw new ClientError("Missing String argument: " + name);
+        }
+    }
+
+    @Override
+    public List getArgumentAsList(String name) throws ClientError {
+        if (arguments.containsKey(name)) {
+            Object value = arguments.get(name);
+            if (value == null) {
+                return null;
+            } else if (value instanceof List) {
+                return ((List) value);
+            } else {
+                throw new ClassCastException("Cannot cast argument \"" + name + "\" to List");
+            }
+        } else {
+            throw new ClientError("Missing List argument: " + name);
+        }
+    }
+
+    @Override
+    public Map<String, Object> getArgumentAsMap(String name) throws ClientError {
+        if (arguments.containsKey(name)) {
+            Object value = arguments.get(name);
+            if (value == null) {
+                return null;
+            } else if (value instanceof Map) {
+                Map mapValue = (Map) value;
+                HashMap<String, Object> map = new HashMap<>(mapValue.size());
+                for (Object key : mapValue.keySet()) {
+                    map.put(key.toString(), mapValue.get(key));
+                }
+                return map;
+            } else {
+                throw new ClassCastException("Cannot cast argument \"" + name + "\" to Map");
+            }
+        } else {
+            throw new ClientError("Missing Map argument: " + name);
+        }
+    }
+
+    @Override
+    public Object getArgument(String name, Object defaultValue) {
+        if (arguments == null) {
+            return defaultValue;
+        } else if (arguments.containsKey(name)) {
+            return arguments.get(name);
+        } else {
+            return defaultValue;
+        }
+    }
+
+    @Override
+    public Boolean getArgumentAsBoolean(String name, Boolean defaultValue) {
+        if (arguments.containsKey(name)) {
+            Object value = arguments.get(name);
+            if (value == null) {
+                return null;
+            } else if (value instanceof Boolean) {
+                return ((Boolean) value);
+            } else {
+                throw new ClassCastException("Cannot cast argument \"" + name + "\" to Boolean");
+            }
+        } else {
+            return defaultValue;
+        }
+    }
+
+    @Override
+    public Integer getArgumentAsInteger(String name, Integer defaultValue) {
+        if (arguments.containsKey(name)) {
+            Object value = arguments.get(name);
+            if (value == null) {
+                return null;
+            } else if (value instanceof Number) {
+                return ((Number) value).intValue();
+            } else {
+                throw new ClassCastException("Cannot cast argument \"" + name + "\" to Integer");
+            }
+        } else {
+            return defaultValue;
+        }
+    }
+
+    @Override
+    public Long getArgumentAsLong(String name, Long defaultValue) {
+        if (arguments.containsKey(name)) {
+            Object value = arguments.get(name);
+            if (value == null) {
+                return null;
+            } else if (value instanceof Number) {
+                return ((Number) value).longValue();
+            } else {
+                throw new ClassCastException("Cannot cast argument \"" + name + "\" to Long");
+            }
+        } else {
+            return defaultValue;
+        }
+    }
+
+    @Override
+    public Double getArgumentAsDouble(String name, Double defaultValue) {
+        if (arguments.containsKey(name)) {
+            Object value = arguments.get(name);
+            if (value == null) {
+                return null;
+            } else if (value instanceof Number) {
+                return ((Number) value).doubleValue();
+            } else {
+                throw new ClassCastException("Cannot cast argument \"" + name + "\" to Double");
+            }
+        } else {
+            return defaultValue;
+        }
+    }
+
+    @Override
+    public String getArgumentAsString(String name, String defaultValue) {
+        if (arguments.containsKey(name)) {
+            Object value = arguments.get(name);
+            if (value == null) {
+                return null;
+            } else {
+                return value.toString();
+            }
+        } else {
+            return defaultValue;
+        }
+    }
+
+    @Override
+    public List getArgumentAsList(String name, List defaultValue) {
+        if (arguments.containsKey(name)) {
+            Object value = arguments.get(name);
+            if (value == null) {
+                return null;
+            } else if (value instanceof List) {
+                return ((List) value);
+            } else {
+                throw new ClassCastException("Cannot cast argument \"" + name + "\" to List");
+            }
+        } else {
+            return defaultValue;
+        }
+    }
+
+    @Override
+    public Map<String, Object> getArgumentAsMap(String name, Map<String, Object> defaultValue) {
+        if (arguments.containsKey(name)) {
+            Object value = arguments.get(name);
+            if (value == null) {
+                return null;
+            } else if (value instanceof Map) {
+                Map mapValue = (Map) value;
+                HashMap<String, Object> map = new HashMap<>(mapValue.size());
+                for (Object key : mapValue.keySet()) {
+                    map.put(key.toString(), mapValue.get(key));
+                }
+                return map;
+            } else {
+                throw new ClassCastException("Cannot cast argument \"" + name + "\" to Map");
+            }
+        } else {
+            return defaultValue;
+        }
+    }
+
+    @Override
+    public void resolvePointers(List<PropertyContainer> values) {
+        HashMap<String, Object> resolved = new HashMap<>();
+        for (Map.Entry<String, Object> entry : arguments.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            if (key.endsWith("*")) {
+                key = key.substring(0, key.length() - 1);
+                PropertyContainer replacementValue = values.get(Integer.parseInt(value.toString()));
+                resolved.put(key, replacementValue);
+            }
+        }
+        arguments.putAll(resolved);
     }
 
 }

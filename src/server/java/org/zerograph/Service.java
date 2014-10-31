@@ -1,74 +1,91 @@
 package org.zerograph;
 
+import org.zerograph.api.ServiceInterface;
+import org.zerograph.util.Log;
 import org.zeromq.ZMQ;
+import zmq.ZError;
 
-import java.util.HashMap;
+import java.nio.channels.ClosedChannelException;
 
-public class Service implements Runnable {
+public abstract class Service implements Runnable, ServiceInterface {
 
-    final static private HashMap<Integer, Thread> instances = new HashMap<>(1);
+    public static String key(String host, int port) {
+        return host + ":" + port;
+    }
 
-    final public static int WORKER_COUNT = 40;
+    final public static int WORKER_COUNT = 4;
 
-    final private Environment env;
+    final private String host;
     final private int port;
-    final private String address;
 
+    final private Environment environment;
+
+    private ZMQ.Context context;
     private ZMQ.Socket external;  // incoming requests from clients
     private ZMQ.Socket internal;  // request forwarding to workers
 
-    public Service(int port) {
-        this.env = Environment.getInstance();
+    public Service(String host, int port) {
+        this.host = host;
         this.port = port;
-        this.address = "tcp://*:" + port;
+        this.environment = Environment.getInstance();
     }
 
-    public synchronized static void start(int port) {
-        if (instances.containsKey(port)) {
-            // TODO: already running
-        } else {
-            Service service = new Service(port);
-            Thread thread = new Thread(service);
-            thread.start();
-            instances.put(port, thread);
-        }
+    public String getHost() {
+        return this.host;
     }
 
-    public synchronized static void stop(int port) {
-        if (instances.containsKey(port)) {
-            Thread thread = instances.get(port);
-            // TODO: can't kill current db
-            thread.interrupt();
-        } else {
-            // TODO: not running
-        }
+    public int getPort() {
+        return this.port;
     }
 
-    private void bind() {
-        this.external = env.getContext().socket(ZMQ.ROUTER);
-        this.external.bind(address);
-        this.internal = env.getContext().socket(ZMQ.DEALER);
-        this.internal.bind(Worker.ADDRESS);
+    public Environment getEnvironment() {
+        return this.environment;
     }
 
-    private void startWorkers(int count) {
-        for(int i = 0; i < count; i++) {
-            new Thread(new Worker(env, port)).start();
-        }
+    public String getInternalAddress() {
+        return "inproc://" + host + "-" + port;
     }
+
+    public String getExternalAddress() {
+        return "tcp://" + host + ":" + port;
+    }
+
+    public ZMQ.Context getContext() {
+        return context;
+    }
+
+    public abstract void startWorkers();
 
     public void run() {
-        System.out.println("Starting up " + this.port);
-        bind();
-        startWorkers(WORKER_COUNT);
-        ZMQ.proxy(external, internal, null);
+        start();
     }
 
-    public void shutdown() {
-        System.out.println("Shutting down " + this.port);
-        this.external.close();
-        this.internal.close();
-        this.env.getContext().term();
+    public synchronized void start() {
+        Log.write("Starting service on " + this.port);
+        this.context = ZMQ.context(1);
+        this.internal = context.socket(ZMQ.DEALER);
+        this.internal.bind(getInternalAddress());
+        this.external = context.socket(ZMQ.ROUTER);
+        this.external.bind(getExternalAddress());
+        startWorkers();
+        try {
+            ZMQ.proxy(external, internal, null);
+        } catch (ZError.IOException ex) {
+            Throwable cause = ex.getCause();
+            if (cause instanceof ClosedChannelException) {
+                stop();
+            } else {
+                throw ex;
+            }
+        }
+    }
+
+    public void stop() {
+        Log.write("Stopping service on port " + this.port);
+        external.close();
+        internal.close();
+        context.term();
+        Log.write("Stopped service on port " + this.port);
     }
 
 }

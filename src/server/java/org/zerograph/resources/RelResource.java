@@ -1,71 +1,69 @@
 package org.zerograph.resources;
 
-import org.zerograph.Request;
-import org.zerograph.Response;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
+import org.zerograph.api.DatabaseInterface;
+import org.zerograph.api.ResourceInterface;
+import org.zerograph.api.RequestInterface;
+import org.zerograph.api.ResponderInterface;
 import org.zerograph.except.ClientError;
 import org.zerograph.except.ServerError;
-import org.neo4j.graphdb.*;
-import org.zeromq.ZMQ;
 
-import java.util.HashMap;
 import java.util.Map;
 
-public class RelResource extends PropertyContainerResource {
+public class RelResource extends AbstractResource implements ResourceInterface {
 
-    final public static String NAME = "rel";
+    final private static String NAME = "Rel";
 
-    final private HashMap<String, RelationshipType> relationshipTypes;
+    public RelResource(ResponderInterface responder) {
+        super(responder);
+    }
 
-    public RelResource(GraphDatabaseService database, ZMQ.Socket socket) {
-        super(database, socket);
-        this.relationshipTypes = new HashMap<>();
+    public String getName() {
+        return NAME;
     }
 
     /**
-     * GET rel {rel_id}
+     * GET Rel {"id": …}
      *
      * Fetch a single relationship by ID.
      */
     @Override
-    public PropertyContainer get(Transaction tx, Request request) throws ClientError, ServerError {
-        long relID = request.getIntegerData(0);
+    public PropertyContainer get(RequestInterface request, DatabaseInterface context) throws ClientError, ServerError {
+        long id = request.getArgumentAsLong("id");
         try {
-            Relationship rel = database().getRelationshipById(relID);
-            sendOK(rel);
+            Relationship rel = context.getRelationship(id);
+            responder.sendBody(rel);
             return rel;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, "Relationship " + relID + " not found"));
+            throw new ClientError("Relationship " + id + " not found!");
         }
     }
 
     /**
-     * PUT rel {rel_id} {properties}
+     * SET Rel {"id": …, "properties": …}
      *
      * Replace all properties on a relationship identified by ID.
      * This will not create a relationship with the given ID if one does not
      * already exist.
      */
     @Override
-    public PropertyContainer put(Transaction tx, Request request) throws ClientError, ServerError {
-        long relID = request.getIntegerData(0);
-        Map properties = request.getMapData(1);
+    public PropertyContainer set(RequestInterface request, DatabaseInterface context) throws ClientError, ServerError {
+        long id = request.getArgumentAsLong("id");
+        Map<String, Object> properties = request.getArgumentAsMap("properties");
         try {
-            Relationship rel = database().getRelationshipById(relID);
-            Lock writeLock = tx.acquireWriteLock(rel);
-            Lock readLock = tx.acquireReadLock(rel);
-            removeProperties(rel);
-            addProperties(rel, properties);
-            readLock.release();
-            writeLock.release();
-            sendOK(rel);
+            Relationship rel = context.putRelationship(id, properties);
+            responder.sendBody(rel);
             return rel;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, "Relationship " + relID + " not found"));
+            throw new ClientError("Relationship " + id + " not found");
         }
     }
 
     /**
-     * PATCH rel {rel_id} {properties}
+     * PATCH Rel {"id": …, "properties": …}
      *
      * Add new properties to a relationship identified by ID.
      * This will not create a relationship with the given ID if one does not
@@ -73,85 +71,47 @@ public class RelResource extends PropertyContainerResource {
      * maintained.
      */
     @Override
-    public PropertyContainer patch(Transaction tx, Request request) throws ClientError, ServerError {
-        long relID = request.getIntegerData(0);
-        Map properties = request.getMapData(1);
+    public PropertyContainer patch(RequestInterface request, DatabaseInterface context) throws ClientError, ServerError {
+        long id = request.getArgumentAsLong("id");
+        Map<String, Object> properties = request.getArgumentAsMap("properties");
         try {
-            Relationship rel = database().getRelationshipById(relID);
-            Lock writeLock = tx.acquireWriteLock(rel);
-            Lock readLock = tx.acquireReadLock(rel);
-            addProperties(rel, properties);
-            readLock.release();
-            writeLock.release();
-            sendOK(rel);
+            Relationship rel = context.patchRelationship(id, properties);
+            responder.sendBody(rel);
             return rel;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, "Relationship " + relID + " not found"));
+            throw new ClientError("Relationship " + id + " not found");
         }
     }
 
     /**
-     * POST rel {start_node} {end_node} {type} {properties}
+     * CREATE Rel {"start": …, "end": …, "type": …, "properties": …}
      *
      * Create a new relationship.
      */
     @Override
-    public PropertyContainer post(Transaction tx, Request request) throws ClientError, ServerError {
-        Node startNode = resolveNode(request.getData(0));
-        Node endNode = resolveNode(request.getData(1));
-        String typeName = request.getStringData(2);
-        Map properties = request.getMapData(3);
-        Relationship rel = startNode.createRelationshipTo(endNode, getRelationshipType(typeName));
-        Lock writeLock = tx.acquireWriteLock(rel);
-        Lock readLock = tx.acquireReadLock(rel);
-        addProperties(rel, properties);
-        readLock.release();
-        writeLock.release();
-        sendCreated(rel);
+    public PropertyContainer create(RequestInterface request, DatabaseInterface context) throws ClientError, ServerError {
+        Node startNode = resolveNode(context, request.getArgument("start"));
+        Node endNode = resolveNode(context, request.getArgument("end"));
+        String typeName = request.getArgumentAsString("type");
+        Map<String, Object> properties = request.getArgumentAsMap("properties");
+        Relationship rel = context.createRelationship(startNode, endNode, typeName, properties);
+        responder.sendBody(rel);
         return rel;
     }
 
     /**
-     * DELETE rel {rel_id}
+     * DELETE Rel {"id": …}
      *
      * Delete a relationship identified by ID.
      */
     @Override
-    public PropertyContainer delete(Transaction tx, Request request) throws ClientError, ServerError {
-        long relID = request.getIntegerData(0);
+    public PropertyContainer delete(RequestInterface request, DatabaseInterface context) throws ClientError, ServerError {
+        long id = request.getArgumentAsLong("id");
         try {
-            Relationship rel = database().getRelationshipById(relID);
-            Lock writeLock = tx.acquireWriteLock(rel);
-            rel.delete();
-            writeLock.release();
-            sendNoContent();
+            context.deleteRelationship(id);
             return null;
         } catch (NotFoundException ex) {
-            throw new ClientError(new Response(Response.NOT_FOUND, "Relationship " + relID + " not found"));
-        }
-    }
-
-    private Node resolveNode(Object value) throws ClientError {
-        if (value instanceof Node) {
-            return (Node)value;
-        } else if (value instanceof Integer) {
-            try {
-                return database().getNodeById((Integer)value);
-            } catch (NotFoundException ex) {
-                throw new ClientError(new Response(Response.NOT_FOUND, "Relationship " + value + " not found"));
-            }
-        } else {
-            throw new ClientError(new Response(Response.BAD_REQUEST, value));
-        }
-    }
-
-    private RelationshipType getRelationshipType(String name) {
-        if (relationshipTypes.containsKey(name)) {
-            return relationshipTypes.get(name);
-        } else {
-            DynamicRelationshipType relationshipType = DynamicRelationshipType.withName(name);
-            relationshipTypes.put(name, relationshipType);
-            return relationshipType;
+            throw new ClientError("Relationship " + id + " not found");
         }
     }
 
